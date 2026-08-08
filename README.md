@@ -1,6 +1,6 @@
 # lasermade-tools
 
-Three scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
+Four scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
 build repositories — [octagonal-torus](https://github.com/Gernreich/octagonal-torus),
 [knotwork-soundholes](https://github.com/Gernreich/knotwork-soundholes),
 [living-hinge](https://github.com/Gernreich/living-hinge),
@@ -21,13 +21,14 @@ Python 3, no dependencies. Nothing here reads or writes outside the paths you gi
 | `doc-audit.py` | claims a writeup makes about itself and about files on disk |
 | `md2html.py` | markdown → one self-contained HTML page |
 | `svg-stroke-check.py` | SVG elements whose stroke colour is declared twice and disagrees |
+| `make-preview.py` | a cut file rendered so it can be read on a page |
 
 ## Why these live in their own repository
 
 They are used by all seven build repositories, so none of them can own the tools without
 the other six depending on it. Tools that know one build — `octagonal-torus/verify.js`
 knows that build's apothems and panel sizes — stay inside the repository they describe.
-These three know nothing about any particular object, so they sit here.
+These four know nothing about any particular object, so they sit here.
 
 Until 2026-08-08 they lived in `~/Claude`, which is not version controlled. Their bugs
 are the reason that mattered: the failures below were found by accident, and without
@@ -114,10 +115,31 @@ saying green or cyan, attribute saying black. Read the attribute way, all sixtee
 cut that frees the plates. Nothing in the file looked wrong, and no other check could see
 it.
 
+## `make-preview.py`
+
+```
+python3 make-preview.py CUTFILE.svg [OUT.svg]      # default previews/<name>
+```
+
+A cut file draws hairlines on no background: nearly invisible in a browser, and a black
+one disappears on a dark page. This thickens the stroke, paints a light ground, and
+darkens the inks that cannot be seen against it.
+
+**It changes the colours, and that is the point.** Three of the six cut-order inks fail
+the WCAG 3:1 graphics minimum on the cream ground — green at 1.28:1, cyan at 1.17:1,
+orange at 2.35:1 — so a faithful rendering of the palette is an unreadable picture. The
+darkened equivalents keep the hue and the sequence and clear 4.8:1. Geometry, sheet
+position and cut order are untouched, and both are checked against the source before the
+file is written.
+
+The cut order it renders is shared by every build repository here: **blue engraves, then
+green → orange → cyan → black**, black always the cut that frees the part, violet always
+skip. A file uses only the stages it needs.
+
 ## Checking this page
 
 ```
-python3 doc-audit.py README.md --ignore 'WRITEUP.md,PAGE.html,FILE.svg,prose.py,verify.js,BuildA1_90_25.svg'
+python3 doc-audit.py README.md --ignore 'WRITEUP.md,PAGE.html,FILE.svg,CUTFILE.svg,OUT.svg,prose.py,verify.js,BuildA1_90_25.svg'
 ```
 
 The ignore list is the usage-synopsis placeholders and two files that live in
