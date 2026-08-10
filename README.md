@@ -1,7 +1,7 @@
 # lasermade-tools
 
 Four scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
-build repositories — [octagonal-torus](https://github.com/Gernreich/octagonal-torus),
+build repositories — [torus-octagonal](https://github.com/Gernreich/torus-octagonal),
 [knotwork-soundholes](https://github.com/Gernreich/knotwork-soundholes),
 [living-hinge](https://github.com/Gernreich/living-hinge),
 [slapstick](https://github.com/Gernreich/slapstick),
@@ -26,7 +26,7 @@ Python 3, no dependencies. Nothing here reads or writes outside the paths you gi
 ## Why these live in their own repository
 
 They are used by all seven build repositories, so none of them can own the tools without
-the other six depending on it. Tools that know one build — `octagonal-torus/verify.js`
+the other six depending on it. Tools that know one build — `torus-octagonal/verify.js`
 knows that build's apothems and panel sizes — stay inside the repository they describe.
 These four know nothing about any particular object, so they sit here.
 
@@ -109,7 +109,7 @@ was winning anyway, so what the file cuts does not change. It compares path data
 and after and refuses to write if anything but the attribute moved. Exit status is 1 when
 conflicts exist, so it can gate a commit.
 
-**Why it exists.** `octagonal-torus/BuildA1_90_25.svg` carried sixteen such paths: style
+**Why it exists.** `torus-octagonal/BuildA1_90_25.svg` carried sixteen such paths: style
 saying green or cyan, attribute saying black. Read the attribute way, all sixteen panels
 — including the eight nested inside the plate holes — moved to the final stage, after the
 cut that frees the plates. Nothing in the file looked wrong, and no other check could see
@@ -143,7 +143,7 @@ python3 doc-audit.py README.md --ignore 'WRITEUP.md,PAGE.html,FILE.svg,CUTFILE.s
 ```
 
 The ignore list is the usage-synopsis placeholders and two files that live in
-`octagonal-torus`, not here. Auditing this README is what turned up the quoted-example
+`torus-octagonal`, not here. Auditing this README is what turned up the quoted-example
 bug fixed above: the line describing the list-count check quotes `"Three things"`, and
 the checker read its own example as a claim.
 
