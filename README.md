@@ -2,6 +2,8 @@
 
 Four scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
 build repositories — [torus-octagonal](https://github.com/Gernreich/torus-octagonal),
+[trumpet-octagonal](https://github.com/Gernreich/trumpet-octagonal),
+[trumpet-curved](https://github.com/Gernreich/trumpet-curved),
 [knotwork-soundholes](https://github.com/Gernreich/knotwork-soundholes),
 [living-hinge](https://github.com/Gernreich/living-hinge),
 [slapstick](https://github.com/Gernreich/slapstick),
@@ -25,8 +27,8 @@ Python 3, no dependencies. Nothing here reads or writes outside the paths you gi
 
 ## Why these live in their own repository
 
-They are used by all seven build repositories, so none of them can own the tools without
-the other six depending on it. Tools that know one build — `torus-octagonal/verify_torus.js`
+They are used by all nine build repositories, so none of them can own the tools without
+the other eight depending on it. Tools that know one build — `torus-octagonal/verify_torus.js`
 knows that build's apothems and panel sizes — stay inside the repository they describe.
 These four know nothing about any particular object, so they sit here.
 
