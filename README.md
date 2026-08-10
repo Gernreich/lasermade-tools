@@ -26,7 +26,7 @@ Python 3, no dependencies. Nothing here reads or writes outside the paths you gi
 ## Why these live in their own repository
 
 They are used by all seven build repositories, so none of them can own the tools without
-the other six depending on it. Tools that know one build — `torus-octagonal/verify.js`
+the other six depending on it. Tools that know one build — `torus-octagonal/verify_torus.js`
 knows that build's apothems and panel sizes — stay inside the repository they describe.
 These four know nothing about any particular object, so they sit here.
 
@@ -139,7 +139,7 @@ skip. A file uses only the stages it needs.
 ## Checking this page
 
 ```
-python3 doc-audit.py README.md --ignore 'WRITEUP.md,PAGE.html,FILE.svg,CUTFILE.svg,OUT.svg,prose.py,verify.js,BuildA1_90_25.svg'
+python3 doc-audit.py README.md --ignore 'WRITEUP.md,PAGE.html,FILE.svg,CUTFILE.svg,OUT.svg,prose.py,verify_torus.js,BuildA1_90_25.svg'
 ```
 
 The ignore list is the usage-synopsis placeholders and two files that live in
