@@ -120,6 +120,22 @@ try:
 
     orphans = [f for f in tracked if not named(f) and f not in skip]
     ok("every tracked file is mentioned somewhere", not orphans, str(orphans) if orphans else "")
+
+    # A named file and a shown file are different things. Twice in one project a photograph
+    # was listed in a README's file table and displayed nowhere, so the document most people
+    # see first named a picture it never showed. The orphan check above passes on a mention;
+    # this one asks whether the image is actually on the page.
+    RASTER = (".jpg", ".jpeg", ".png", ".gif", ".webp")
+    # Per document, not pooled. Pooling was the first attempt and it could not catch the
+    # case it was written for: the photograph WAS shown, in the writeup, while the README
+    # that named it showed nothing. An image a document names is an image that document
+    # should show.
+    shown = {m.group(1).split("/")[-1] for m in re.finditer(r'<img[^>]+src="([^"]+)"', src)}
+    shown |= {m.group(1).split("/")[-1] for m in re.finditer(r'!\[[^\]]*\]\(([^)\s]+)', src)}
+    named_here = {r.split("/")[-1] for r in refs if r.lower().endswith(RASTER)}
+    unshown = sorted(n for n in named_here if n not in shown and n not in prose_only)
+    ok("every image is displayed, not just named", not unshown,
+       str(unshown) if unshown else "")
 except Exception:
     notes.append("  – not a git repo, skipped the orphan check")
 
