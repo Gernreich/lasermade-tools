@@ -67,6 +67,14 @@ own bugs rather than the document's. Later, a document in a subdirectory was tol
 neighbours did not exist, because the checker rooted everything at the document's own
 directory; and the orphan check compared bare filenames, so `coupons/README.md` excluded
 the *root* `README.md` from the pool and then reported files only that README mentions.
+
+Most recently `--run-blocks` failed a document that contains no fenced blocks at all. It
+snapshotted the tree before running them, unconditionally, and `trumpet-curved` holds a
+148MB video over the stash cap — which it then reported as a file a block "may have
+modified". No block existed to modify it. The snapshot is now skipped when there is
+nothing to run, and files over the cap are tracked by size and mtime, so the failure
+states that a file *changed* rather than that one might have.
+
 **Verify anything it flags against the source before acting on it.**
 
 ## `md2html.py`

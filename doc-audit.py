@@ -236,13 +236,19 @@ if page:
             pass
 
 # ── 7. fenced blocks presented as terminal sessions ──────────────────────────
-if a.run_blocks:
+BLOCKS = re.findall(r"```\n\$ ([^\n]+)\n((?:.*\n)*?)```", src)
+if a.run_blocks and BLOCKS:
     # A quoted command is often a generator, not a read-only query: the octagonal
     # torus writeup quotes torus-geometry-diagram.js, which rewrites the very figure
     # the document displays. Auditing must not mutate the tree it audits, and the
     # damage is silent — the next run's "page is current" check would fail against an
     # HTML rebuilt from a figure this tool had replaced. So snapshot ROOT, run the
     # blocks against the real tree for fidelity, then put back anything they touched.
+    #
+    # Guarded on BLOCKS because the snapshot is not free. A writeup with no fenced
+    # sessions was reading every byte under ROOT to protect against commands that do
+    # not exist -- and then failing, because a 148MB video sat over the cap and got
+    # reported as "may have modified". Nothing had run. Nothing could have.
     STASH_CAP = 8 * 1024 * 1024
     SNAP_SKIP = {".git", ".DS_Store"}
 
@@ -251,14 +257,25 @@ if a.run_blocks:
             if p.is_file() and not (SNAP_SKIP & set(p.parts)):
                 yield p
 
-    before = {}
+    def stamp(p):
+        st = p.stat()
+        return (st.st_size, st.st_mtime_ns)
+
+    # Files over the cap are tracked by size and mtime instead of content. That cannot
+    # restore one, but it can tell whether restoring is even called for -- and saying
+    # "a block may have modified" about a file that provably did not change is a
+    # failure the reader has no way to dismiss.
+    before, big = {}, {}
     for p in walk():
         try:
-            before[p] = p.read_bytes() if p.stat().st_size <= STASH_CAP else None
+            if p.stat().st_size <= STASH_CAP:
+                before[p] = p.read_bytes()
+            else:
+                big[p] = stamp(p)
         except OSError:
-            before[p] = None
+            big[p] = None
 
-    for cmd, body in re.findall(r"```\n\$ ([^\n]+)\n((?:.*\n)*?)```", src):
+    for cmd, body in BLOCKS:
         try:
             got = subprocess.run(cmd, shell=True, cwd=ROOT, capture_output=True,
                                  text=True, timeout=60).stdout
@@ -272,20 +289,29 @@ if a.run_blocks:
     put_back, unrestorable = [], []
     for p in walk():                                    # changed, or newly created
         rel = str(p.relative_to(ROOT))
+        if p in big:
+            was = big[p]
+            try:
+                if was is not None and stamp(p) != was:
+                    unrestorable.append(rel)
+            except OSError:
+                unrestorable.append(rel)
+            continue
         if p not in before:
             p.unlink(); put_back.append(rel + " (created)"); continue
         keep = before[p]
-        if keep is None:
-            unrestorable.append(rel)
-        elif p.read_bytes() != keep:
+        if p.read_bytes() != keep:
             p.write_bytes(keep); put_back.append(rel)
     for p, keep in before.items():                      # or deleted outright
-        if keep is not None and not p.exists():
+        if not p.exists():
             p.write_bytes(keep); put_back.append(str(p.relative_to(ROOT)) + " (deleted)")
+    for p in big:                                       # walk() cannot see these
+        if not p.exists():
+            unrestorable.append(str(p.relative_to(ROOT)) + " (deleted)")
     if put_back:
         notes.append("  – blocks wrote to the tree; restored " + ", ".join(sorted(put_back)))
     if unrestorable:
-        fails.append("  ✗ a block may have modified files too large to snapshot: "
+        fails.append("  ✗ a block changed a file too large to restore: "
                      + ", ".join(sorted(unrestorable)))
 
 # ── 8. external links ────────────────────────────────────────────────────────
