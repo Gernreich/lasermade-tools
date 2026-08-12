@@ -57,6 +57,8 @@ Everything it checks is a claim the document makes about itself or about files o
 so a failure is always a real inconsistency — never a matter of taste. It reports:
 
 - files the document names that do not exist, and shipped files nothing mentions
+- link and image paths that do not resolve **from the document's own directory** — a
+  separate question from the one above, and the one a browser actually asks
 - dead in-page anchors, heading levels that skip, duplicate headings
 - list counts that contradict the prose — "Three things" over two items
 - doubled words, unbalanced code spans
@@ -66,8 +68,12 @@ so a failure is always a real inconsistency — never a matter of taste. It repo
   against what the document claims they print. Any file a block writes is restored
 - `--links`: external URLs actually resolve
 
-File references resolve against the **repository root**, not the document's directory, so
-a document in a subdirectory can name files above it.
+File references in prose resolve against the **repository root**, not the document's
+directory, so a document in a subdirectory can name files above it.
+
+**Link and image targets are checked differently**, against the document's own directory,
+because that is what a browser does with them. `see bell.py` in prose stays true wherever
+bell.py lives; `<img src="bell.py">` does not. The two checks disagreeing is the point.
 
 **Where it has been wrong.** Its first run produced four failures, all of which were its
 own bugs rather than the document's. It also reported `boxes.py` and `RegularBox.svg` as
@@ -84,6 +90,14 @@ snapshotted the tree before running them, unconditionally, and `trumpet-curved` 
 modified". No block existed to modify it. The snapshot is now skipped when there is
 nothing to run, and files over the cap are tracked by size and mtime, so the failure
 states that a file *changed* rather than that one might have.
+
+Before that it had no notion of a path at all. Every file reference, prose or image tag
+alike, was satisfied by a name existing *anywhere* under the repository. So when
+`trumpet-curved` moved its parts into subdirectories and nothing rewrote the paths, the
+writeup passed **15/15** while 12 of the 13 images and 10 of the links on the published
+page returned 404. Nothing local could see it; the only symptom was on the deployed site.
+The path check above exists because of that, and it catches all 22 when replayed against
+the commit that would have shipped them.
 
 **Verify anything it flags against the source before acting on it.**
 
