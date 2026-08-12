@@ -49,7 +49,8 @@ python3 doc-audit.py WRITEUP.md [--html PAGE.html]
 A repository that legitimately names files it does not ship can say so once, in
 **`.doc-audit-ignore`** at its root — one name per line, `#` for comments — instead of
 remembering `--ignore` on every run. `torus-octagonal` needs it: its parts come from
-**boxes.py**, an external web generator, which serves every download as `RegularBox.svg`.
+**[boxes.py](https://www.festi.info/boxes.py/)** by Florian Festi, an external web generator, which serves
+every download as `RegularBox.svg`.
 Both names belong in the prose and neither will ever be a file there.
 
 Everything it checks is a claim the document makes about itself or about files on disk,
