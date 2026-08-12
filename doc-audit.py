@@ -78,6 +78,18 @@ def ok(label, good, detail=""):
 
 # ── 1. files the document names, and files nobody names ──────────────────────
 prose_only = {x.strip() for x in a.ignore.split(",") if x.strip()}
+# A repository may legitimately name files it does not ship. torus-octagonal is built
+# with boxes.py, an external web generator, and explains that it serves every download
+# as RegularBox.svg -- so both names belong in the prose and neither will ever exist on
+# disk. Passing --ignore each time works until someone forgets, and then the same two
+# false failures come back looking like a regression. A repository states its own
+# exceptions once, in .doc-audit-ignore at the root: one name per line, # for comments.
+IGNORE_FILE = ROOT / ".doc-audit-ignore"
+if IGNORE_FILE.exists():
+    for ln in IGNORE_FILE.read_text().split("\n"):
+        ln = ln.split("#", 1)[0].strip()
+        if ln:
+            prose_only.add(ln)
 no_urls = re.sub(r'https?://\S+', ' ', src)          # a URL's tail is not a local file
 refs = sorted(set(re.findall(r'[A-Za-z0-9_][A-Za-z0-9_.-]*\.(?:svg|js|py|md|html|png|jpg|jpeg|css|zip)', no_urls)))
 # A document may name a file that lives in a subdirectory — "coupons/sweep.svg" or

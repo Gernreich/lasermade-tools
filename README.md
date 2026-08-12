@@ -46,6 +46,12 @@ python3 doc-audit.py WRITEUP.md [--html PAGE.html]
         [--links] [--run-blocks] [--ignore 'named,in,prose.py'] [--strict-h1]
 ```
 
+A repository that legitimately names files it does not ship can say so once, in
+**`.doc-audit-ignore`** at its root — one name per line, `#` for comments — instead of
+remembering `--ignore` on every run. `torus-octagonal` needs it: its parts come from
+**boxes.py**, an external web generator, which serves every download as `RegularBox.svg`.
+Both names belong in the prose and neither will ever be a file there.
+
 Everything it checks is a claim the document makes about itself or about files on disk,
 so a failure is always a real inconsistency — never a matter of taste. It reports:
 
@@ -63,7 +69,10 @@ File references resolve against the **repository root**, not the document's dire
 a document in a subdirectory can name files above it.
 
 **Where it has been wrong.** Its first run produced four failures, all of which were its
-own bugs rather than the document's. Later, a document in a subdirectory was told its
+own bugs rather than the document's. It also reported `boxes.py` and `RegularBox.svg` as
+missing from `torus-octagonal` for as long as that repository existed — they are an
+external tool and the filename it serves, correctly named in prose, and the fix was the
+ignore file above rather than any change to a document that was right. Later, a document in a subdirectory was told its
 neighbours did not exist, because the checker rooted everything at the document's own
 directory; and the orphan check compared bare filenames, so `coupons/README.md` excluded
 the *root* `README.md` from the pool and then reported files only that README mentions.
