@@ -13,6 +13,9 @@ build repositories — [torus-octagonal](https://github.com/Gernreich/torus-octa
 [bullroarer](https://github.com/Gernreich/bullroarer) and
 [buzz-disc](https://github.com/Gernreich/buzz-disc).
 
+**[The rest of the build files](https://gernreich.github.io/)** — every instrument,
+generator and tool, indexed.
+
 They exist because a writeup that tells someone how to cut wood can be wrong in ways
 that cost them a sheet, and because a checker that reports the wrong thing is worse than
 no checker at all. Every one of these has produced a wrong answer at some point. Each
@@ -221,17 +224,26 @@ Treat the default as a starting bracket, not a recommendation.
 
 ## Checking this page
 
+`index.html` is this README rendered by `md2html.py` and committed, not built on the
+server, so it goes stale silently unless it is regenerated after every edit:
+
 ```
-python3 doc-audit.py README.md --ignore 'WRITEUP.md,PAGE.html,FILE.svg,CUTFILE.svg,OUT.svg,prose.py,bell.py,verify_torus.js,BuildA1_90_25.svg'
+python3 md2html.py README.md index.html
+python3 doc-audit.py README.md --html index.html
 ```
 
-The ignore list is the usage-synopsis placeholders and two files that live in
-`torus-octagonal`, not here. `bell.py` is neither — it is the invented example in the
-`doc-audit.py` section that shows prose and image paths resolving differently, and it was
-missing from this command for as long as the command existed, so the documented self-check
-reported two failures against a README that was right. Auditing this README is what turned up the quoted-example
-bug fixed above: the line describing the list-count check quotes `"Three things"`, and
-the checker read its own example as a claim.
+The names that check would otherwise trip on now live in `.doc-audit-ignore` rather than
+in an `--ignore` flag on the command line, so the documented self-check needs no arguments.
+They are the usage-synopsis placeholders, and the files named in prose that live in the
+repository they describe — `verify_torus.js` and `BuildA1_90_25.svg` in `torus-octagonal`,
+`bell.py` nowhere at all, since it is the invented example in the `doc-audit.py` section
+showing prose and image paths resolving differently. `bell.py` was missing from the flag
+for as long as the flag existed, so the documented self-check reported two failures against
+a README that was right.
+
+Auditing this README is also what turned up the quoted-example bug fixed above: the line
+describing the list-count check quotes `"Three things"`, and the checker read its own
+example as a claim.
 
 ---
 
