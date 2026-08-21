@@ -1,6 +1,6 @@
 # lasermade-tools
 
-Four scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
+Five scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
 build repositories — [torus-octagonal](https://github.com/Gernreich/torus-octagonal),
 [trumpet-octagonal](https://github.com/Gernreich/trumpet-octagonal),
 [trumpet-curved](https://github.com/Gernreich/trumpet-curved),
@@ -24,13 +24,14 @@ Python 3, no dependencies. Nothing here reads or writes outside the paths you gi
 | `md2html.py` | markdown → one self-contained HTML page |
 | `svg-stroke-check.py` | SVG elements whose stroke colour is declared twice and disagrees |
 | `make-preview.py` | a cut file rendered so it can be read on a page |
+| `test-ladder.py` | a strip of squares that finds the cut speed for the sheet in front of you |
 
 ## Why these live in their own repository
 
 They are used by all nine build repositories, so none of them can own the tools without
 the other eight depending on it. Tools that know one build — `torus-octagonal/verify_torus.js`
 knows that build's apothems and panel sizes — stay inside the repository they describe.
-These four know nothing about any particular object, so they sit here.
+These five know nothing about any particular object, so they sit here.
 
 Until 2026-08-08 they lived in `~/Claude`, which is not version controlled. Their bugs
 are the reason that mattered: the failures below were found by accident, and without
@@ -170,14 +171,60 @@ The cut order it renders is shared by every build repository here: **blue engrav
 green → orange → cyan → black**, black always the cut that frees the part, violet always
 skip. A file uses only the stages it needs.
 
+## `test-ladder.py`
+
+```
+python3 test-ladder.py OUT.svg [--speeds 15,20,25,30] [--square 15]
+```
+
+Settings for a sheet of plywood are a property of that sheet, not of the species on the
+invoice. Baltic birch from two suppliers, or the same supplier two packs apart, will not
+cut at the same speed, and the number that worked last month is a guess this month. This
+draws four identical squares, each stroked in a different ink so the importer gives it its
+own speed field, with its speed engraved beneath it in seven-segment line art — line art
+rather than text, so no font substitution on import can turn a number into something else
+or into nothing.
+
+Cut it, push each square out from below, and the fastest one that drops free unaided is
+the ceiling. Production runs 15-20% slower than that, so a void or a damp patch does not
+cost a part.
+
+**Colour here is one speed per layer, not cut order** — the only exception in these
+repositories, and it is forced. xTool Studio and XCS split an import into processing
+layers by colour, so a separate colour is the only place a separate speed can live. Same
+ink would mean one layer and one speed: a row of identical squares and no ladder at all.
+
+The inks are still the house stages, so `make-preview.py` renders a ladder and
+`svg-stroke-check.py` reads it. Four rungs, because four stages actually cut — green,
+orange, cyan, black — with blue engraving the labels as it always does. **Violet is never
+emitted**, since it means skip and a skipped rung is a missing answer. Four is also the
+better way to work: bracket coarse, then bisect. `15,25,35,45` finds the decade and a
+second run across the winning pair finds the number, which lands closer than six rungs
+guessed in one pass. Decimal speeds are accepted for that second run.
+
+**Where it has been wrong.** Its first run crashed on every ladder it was asked to draw.
+Speeds are parsed as floats, so `15` became `15.0`, and the digit table had no glyph for
+`.` — a generator that had been described as validated could not render its own default
+arguments. The decimal point is now a baseline tick, which is what makes bisecting below
+whole numbers possible at all.
+
+**The rungs themselves are untested against material.** The geometry is checked — square
+count, ink uniqueness, label glyphs, parseable XML — and the ladder is known to survive
+both sibling tools. Whether `15,20,25,30` brackets 3mm Baltic birch on a 55W tube is
+exactly the question the ladder exists to answer, and nothing here has answered it yet.
+Treat the default as a starting bracket, not a recommendation.
+
 ## Checking this page
 
 ```
-python3 doc-audit.py README.md --ignore 'WRITEUP.md,PAGE.html,FILE.svg,CUTFILE.svg,OUT.svg,prose.py,verify_torus.js,BuildA1_90_25.svg'
+python3 doc-audit.py README.md --ignore 'WRITEUP.md,PAGE.html,FILE.svg,CUTFILE.svg,OUT.svg,prose.py,bell.py,verify_torus.js,BuildA1_90_25.svg'
 ```
 
 The ignore list is the usage-synopsis placeholders and two files that live in
-`torus-octagonal`, not here. Auditing this README is what turned up the quoted-example
+`torus-octagonal`, not here. `bell.py` is neither — it is the invented example in the
+`doc-audit.py` section that shows prose and image paths resolving differently, and it was
+missing from this command for as long as the command existed, so the documented self-check
+reported two failures against a README that was right. Auditing this README is what turned up the quoted-example
 bug fixed above: the line describing the list-count check quotes `"Three things"`, and
 the checker read its own example as a claim.
 
