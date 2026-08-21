@@ -219,6 +219,14 @@ ul,ol{margin:.85em 0;padding-left:1.35em}
 li{margin:.3em 0}
 hr{border:0;border-top:1px solid var(--line);margin:2.6em 0}
 figure{margin:1.6em 0}
+/* A paragraph holding two or more images is a gallery. Left to inline layout they
+   wrap at whatever fits, which put three bells on one row and the fourth alone
+   underneath - directly above the caption, so it read as the caption for that one
+   picture rather than for the set. Flex lets them share the row instead. */
+p:has(img + img){display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;
+justify-content:center}
+p:has(img + img) img{flex:1 1 140px;width:auto;max-width:100%;height:auto;
+border:1px solid var(--line);border-radius:10px}
 figure svg,figure img{display:block;width:100%;max-width:100%;height:auto;
 border:1px solid var(--line);border-radius:10px}
 a{color:var(--accent)}

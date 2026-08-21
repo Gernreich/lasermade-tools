@@ -93,7 +93,14 @@ neighbours did not exist, because the checker rooted everything at the document'
 directory; and the orphan check compared bare filenames, so `coupons/README.md` excluded
 the *root* `README.md` from the pool and then reported files only that README mentions.
 
-Most recently `--run-blocks` failed a document that contains no fenced blocks at all. It
+Most recently the displayed-image check read a thumbnail as a missing picture. A page
+showed a 214KB copy of a 1.4MB photograph and linked the original from it — which is what a
+page should do, rather than making every reader pull the full file to see the picture — and
+the check, which counted only `<img src>` and `![]()`, reported the original as named but
+never shown. An anchor wrapping an image now counts as showing it. The check still fails a
+photograph a document names and displays nowhere, which is the case it was written for.
+
+Before that `--run-blocks` failed a document that contains no fenced blocks at all. It
 snapshotted the tree before running them, unconditionally, and `trumpet-curved` holds a
 148MB video over the stash cap — which it then reported as a file a block "may have
 modified". No block existed to modify it. The snapshot is now skipped when there is

@@ -175,6 +175,12 @@ try:
     # should show.
     shown = {m.group(1).split("/")[-1] for m in re.finditer(r'<img[^>]+src="([^"]+)"', src)}
     shown |= {m.group(1).split("/")[-1] for m in re.finditer(r'!\[[^\]]*\]\(([^)\s]+)', src)}
+    # A full-size photograph offered behind its own thumbnail is shown, not merely named.
+    # Counting only <img src> failed a page that displayed a 214KB copy of a 1.4MB
+    # original and linked the original from it, which is exactly what a page should do
+    # rather than making every reader download the full file to see the picture.
+    shown |= {m.group(1).split("/")[-1]
+              for m in re.finditer(r'<a[^>]+href="([^"]+)"[^>]*>\s*<img', src)}
     named_here = {r.split("/")[-1] for r in refs if r.lower().endswith(RASTER)}
     unshown = sorted(n for n in named_here if n not in shown and n not in prose_only)
     ok("every image is displayed, not just named", not unshown,
