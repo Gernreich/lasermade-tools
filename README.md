@@ -100,6 +100,12 @@ the check, which counted only `<img src>` and `![]()`, reported the original as 
 never shown. An anchor wrapping an image now counts as showing it. The check still fails a
 photograph a document names and displays nowhere, which is the case it was written for.
 
+The gallery rule added at the same time was wrong on its first push, in the opposite
+direction: flex items default to `min-width: auto` and will not shrink below their
+intrinsic width, so four bell renderings each took a row to themselves and the page got
+longer rather than tidier. `min-width: 0` on the item is what makes them share a row. It
+was caught by screenshotting the deployed page, which is the only thing that would have.
+
 Before that `--run-blocks` failed a document that contains no fenced blocks at all. It
 snapshotted the tree before running them, unconditionally, and `trumpet-curved` holds a
 148MB video over the stash cap — which it then reported as a file a block "may have

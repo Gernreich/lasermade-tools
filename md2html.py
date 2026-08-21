@@ -225,7 +225,7 @@ figure{margin:1.6em 0}
    picture rather than for the set. Flex lets them share the row instead. */
 p:has(img + img){display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;
 justify-content:center}
-p:has(img + img) img{flex:1 1 140px;width:auto;max-width:100%;height:auto;
+p:has(img + img) img{flex:1 1 140px;min-width:0;width:auto;max-width:100%;height:auto;
 border:1px solid var(--line);border-radius:10px}
 figure svg,figure img{display:block;width:100%;max-width:100%;height:auto;
 border:1px solid var(--line);border-radius:10px}
