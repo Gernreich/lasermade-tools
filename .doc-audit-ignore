@@ -3,3 +3,20 @@
 
 boxes.py
 RegularBox.svg
+
+# Placeholders in the usage lines. They are what you type in place of, not
+# files kept here.
+
+OUT.svg
+FILE.svg
+CUTFILE.svg
+PAGE.html
+WRITEUP.md
+prose.py
+
+# Named in prose as examples of tools that know one build, and so live in the
+# repository they describe rather than in this one.
+
+bell.py
+verify_torus.js
+BuildA1_90_25.svg

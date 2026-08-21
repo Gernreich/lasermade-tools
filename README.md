@@ -3,7 +3,9 @@
 Five scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
 build repositories — [torus-octagonal](https://github.com/Gernreich/torus-octagonal),
 [trumpet-octagonal](https://github.com/Gernreich/trumpet-octagonal),
-[trumpet-curved](https://github.com/Gernreich/trumpet-curved),
+[trumpet-coiled](https://github.com/Gernreich/trumpet-coiled),
+[trumpet-parts](https://github.com/Gernreich/trumpet-parts),
+[bore-generator](https://github.com/Gernreich/bore-generator),
 [knotwork-soundholes](https://github.com/Gernreich/knotwork-soundholes),
 [living-hinge](https://github.com/Gernreich/living-hinge),
 [slapstick](https://github.com/Gernreich/slapstick),
@@ -15,6 +17,9 @@ They exist because a writeup that tells someone how to cut wood can be wrong in 
 that cost them a sheet, and because a checker that reports the wrong thing is worse than
 no checker at all. Every one of these has produced a wrong answer at some point. Each
 section below says which, because that is the part worth remembering.
+
+**[Read the writeup](https://gernreich.github.io/lasermade-tools/)** — the same text as
+this page, set for reading, with a table of contents.
 
 Python 3, no dependencies. Nothing here reads or writes outside the paths you give it.
 
@@ -28,8 +33,8 @@ Python 3, no dependencies. Nothing here reads or writes outside the paths you gi
 
 ## Why these live in their own repository
 
-They are used by all nine build repositories, so none of them can own the tools without
-the other eight depending on it. Tools that know one build — `torus-octagonal/verify_torus.js`
+They are used by every repository above, so none of them can own the tools without all the
+others depending on it. Tools that know one build — `torus-octagonal/verify_torus.js`
 knows that build's apothems and panel sizes — stay inside the repository they describe.
 These five know nothing about any particular object, so they sit here.
 

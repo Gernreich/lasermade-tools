@@ -1,0 +1,52 @@
+name: Deploy to Pages
+
+# Every page in this repository is pre-generated and self-contained, so this
+# uploads the tree as-is. The legacy Pages builder was used first and its deploy
+# step timed out on three consecutive attempts; this path deploys the same files
+# through Actions instead.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One group per commit, not one for the whole site. A single shared group means a
+# run that wedges holds the lock and every later push queues behind it forever:
+# on 2026-08-06 a stuck run blocked the queue for half an hour, two deploys were
+# superseded and dropped without ever running, and neither cancel nor force-cancel
+# would release it. Keyed on the sha, a stuck run can only ever block a re-run of
+# its own commit. Deploys of different commits may now overlap, which on a
+# single-author repository is a smaller risk than deadlock.
+concurrency:
+  group: pages-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+# If a push produces no run at all, check GitHub's status before the config. On
+# 2026-08-06 pushes stopped creating runs entirely — the events were recorded,
+# nothing fired, nothing failed — during an Actions major outage. Runs stuck in
+# "waiting" for hours were a symptom of the same outage, not the cause; clearing
+# them did not restore triggering. To list them anyway:
+#   gh api "repos/OWNER/REPO/actions/runs?per_page=40" \
+#     --jq '.workflow_runs[] | select(.status!="completed") | .id'
+# And to deploy by hand meanwhile:
+#   gh workflow run "Deploy to Pages" --ref main

@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>lasermade-tools</title>
+<style>
+:root{--bg:#fbfbfa;--fg:#1a1c1e;--mut:#5b6067;--line:#e2e4e7;--card:#fff;--accent:#1d4ed8;
+--codebg:#f4f5f7;--thbg:#f0f1f3;--mark:#fff8c4}
+@media (prefers-color-scheme:dark){:root{--bg:#15171a;--fg:#e6e8ea;--mut:#9aa1a9;--line:#2b2f34;
+--card:#1b1e22;--accent:#7aa2f7;--codebg:#22262b;--thbg:#23272c;--mark:#4a411c}}
+:root[data-theme=dark]{--bg:#15171a;--fg:#e6e8ea;--mut:#9aa1a9;--line:#2b2f34;--card:#1b1e22;
+--accent:#7aa2f7;--codebg:#22262b;--thbg:#23272c;--mark:#4a411c}
+:root[data-theme=light]{--bg:#fbfbfa;--fg:#1a1c1e;--mut:#5b6067;--line:#e2e4e7;--card:#fff;
+--accent:#1d4ed8;--codebg:#f4f5f7;--thbg:#f0f1f3;--mark:#fff8c4}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);
+font:16px/1.62 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+-webkit-text-size-adjust:100%}
+.wrap{display:grid;grid-template-columns:250px minmax(0,1fr);gap:44px;max-width:1180px;
+margin:0 auto;padding:40px 28px 96px}
+nav{position:sticky;top:28px;align-self:start;max-height:calc(100vh - 56px);overflow:auto;
+border-right:1px solid var(--line);padding-right:16px;font-size:13.5px;line-height:1.45}
+nav b{display:block;font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--mut);
+margin:0 0 12px}
+nav a{display:block;color:var(--mut);text-decoration:none;padding:3px 0;border-radius:4px}
+nav a:hover{color:var(--accent)}
+nav a.l1{color:var(--fg);font-weight:640;margin-top:11px}
+nav a.l2{padding-left:12px}
+main{min-width:0}
+h1{font-size:1.62rem;line-height:1.25;letter-spacing:-.015em;margin:2.4em 0 .5em;
+padding-bottom:.32em;border-bottom:2px solid var(--line)}
+main>h1:first-child{margin-top:0;border-bottom:none;font-size:1.95rem}
+h2{font-size:1.16rem;margin:2em 0 .5em;letter-spacing:-.01em}
+h3{font-size:1.02rem;font-weight:650;margin:1.7em 0 .45em}
+p{margin:.85em 0}
+ul,ol{margin:.85em 0;padding-left:1.35em}
+li{margin:.3em 0}
+hr{border:0;border-top:1px solid var(--line);margin:2.6em 0}
+figure{margin:1.6em 0}
+figure svg,figure img{display:block;width:100%;max-width:100%;height:auto;
+border:1px solid var(--line);border-radius:10px}
+a{color:var(--accent)}
+code{font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+background:var(--codebg);padding:.1em .32em;border-radius:4px;
+border:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
+pre{background:var(--codebg);border:1px solid var(--line);border-radius:9px;
+padding:14px 16px;overflow-x:auto;margin:1.1em 0}
+pre code{background:none;border:0;padding:0;font-size:12.8px;line-height:1.62;white-space:pre}
+blockquote{margin:1.15em 0;padding:.7em 1.1em;border-left:4px solid var(--accent);
+background:var(--codebg);border-radius:0 7px 7px 0}
+blockquote p{margin:0}
+.tw{overflow-x:auto;margin:1.15em 0;border:1px solid var(--line);border-radius:9px;
+background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:8px 13px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+/* honour align="center" on gallery cells: a presentation attribute loses to any
+   CSS rule, so the line above would silently left-align every thumbnail caption */
+td[align=center],th[align=center]{text-align:center}
+th{background:var(--thbg);font-weight:630;white-space:nowrap;font-size:13px;
+letter-spacing:.01em}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover{background:color-mix(in srgb,var(--thbg) 45%,transparent)}
+td code,th code{white-space:nowrap}
+.tog{position:fixed;top:14px;right:14px;z-index:9;background:var(--card);color:var(--mut);
+border:1px solid var(--line);border-radius:7px;padding:6px 11px;font-size:12.5px;cursor:pointer}
+.tog:hover{color:var(--accent)}
+@media (max-width:900px){.wrap{grid-template-columns:1fr;gap:20px;padding:26px 18px 72px}
+nav{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line);
+padding:0 0 16px;columns:2;column-gap:20px}}
+@media print{nav,.tog{display:none}.wrap{display:block;max-width:none;padding:0}
+pre,.tw{break-inside:avoid}h1{break-after:avoid}}
+</style>
+</head>
+<body>
+<button class="tog" type="button">theme</button>
+<div class="wrap">
+<nav><b>Contents</b><a class="l1" href="#lasermade-tools">lasermade-tools</a><a class="l2" href="#why-these-live-in-their-own-repository">Why these live in their own repository</a><a class="l2" href="#doc-auditpy">doc-audit.py</a><a class="l2" href="#md2htmlpy">md2html.py</a><a class="l2" href="#svg-stroke-checkpy">svg-stroke-check.py</a><a class="l2" href="#make-previewpy">make-preview.py</a><a class="l2" href="#test-ladderpy">test-ladder.py</a><a class="l2" href="#checking-this-page">Checking this page</a></nav>
+<main>
+<h1 id="lasermade-tools">lasermade-tools</h1>
+<p>Five scripts shared by the <a href="https://www.youtube.com/@LaserMadeMusic">LaserMadeMusic</a> build repositories — <a href="https://github.com/Gernreich/torus-octagonal">torus-octagonal</a>, <a href="https://github.com/Gernreich/trumpet-octagonal">trumpet-octagonal</a>, <a href="https://github.com/Gernreich/trumpet-coiled">trumpet-coiled</a>, <a href="https://github.com/Gernreich/trumpet-parts">trumpet-parts</a>, <a href="https://github.com/Gernreich/bore-generator">bore-generator</a>, <a href="https://github.com/Gernreich/knotwork-soundholes">knotwork-soundholes</a>, <a href="https://github.com/Gernreich/living-hinge">living-hinge</a>, <a href="https://github.com/Gernreich/slapstick">slapstick</a>, <a href="https://github.com/Gernreich/kalimba">kalimba</a>, <a href="https://github.com/Gernreich/bullroarer">bullroarer</a> and <a href="https://github.com/Gernreich/buzz-disc">buzz-disc</a>.</p>
+<p>They exist because a writeup that tells someone how to cut wood can be wrong in ways that cost them a sheet, and because a checker that reports the wrong thing is worse than no checker at all. Every one of these has produced a wrong answer at some point. Each section below says which, because that is the part worth remembering.</p>
+<p><strong><a href="https://gernreich.github.io/lasermade-tools/">Read the writeup</a></strong> — the same text as this page, set for reading, with a table of contents.</p>
+<p>Python 3, no dependencies. Nothing here reads or writes outside the paths you give it.</p>
+<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td><code>doc-audit.py</code></td><td>claims a writeup makes about itself and about files on disk</td></tr><tr><td><code>md2html.py</code></td><td>markdown → one self-contained HTML page</td></tr><tr><td><code>svg-stroke-check.py</code></td><td>SVG elements whose stroke colour is declared twice and disagrees</td></tr><tr><td><code>make-preview.py</code></td><td>a cut file rendered so it can be read on a page</td></tr><tr><td><code>test-ladder.py</code></td><td>a strip of squares that finds the cut speed for the sheet in front of you</td></tr></tbody></table></div>
+<h2 id="why-these-live-in-their-own-repository">Why these live in their own repository</h2>
+<p>They are used by every repository above, so none of them can own the tools without all the others depending on it. Tools that know one build — <code>torus-octagonal/verify_torus.js</code> knows that build's apothems and panel sizes — stay inside the repository they describe. These five know nothing about any particular object, so they sit here.</p>
+<p>Until 2026-08-08 they lived in <code>~/Claude</code>, which is not version controlled. Their bugs are the reason that mattered: the failures below were found by accident, and without history there was no way to see when a check started lying.</p>
+<hr>
+<h2 id="doc-auditpy"><code>doc-audit.py</code></h2>
+<pre><code>python3 doc-audit.py WRITEUP.md [--html PAGE.html]
+        [--rebuild "python3 md2html.py {md} {out}"]
+        [--links] [--run-blocks] [--ignore 'named,in,prose.py'] [--strict-h1]</code></pre>
+<p>A repository that legitimately names files it does not ship can say so once, in <strong><code>.doc-audit-ignore</code></strong> at its root — one name per line, <code>#</code> for comments — instead of remembering <code>--ignore</code> on every run. <code>torus-octagonal</code> needs it: its parts come from <strong><a href="https://www.festi.info/boxes.py/">boxes.py</a></strong> by Florian Festi, an external web generator, which serves every download as <code>RegularBox.svg</code>. Both names belong in the prose and neither will ever be a file there.</p>
+<p>Everything it checks is a claim the document makes about itself or about files on disk, so a failure is always a real inconsistency — never a matter of taste. It reports:</p>
+<ul><li>files the document names that do not exist, and shipped files nothing mentions</li><li>link and image paths that do not resolve <strong>from the document's own directory</strong> — a separate question from the one above, and the one a browser actually asks</li><li>dead in-page anchors, heading levels that skip, duplicate headings</li><li>list counts that contradict the prose — "Three things" over two items</li><li>doubled words, unbalanced code spans</li><li>figures with no text alternative, print stylesheet, dark theme, language attribute</li><li>whether the HTML is older than the markdown or than any SVG figure inlined into it</li><li><code>--run-blocks</code>: fenced blocks that look like terminal sessions, re-run and diffed against what the document claims they print. Any file a block writes is restored</li><li><code>--links</code>: external URLs actually resolve</li></ul>
+<p>File references in prose resolve against the <strong>repository root</strong>, not the document's directory, so a document in a subdirectory can name files above it.</p>
+<p><strong>Link and image targets are checked differently</strong>, against the document's own directory, because that is what a browser does with them. <code>see bell.py</code> in prose stays true wherever bell.py lives; <code>&lt;img src="bell.py"&gt;</code> does not. The two checks disagreeing is the point.</p>
+<p><strong>Where it has been wrong.</strong> Its first run produced four failures, all of which were its own bugs rather than the document's. It also reported <code>boxes.py</code> and <code>RegularBox.svg</code> as missing from <code>torus-octagonal</code> for as long as that repository existed — they are an external tool and the filename it serves, correctly named in prose, and the fix was the ignore file above rather than any change to a document that was right. Later, a document in a subdirectory was told its neighbours did not exist, because the checker rooted everything at the document's own directory; and the orphan check compared bare filenames, so <code>coupons/README.md</code> excluded the <em>root</em> <code>README.md</code> from the pool and then reported files only that README mentions.</p>
+<p>Most recently <code>--run-blocks</code> failed a document that contains no fenced blocks at all. It snapshotted the tree before running them, unconditionally, and <code>trumpet-curved</code> holds a 148MB video over the stash cap — which it then reported as a file a block "may have modified". No block existed to modify it. The snapshot is now skipped when there is nothing to run, and files over the cap are tracked by size and mtime, so the failure states that a file <em>changed</em> rather than that one might have.</p>
+<p>Before that it had no notion of a path at all. Every file reference, prose or image tag alike, was satisfied by a name existing <em>anywhere</em> under the repository. So when <code>trumpet-curved</code> moved its parts into subdirectories and nothing rewrote the paths, the writeup passed <strong>15/15</strong> while 12 of the 13 images and 10 of the links on the published page returned 404. Nothing local could see it; the only symptom was on the deployed site. The path check above exists because of that, and it catches all 22 when replayed against the commit that would have shipped them.</p>
+<p><strong>Verify anything it flags against the source before acting on it.</strong></p>
+<h2 id="md2htmlpy"><code>md2html.py</code></h2>
+<pre><code>python3 md2html.py WRITEUP.md PAGE.html</code></pre>
+<p>One self-contained page: no external CSS, no fonts, no scripts. SVG figures are <strong>inlined into the HTML</strong>, which is why <code>doc-audit.py</code> treats a page older than any of its figures as stale — regenerating an SVG does not change the page that already swallowed a copy of it. Tab title comes from the document's own first <code># </code> heading.</p>
+<p>Raw HTML blocks pass through unescaped, which is what makes the thumbnail-gallery tables in these writeups render as tables rather than as visible source.</p>
+<p><strong>Where it has been wrong.</strong> It escaped raw HTML blocks, so galleries appeared as their own markup; and it had no blockquote branch, so <code>&gt; </code> lines rendered as literal text with the marker showing.</p>
+<h2 id="svg-stroke-checkpy"><code>svg-stroke-check.py</code></h2>
+<pre><code>python3 svg-stroke-check.py FILE.svg [FILE.svg ...]
+python3 svg-stroke-check.py --dir DIR [--dir DIR] [--quiet]
+python3 svg-stroke-check.py ... --fix</code></pre>
+<p>Finds SVG elements that declare their stroke colour twice, in two places that disagree — a <code>style</code> property saying one colour and a presentation attribute saying another. The CSS cascade resolves that to the style property, and browsers and Inkscape both agree, but not every laser importer applies the cascade. One that reads the attribute instead puts the part in a different cut stage.</p>
+<p><strong>In these repositories colour is the cut order</strong>, so that is not a cosmetic difference: it is a part cut at the wrong moment, after the material holding it has already been freed. Elements that declare the same colour twice are reported separately and are harmless — no importer can disagree about them.</p>
+<p><code>--fix</code> deletes the redundant presentation attribute and keeps the style property that was winning anyway, so what the file cuts does not change. It compares path data before and after and refuses to write if anything but the attribute moved. Exit status is 1 when conflicts exist, so it can gate a commit.</p>
+<p><strong>Why it exists.</strong> <code>torus-octagonal/BuildA1_90_25.svg</code> carried sixteen such paths: style saying green or cyan, attribute saying black. Read the attribute way, all sixteen panels — including the eight nested inside the plate holes — moved to the final stage, after the cut that frees the plates. Nothing in the file looked wrong, and no other check could see it.</p>
+<h2 id="make-previewpy"><code>make-preview.py</code></h2>
+<pre><code>python3 make-preview.py CUTFILE.svg [OUT.svg]      # default previews/&lt;name&gt;</code></pre>
+<p>A cut file draws hairlines on no background: nearly invisible in a browser, and a black one disappears on a dark page. This thickens the stroke, paints a light ground, and darkens the inks that cannot be seen against it.</p>
+<p><strong>It changes the colours, and that is the point.</strong> Three of the six cut-order inks fail the WCAG 3:1 graphics minimum on the cream ground — green at 1.28:1, cyan at 1.17:1, orange at 2.35:1 — so a faithful rendering of the palette is an unreadable picture. The darkened equivalents keep the hue and the sequence and clear 4.8:1. Geometry, sheet position and cut order are untouched, and both are checked against the source before the file is written.</p>
+<p>The cut order it renders is shared by every build repository here: <strong>blue engraves, then green → orange → cyan → black</strong>, black always the cut that frees the part, violet always skip. A file uses only the stages it needs.</p>
+<h2 id="test-ladderpy"><code>test-ladder.py</code></h2>
+<pre><code>python3 test-ladder.py OUT.svg [--speeds 15,20,25,30] [--square 15]</code></pre>
+<p>Settings for a sheet of plywood are a property of that sheet, not of the species on the invoice. Baltic birch from two suppliers, or the same supplier two packs apart, will not cut at the same speed, and the number that worked last month is a guess this month. This draws four identical squares, each stroked in a different ink so the importer gives it its own speed field, with its speed engraved beneath it in seven-segment line art — line art rather than text, so no font substitution on import can turn a number into something else or into nothing.</p>
+<p>Cut it, push each square out from below, and the fastest one that drops free unaided is the ceiling. Production runs 15-20% slower than that, so a void or a damp patch does not cost a part.</p>
+<p><strong>Colour here is one speed per layer, not cut order</strong> — the only exception in these repositories, and it is forced. xTool Studio and XCS split an import into processing layers by colour, so a separate colour is the only place a separate speed can live. Same ink would mean one layer and one speed: a row of identical squares and no ladder at all.</p>
+<p>The inks are still the house stages, so <code>make-preview.py</code> renders a ladder and <code>svg-stroke-check.py</code> reads it. Four rungs, because four stages actually cut — green, orange, cyan, black — with blue engraving the labels as it always does. <strong>Violet is never emitted</strong>, since it means skip and a skipped rung is a missing answer. Four is also the better way to work: bracket coarse, then bisect. <code>15,25,35,45</code> finds the decade and a second run across the winning pair finds the number, which lands closer than six rungs guessed in one pass. Decimal speeds are accepted for that second run.</p>
+<p><strong>Where it has been wrong.</strong> Its first run crashed on every ladder it was asked to draw. Speeds are parsed as floats, so <code>15</code> became <code>15.0</code>, and the digit table had no glyph for <code>.</code> — a generator that had been described as validated could not render its own default arguments. The decimal point is now a baseline tick, which is what makes bisecting below whole numbers possible at all.</p>
+<p><strong>The rungs themselves are untested against material.</strong> The geometry is checked — square count, ink uniqueness, label glyphs, parseable XML — and the ladder is known to survive both sibling tools. Whether <code>15,20,25,30</code> brackets 3mm Baltic birch on a 55W tube is exactly the question the ladder exists to answer, and nothing here has answered it yet. Treat the default as a starting bracket, not a recommendation.</p>
+<h2 id="checking-this-page">Checking this page</h2>
+<pre><code>python3 doc-audit.py README.md --ignore 'WRITEUP.md,PAGE.html,FILE.svg,CUTFILE.svg,OUT.svg,prose.py,bell.py,verify_torus.js,BuildA1_90_25.svg'</code></pre>
+<p>The ignore list is the usage-synopsis placeholders and two files that live in <code>torus-octagonal</code>, not here. <code>bell.py</code> is neither — it is the invented example in the <code>doc-audit.py</code> section that shows prose and image paths resolving differently, and it was missing from this command for as long as the command existed, so the documented self-check reported two failures against a README that was right. Auditing this README is what turned up the quoted-example bug fixed above: the line describing the list-count check quotes <code>"Three things"</code>, and the checker read its own example as a claim.</p>
+<hr>
+<p>Released under <a href="LICENSE">CC0 1.0</a>.</p>
+</main>
+</div>
+<script>
+var r=document.documentElement,b=document.querySelector('.tog');
+function set(t){r.setAttribute('data-theme',t);try{localStorage.setItem('ctg-theme',t)}catch(e){}
+b.textContent=t==='dark'?'\u2600 light':'\u263e dark';}
+var saved=null;try{saved=localStorage.getItem('ctg-theme')}catch(e){}
+set(saved||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
+b.addEventListener('click',function(){set(r.getAttribute('data-theme')==='dark'?'light':'dark')});
+</script>
+</body>
+</html>
