@@ -70,6 +70,9 @@ letter-spacing:.01em}
 tbody tr:last-child td{border-bottom:0}
 tbody tr:hover{background:color-mix(in srgb,var(--thbg) 45%,transparent)}
 td code,th code{white-space:nowrap}
+/* A walk inside a link is one token: breaking it mid-walk put "N" at the end of one
+   line and "N5 U" at the start of the next, which reads as two things. */
+a code{white-space:nowrap}
 .tog{position:fixed;top:14px;right:14px;z-index:9;background:var(--card);color:var(--mut);
 border:1px solid var(--line);border-radius:7px;padding:6px 11px;font-size:12.5px;cursor:pointer}
 .tog:hover{color:var(--accent)}
