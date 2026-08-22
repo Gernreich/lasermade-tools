@@ -148,6 +148,12 @@ it. Tab title comes from the document's own first `# ` heading.
 Raw HTML blocks pass through unescaped, which is what makes the thumbnail-gallery tables
 in these writeups render as tables rather than as visible source.
 
+It had no branch for an **indented code block** — four leading spaces, CommonMark's
+older fence-free form — so those lines fell through to the paragraph joiner and were run
+together into prose. A design library with fifteen of them published its column-aligned
+walk tables as `N N3 U1 N3 U1 N3 N y and z only 1 section, 0 elbows N N3 U2 …`, while
+reading correctly on GitHub, which renders them.
+
 `<!-- readme-only -->` on a line of its own drops the paragraph after it from the page
 while leaving it in the README. It exists because a repository whose page is generated
 from its own README published that README's "Read the writeup" line on the writeup —

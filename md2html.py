@@ -67,6 +67,23 @@ while i < n:
         out.append("<pre><code>" + "\n".join(block) + "</code></pre>")
         continue
 
+    # An indented code block: four spaces at the start of a line, CommonMark's older
+    # fence-free form. Without this branch the lines fall through to the paragraph
+    # joiner and are run together into prose, which turned a column-aligned table of
+    # walks into "N N3 U1 N3 U1 N3 N y and z only 1 section, 0 elbows N N3 U2..." on
+    # the published page while reading correctly on GitHub. Blank lines inside the
+    # block are kept; a run of them at the end is not.
+    if ln.startswith("    ") and ln.strip():
+        blk = []
+        while i < n and (lines[i].startswith("    ") or not lines[i].strip()):
+            blk.append(lines[i][4:] if lines[i].startswith("    ") else "")
+            i += 1
+        while blk and not blk[-1].strip():
+            blk.pop()
+        out.append("<pre><code>" + "\n".join(html.escape(x, quote=False) for x in blk)
+                   + "</code></pre>")
+        continue
+
     # <!-- readme-only --> drops the paragraph that follows it. A repository whose
     # page is generated from its own README ends up publishing that README's
     # "Read the writeup" line on the writeup itself, linking to the page you are
