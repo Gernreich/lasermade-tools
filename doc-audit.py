@@ -90,6 +90,21 @@ if IGNORE_FILE.exists():
         ln = ln.split("#", 1)[0].strip()
         if ln:
             prose_only.add(ln)
+
+# Some repositories are mostly machine output. A design library holds a directory per
+# design - twenty-seven cut files in one of them - documented collectively, and naming
+# every SVG in prose to satisfy the orphan check would be worse writing, not better.
+# A repository declares those directories once, in .doc-audit-generated at the root:
+# one path per line, # for comments. Declared rather than inferred on purpose - taking
+# "this folder has its own README" as the signal would let any repository hide files
+# from the check by dropping a README into a directory.
+GENERATED_FILE = ROOT / ".doc-audit-generated"
+generated_dirs = []
+if GENERATED_FILE.exists():
+    for ln in GENERATED_FILE.read_text().split("\n"):
+        ln = ln.split("#", 1)[0].strip().rstrip("/")
+        if ln:
+            generated_dirs.append(ln + "/")
 no_urls = re.sub(r'https?://\S+', ' ', src)          # a URL's tail is not a local file
 refs = sorted(set(re.findall(r'[A-Za-z0-9_][A-Za-z0-9_.-]*\.(?:svg|js|py|md|html|png|jpg|jpeg|css|zip)', no_urls)))
 # A document may name a file that lives in a subdirectory — "coupons/sweep.svg" or
@@ -154,7 +169,10 @@ try:
     # README.md needs no introduction for the same reason LICENSE does not, and anything
     # under a dot-directory (.github/workflows/…) is repository plumbing, not content.
     infra = {t for t in tracked if any(p.startswith(".") for p in t.split("/"))}
-    skip = ({"LICENSE", ".gitignore", "README.md", MD_REL} | generated | infra
+    # Contents of a declared generated directory are documented by the directory, not
+    # one file at a time.
+    machine = {t for t in tracked if any(t.startswith(d) for d in generated_dirs)}
+    skip = ({"LICENSE", ".gitignore", "README.md", MD_REL} | generated | infra | machine
             | ({pathlib.Path(a.html).name} if a.html else set()))
     # A tracked file counts as mentioned whether the prose gives its full path or just
     # its name — a listing of coupon filenames documents coupons/ as surely as a path would.

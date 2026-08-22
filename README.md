@@ -93,6 +93,16 @@ neighbours did not exist, because the checker rooted everything at the document'
 directory; and the orphan check compared bare filenames, so `coupons/README.md` excluded
 the *root* `README.md` from the pool and then reported files only that README mentions.
 
+`.doc-audit-generated` at the root, one directory path per line, declares directories
+whose contents are machine output. The orphan check then treats the directory as
+documented rather than each file inside it. It exists for `bore-designs`, which is a
+design library: seven directories of cut files, twenty-seven SVGs in one of them, and
+naming every one in prose to satisfy a check would be worse writing, not better. It is
+**declared, not inferred** — taking "this folder has its own README" as the signal was
+the obvious alternative and would let any repository hide files from the check by
+dropping a README into a directory. Two of the seven have no README anyway, so inference
+would not even have worked.
+
 Most recently the displayed-image check read a thumbnail as a missing picture. A page
 showed a 214KB copy of a 1.4MB photograph and linked the original from it — which is what a
 page should do, rather than making every reader pull the full file to see the picture — and
