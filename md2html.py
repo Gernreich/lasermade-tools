@@ -67,6 +67,21 @@ while i < n:
         out.append("<pre><code>" + "\n".join(block) + "</code></pre>")
         continue
 
+    # <!-- readme-only --> drops the paragraph that follows it. A repository whose
+    # page is generated from its own README ends up publishing that README's
+    # "Read the writeup" line on the writeup itself, linking to the page you are
+    # already reading. Marked rather than detected: the converter knows only its
+    # input and output paths, and guessing the site URL from the directory name is
+    # wrong the moment a directory and its repository differ - as test/ and
+    # bore-designs do. GitHub renders the comment as nothing, so the README is
+    # unaffected.
+    if ln.strip() == "<!-- readme-only -->":
+        while i < n and not lines[i].strip():          # any blank lines after it
+            i += 1
+        while i < n and lines[i].strip():              # then the paragraph itself
+            i += 1
+        continue
+
     # Raw HTML block, passed through verbatim (CommonMark type 7: a block-level
     # tag at column 0, running to the next blank line). Without this the whole
     # block falls through to the paragraph branch and gets html.escape()d, so a

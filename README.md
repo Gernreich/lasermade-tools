@@ -21,6 +21,7 @@ that cost them a sheet, and because a checker that reports the wrong thing is wo
 no checker at all. Every one of these has produced a wrong answer at some point. Each
 section below says which, because that is the part worth remembering.
 
+<!-- readme-only -->
 **[Read the writeup](https://gernreich.github.io/lasermade-tools/)** — the same text as
 this page, set for reading, with a table of contents.
 
@@ -146,6 +147,14 @@ it. Tab title comes from the document's own first `# ` heading.
 
 Raw HTML blocks pass through unescaped, which is what makes the thumbnail-gallery tables
 in these writeups render as tables rather than as visible source.
+
+`<!-- readme-only -->` on a line of its own drops the paragraph after it from the page
+while leaving it in the README. It exists because a repository whose page is generated
+from its own README published that README's "Read the writeup" line on the writeup —
+a link to the page you were already reading, on seven pages. Marked rather than detected:
+this converter knows only its input and output paths, and guessing the site URL from the
+directory name breaks the moment a directory and its repository differ, as `test/` and
+`bore-designs` do. GitHub renders the comment as nothing, so the README is unaffected.
 
 **Where it has been wrong.** It escaped raw HTML blocks, so galleries appeared as their
 own markup; and it had no blockquote branch, so `> ` lines rendered as literal text with
