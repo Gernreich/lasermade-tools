@@ -588,7 +588,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="Pre-cut gate for flat single-sheet parts.")
     ap.add_argument("files", nargs="*", type=pathlib.Path)
     ap.add_argument("--dir", action="append", default=[], type=pathlib.Path,
-                    help="every .svg beneath DIR (previews/ is skipped)")
+                    help="every .svg beneath DIR (previews/ and dot-directories skipped)")
     ap.add_argument("--bed", default=f"{BED_W:.0f}x{BED_H:.0f}",
                     help=f"work area in mm, default {BED_W:.0f}x{BED_H:.0f}")
     ap.add_argument("--min-edge", type=float, default=MIN_EDGE,
@@ -602,7 +602,9 @@ def main(argv=None):
 
     files = list(a.files)
     for d in a.dir:
-        files += [f for f in sorted(d.rglob("*.svg")) if "previews" not in f.parts]
+        files += [f for f in sorted(d.rglob("*.svg"))
+                  if "previews" not in f.parts
+                  and not any(part.startswith(".") for part in f.parts)]
     if not files:
         ap.error("no files given")
 
