@@ -1,6 +1,6 @@
 # lasermade-tools
 
-Five scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
+Six scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
 build repositories — [torus-octagonal](https://github.com/Gernreich/torus-octagonal),
 [trumpet-octagonal](https://github.com/Gernreich/trumpet-octagonal),
 [trumpet-coiled](https://github.com/Gernreich/trumpet-coiled),
@@ -34,6 +34,7 @@ Python 3, no dependencies. Nothing here reads or writes outside the paths you gi
 | `svg-stroke-check.py` | SVG elements whose stroke colour is declared twice and disagrees |
 | `make-preview.py` | a cut file rendered so it can be read on a page |
 | `test-ladder.py` | a strip of squares that finds the cut speed for the sheet in front of you |
+| `flat-part-check.py` | the pre-cut gate for a flat single-sheet part: size, closure, cut order, holes |
 
 ## Why these live in their own repository
 
@@ -195,6 +196,59 @@ saying green or cyan, attribute saying black. Read the attribute way, all sixtee
 — including the eight nested inside the plate holes — moved to the final stage, after the
 cut that frees the plates. Nothing in the file looked wrong, and no other check could see
 it.
+
+## `flat-part-check.py`
+
+```
+python3 flat-part-check.py FILE.svg [FILE.svg ...]
+python3 flat-part-check.py --dir DIR [--dir DIR] [--quiet]
+python3 flat-part-check.py ... --bed 600x308 --min-edge 3 --min-hole 2 --weld 0.05
+```
+
+The bore repositories have a gate: `bore_split.py --write` checks every net it writes,
+and nothing is cut from a file that has not passed. The flat parts — bullroarer blades,
+buzz discs, anything cut from one sheet with holes in it — had no equivalent. This is it.
+
+It reads geometry, not drawing. Paths, rects, circles, ellipses, polygons and lines are
+flattened to polylines with every enclosing transform applied, and then measured:
+
+| check | the mistake it is looking for |
+|---|---|
+| millimetre-true | a user unit that is not a millimetre cuts at 96/25.4 and looks right on screen the whole time |
+| fits the bed | refused at the machine, or silently cropped |
+| cut paths are closed | an outline that does not meet does not free the part |
+| ink is in the palette | colour is the cut order here; an unknown colour is a stage nothing runs |
+| black frees the part | the outline must be last, or the part moves while its holes are still being cut |
+| holes cut before the outline | the same mistake, one stage at a time |
+| holes are inside the outline | a hole on the waste, and usually a transform that was missed |
+| hole is big enough | the cord holes are the point of these parts |
+| edge distance | the cord hole is where a bullroarer fails — too little material and it tears out |
+
+Exit status is 1 if any file fails, so it can gate a commit. `previews/` is skipped under
+`--dir`: those are display renderings and are not cut.
+
+**Kerf is not modelled.** Every measurement is of the path as drawn, and the beam takes
+its width from both sides of that line — a 3.0mm hole cuts about 3.1mm, a 3.0mm wall comes
+out about 2.9mm. Set `--min-edge` with that in hand rather than at the limit.
+
+**Why it exists, and the two wrong answers it gave first.** Both were found by running it
+on files known to be good, which is the only way this kind of bug surfaces.
+
+It called `buzz-disc/BuzzDisc1.svg` three kinds of broken. The disc's outline carries no
+`z` — Inkscape wrote the return point as an ordinary node, and the ends coincide to
+0.00009mm, which cuts identically. Worse was what followed: with the outline discounted,
+the largest closed path was a 5mm cord hole, so the gate reported that a cord hole freed
+the part and that the *other* cord hole lay outside it. One wrong assumption, three
+confident failures, all of them nonsense.
+
+Then it called four of the five bullroarer blades open. They are drawn as a top curve and
+a bottom curve meeting at the two tips: two open paths that cut one closed ring. Open
+paths of the same colour are now stitched end to end within `--weld` before anything is
+judged, and the report says how many joins it made.
+
+The point of both: **a checker that reports the wrong thing is worse than no checker**,
+and this one had to be run against known-good work before it was worth pointing at
+anything else.
 
 ## `make-preview.py`
 

@@ -20,3 +20,7 @@ prose.py
 bell.py
 verify_torus.js
 BuildA1_90_25.svg
+
+# In the build repositories these check, not here.
+bore_split.py
+BuzzDisc1.svg
