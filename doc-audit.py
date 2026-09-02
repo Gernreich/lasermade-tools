@@ -106,7 +106,12 @@ if GENERATED_FILE.exists():
         if ln:
             generated_dirs.append(ln + "/")
 no_urls = re.sub(r'https?://\S+', ' ', src)          # a URL's tail is not a local file
-refs = sorted(set(re.findall(r'[A-Za-z0-9_][A-Za-z0-9_.-]*\.(?:svg|js|py|md|html|png|jpg|jpeg|css|zip)', no_urls)))
+# The extension must end the name. Without the lookahead, ".json" matched ".js" inside
+# it, so a document mentioning reduced.json was reported as naming a missing reduced.js --
+# a phantom the reader cannot fix, because the file it names is right there.
+refs = sorted(set(re.findall(
+    r'[A-Za-z0-9_][A-Za-z0-9_.-]*\.(?:svg|js|py|md|html|png|jpg|jpeg|css|zip)(?![A-Za-z0-9])',
+    no_urls)))
 # A document may name a file that lives in a subdirectory — "coupons/sweep.svg" or
 # just "sweep.svg" in a listing. Accept either: exists at ROOT, or exists anywhere
 # below it under that name. Only a name matching nothing is a real dangling reference.

@@ -24,3 +24,9 @@ BuildA1_90_25.svg
 # In the build repositories these check, not here.
 bore_split.py
 BuzzDisc1.svg
+
+# doc-audit.py's write-up of the ".json read as .js" wrong answer names the phantom it
+# used to invent and the missing file its bite test still catches. Examples, not files.
+
+reduced.js
+ghost.js

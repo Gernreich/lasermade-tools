@@ -64,6 +64,13 @@ remembering `--ignore` on every run. `torus-octagonal` needs it: its parts come 
 every download as `RegularBox.svg`.
 Both names belong in the prose and neither will ever be a file there.
 
+**A wrong answer it gave: `.json` read as `.js`.** The filename pattern accepted an
+extension wherever it appeared rather than only at the end, so a document mentioning
+`reduced.json` was reported as naming a missing `reduced.js`. It was unfixable from the
+document's side — the file it named was right there — and it cost a false finding in
+`spirals`, which mentions two `.json` artifacts. The extension must now end the name.
+Real misses still fail: a document naming `ghost.js` with no such file still reports it.
+
 Everything it checks is a claim the document makes about itself or about files on disk,
 so a failure is always a real inconsistency — never a matter of taste. It reports:
 
