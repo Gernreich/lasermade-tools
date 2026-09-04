@@ -75,6 +75,9 @@ Everything it checks is a claim the document makes about itself or about files o
 so a failure is always a real inconsistency — never a matter of taste. It reports:
 
 - files the document names that do not exist, and shipped files nothing mentions
+- files deleted from the index but left in the working tree — a retirement leftover,
+  invisible to every check above because they all read `git ls-files`. Genuinely new
+  untracked files are not reported: a cut file open in Inkscape is normal.
 - link and image paths that do not resolve **from the document's own directory** — a
   separate question from the one above, and the one a browser actually asks
 - dead in-page anchors, heading levels that skip, duplicate headings

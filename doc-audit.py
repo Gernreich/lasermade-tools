@@ -187,6 +187,26 @@ try:
     orphans = [f for f in tracked if not named(f) and f not in skip]
     ok("every tracked file is mentioned somewhere", not orphans, str(orphans) if orphans else "")
 
+    # A file deleted from the index but left sitting in the working tree is invisible
+    # to every check above, all of which read `git ls-files`. It is not new work either
+    # — git has seen it before. That is what a size retirement leaves behind: two 25mm
+    # mouthpiece sheets survived trumpet-parts' 10mm-only rewrite for a day, documented
+    # nowhere and flagged by nothing. Genuinely new untracked files are not reported,
+    # because a cut file open in Inkscape is normal and would drown the signal.
+    others = subprocess.run(["git", "ls-files", "--others", "--exclude-standard"],
+                            cwd=ROOT, capture_output=True, text=True).stdout.split()
+    if others:
+        seen = set(subprocess.run(
+            ["git", "log", "--all", "--diff-filter=D", "--name-only", "--format="],
+            cwd=ROOT, capture_output=True, text=True).stdout.split())
+        left = sorted(f for f in others if f in seen
+                      and f not in prose_only
+                      and pathlib.PurePath(f).name not in prose_only)
+    else:
+        left = []
+    ok("no file deleted from the index is still on disk", not left,
+       str(left) if left else "")
+
     # A named file and a shown file are different things. Twice in one project a photograph
     # was listed in a README's file table and displayed nowhere, so the document most people
     # see first named a picture it never showed. The orphan check above passes on a mention;
