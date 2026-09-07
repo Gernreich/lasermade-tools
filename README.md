@@ -1,17 +1,18 @@
 # lasermade-tools
 
 Six scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
-build repositories — [torus-octagonal](https://github.com/Gernreich/torus-octagonal),
-[trumpet-octagonal](https://github.com/Gernreich/trumpet-octagonal),
-[trumpet-coiled](https://github.com/Gernreich/trumpet-coiled),
-[trumpet-parts](https://github.com/Gernreich/trumpet-parts),
-[bore-generator](https://github.com/Gernreich/bore-generator),
+build repositories — [trumpet](https://github.com/Gernreich/trumpet),
 [knotwork-soundholes](https://github.com/Gernreich/knotwork-soundholes),
 [living-hinge](https://github.com/Gernreich/living-hinge),
 [slapstick](https://github.com/Gernreich/slapstick),
 [kalimba](https://github.com/Gernreich/kalimba),
 [bullroarer](https://github.com/Gernreich/bullroarer) and
 [buzz-disc](https://github.com/Gernreich/buzz-disc).
+
+`trumpet` was five repositories until 2026-09-05 — `torus-octagonal`,
+`trumpet-octagonal`, `trumpet-coiled`, `trumpet-parts` and `bore-generator`.
+Notes below that name one of those are describing where a lesson came from, not
+a repository you can clone.
 
 **[The rest of the build files](https://gernreich.github.io/)** — every instrument,
 generator and tool, indexed.
