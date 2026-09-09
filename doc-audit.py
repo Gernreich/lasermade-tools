@@ -278,6 +278,12 @@ for m in re.finditer(r"\b(One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|\d+)\
 # ── 5. prose hygiene ─────────────────────────────────────────────────────────
 prose = prose_src
 prose = re.sub(r"https?://\S+", "", prose)
+# A code span is a quotation, not prose. The counts check above already works
+# this way -- "Quotation marks and backticks mean mentioned" -- and this one did
+# not, so a document that quotes `names names` as an EXAMPLE of a doubled word
+# was reported as containing one. Found by this file's own audit section doing
+# exactly that on 2026-09-09.
+prose = re.sub(r"`[^`]*`", "", prose)
 dbl = [m.group(1) for m in re.finditer(r"\b([A-Za-z]{3,})\s+\1\b", prose)]
 ok("no doubled words", not dbl, str(dbl) if dbl else "")
 odd = [i + 1 for i, l in enumerate(prose.split("\n")) if l.count("`") % 2]

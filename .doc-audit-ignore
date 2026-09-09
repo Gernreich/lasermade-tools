@@ -30,3 +30,9 @@ BuzzDisc1.svg
 
 reduced.js
 ghost.js
+
+# The living-hinge figure whose two descriptions had drifted. Named in prose to
+# say where the drift is; both files live in that repository, not this one.
+
+living-hinge-guide.md
+panel-convention.svg
