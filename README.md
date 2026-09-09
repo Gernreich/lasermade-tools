@@ -178,6 +178,40 @@ directory name breaks the moment a directory and its repository differ, as `test
 own markup; and it had no blockquote branch, so `> ` lines rendered as literal text with
 the marker showing.
 
+## The checkers, audited against documents they should reject
+
+Done 2026-09-08. Each check was given something it ought to fail.
+
+**`flat-part-check.py` — all eight hold.** A file whose user unit is not a
+millimetre, a part too big for the bed, a genuinely open cut path, an ink
+outside the palette, a hole under the floor, a hole outside the outline, a hole
+too near an edge, and a hole moved into the last cut stage — every one fails,
+and the open path correctly drags `black frees the part` down with it.
+
+Four probes came back clean and were wrong before the tool was: growing the
+canvas is not growing the part; a path whose ends still meet is closed whether
+or not it has a `z`; the near edge of a long thin blade is across it, not along
+it; and the cut order is the ink, not the document order. **A check that does
+not fire has not been tested until you know your input reached it.**
+
+**`doc-audit.py` — effective, with two narrow blind spots.** A named file that
+is not there, a heading level skipped, a stale page, a doubled word, a count
+that contradicts its list, and a figure with no text alternative all fail.
+
+- *no doubled words* is case-sensitive: `names names` is caught, `The the` is
+  not — and a doubling across a sentence boundary is the common one.
+- *"N things" matches the list under it* only counts **bold-lead** items. A
+  claim over a plain list is not checked at all.
+
+**What the figure check found.** An inlined SVG carries no `alt`, and
+`md2html.py` was dropping it: the description written in the markdown reached
+nothing, and a page was accessible only where the drawing happened to carry its
+own `aria-label`. The two had already drifted — `living-hinge-guide.md` says
+"x across the width" and `panel-convention.svg` says "x runs across the width".
+`md2html.py` now uses the alt as the label when the SVG has none, and leaves the
+drawing's own label alone where it has one. Every published page regenerates
+byte-identical.
+
 ## `svg-stroke-check.py`
 
 ```

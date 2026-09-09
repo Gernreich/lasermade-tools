@@ -171,6 +171,22 @@ while i < n:
             svg = cand.read_text()
             svg = re.sub(r"<\?xml[^>]*\?>\s*", "", svg)
             svg = re.sub(r"<!DOCTYPE[^>]*>\s*", "", svg)
+            # The alt text was thrown away here. An inlined SVG is not an <img>
+            # and carries no alt, so the description the author wrote in the
+            # document reached nothing: the page was accessible only where the
+            # SVG file happened to carry its own aria-label, and the two had
+            # already drifted apart in living-hinge, where the markdown says
+            # "x across the width" and the drawing says "x runs across the
+            # width". doc-audit's "every figure has a text alternative" is what
+            # found it -- an inlined SVG without aria-label fails it.
+            #
+            # The file's own label wins if it has one: it ships with the
+            # drawing and other pages may rely on it. Otherwise the alt becomes
+            # the label, so writing alt text in the markdown is never silently
+            # pointless.
+            if alt and 'aria-label' not in svg.split('>', 1)[0]:
+                svg = re.sub(r"<svg\b", f'<svg aria-label="{html.escape(alt)}"',
+                             svg, count=1)
             out.append("<figure>" + svg.strip() + "</figure>")
         else:
             out.append(f'<figure><img src="{html.escape(srcpath)}" alt="{html.escape(alt)}"></figure>')
