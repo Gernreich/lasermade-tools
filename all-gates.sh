@@ -166,6 +166,19 @@ done
 rm -f /tmp/_ag2.svg
 say "previews current in the hand-drawn repos" "$( [ $stale = 0 ] && echo "ok  $n/$n" || echo "FAIL $stale stale")"
 
+# The one artefact that CROSSES repositories: gernreich.github.io publishes an
+# embed drawn by a generator that lives in trumpet, and its own notes said in
+# so many words "Nothing gates it." It had drifted -- the published copy predated
+# the field naming which curve each shape's vertices sit on, so the file on the
+# site was not the file the generator draws. Inert, as it happens: the embed is
+# canvas-only and never reads that field. The next one need not be.
+cd $R/trumpet/parts/bore/concept/swept-curve
+python3 ribbon_view.py --shape=serpentine --embed --out=/tmp/_ag_bv.html \
+    --home=https://gernreich.github.io/trumpet/ >/dev/null 2>&1
+cmp -s /tmp/_ag_bv.html $R/Gernreich.github.io/bore-viewer.html && o=ok || o="FAIL stale"
+rm -f /tmp/_ag_bv.html
+say "published embed matches its generator" "$o"
+
 cd $R/trumpet/tools
 o=$(python3 -c "
 import ast,pathlib,os,sys
