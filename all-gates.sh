@@ -226,7 +226,7 @@ for repo in knotwork-soundholes living-hinge; do
   cd $R/$repo 2>/dev/null || continue
   ro=$(python3 $G/repro-svg.py . 2>&1); rc=$?
   o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
-  say "$repo SVGs reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
+  say "$repo drawings and pages reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 done
 
 # And trumpet's OTHER two part directories, which had no reproduction gate of
@@ -240,7 +240,7 @@ for d in parts/bell parts/mouthpiece; do
   cd $R/trumpet
   ro=$(python3 $G/repro-svg.py $d 2>&1); rc=$?
   o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
-  say "${d#parts/} SVGs reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
+  say "${d#parts/} drawings and pages reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 done
 
 # The previews in the four hand-drawn repositories are made by make-preview.py
@@ -298,6 +298,29 @@ say "published embed matches its generator" "$o"
 # so. This runs each entry point once and asks only that it exit 0. That is a
 # low bar and it is the bar that was missing; the tools with shipped output are
 # held to byte-identity elsewhere.
+# THE PORTS PATH, which no design in regress.py can carry. A port lets a change
+# of plane happen inside a piece and cuts the part count sharply -- the test
+# bore goes from three pieces to two -- and it is kept because it works: with
+# two sections assembled the joint closes, the bore carries on through it and
+# the whole passage is sealed. What it costs is a joint with no tab, and the
+# fingers of the cell whose plate was removed facing nothing. check.py is
+# written to refuse it for exactly those two reasons plus the third that
+# follows from them, so a ported design cannot sit in the corpus and be "pass".
+#
+# It was gated by nothing at all instead, and check.py had no --ports to be
+# gated with. This pins the REFUSAL: three named failures and no fourth. A
+# fourth means the ports path has broken in some new way; two means one of the
+# objections has quietly stopped being raised.
+cd $R/trumpet/tools
+o=$(~/Software/boxes/venv/bin/python check.py "U U2 E2 S2 U2 U" --ports 2>&1)
+tot=$(echo "$o" | tail -1); hit=0
+for w in "the section closes round its bore" \
+         "no wall finger left unengaged" \
+         "seam has no port"; do
+  echo "$o" | grep -q "^  $w *FAIL" && hit=$((hit+1))
+done
+say "the ports path refuses for its three reasons" "$( [[ "$tot" == *"3 failed"* ]] && [ $hit = 3 ] && echo "ok  ${tot# }" || echo "FAIL ${tot:-no output}, $hit of 3 expected")"
+
 cd $R/trumpet/tools
 PYB=~/Software/boxes/venv/bin/python
 T=$(mktemp -d); bad=0; n=0
@@ -318,16 +341,15 @@ say "every entry-point tool still runs" "$( [ $bad = 0 ] && [ $n -ge 6 ] && echo
 # and parts/mouthpiece/.repro below. These five write nothing that ships, so no
 # manifest can reach them, and they are the ones that had never been run at all.
 #
-# Two of them REWRITE THE SHEET THEY ARE GIVEN, in place, so they are handed a
-# copy in $T and never the tracked file. number_rings.py is asked for
-# --order=document because it refuses to guess the order on a sheet that could
-# have been hand-nested, which is the right refusal and not a failure.
+# number_rings.py REWRITES THE SHEET IT IS GIVEN, in place, so it is handed a
+# copy in $T and never the tracked file. It is asked for --order=document
+# because it refuses to guess the order on a sheet that could have been
+# hand-nested, which is the right refusal and not a failure.
 #
-# ramp_bell.py is expected to REFUSE, and that is what is checked. Its ramp
-# belongs to a nested sheet, the one that needed it was deleted on 2026-08-25,
-# and every sheet here is a single black stage -- so the tool has no valid input
-# left in the repository. It still has to parse the sheet, compute the ramp and
-# decline to write, which is what this catches if any of that breaks.
+# ramp_bell.py was gated here for one day, as a tool expected to REFUSE. It has
+# been deleted instead: it rewrote a stroke: style property and these sheets
+# carry a stroke attribute on the group, so it matched nothing on every sheet in
+# the repository and had no valid input left. See parts/CLAUDE.md.
 cd $R/trumpet/parts
 T=$(mktemp -d); bad=0; n=0
 BS=bell/cut-files/bell-round10-153mm-17rings-x3-rim86-cut-files.svg
@@ -340,11 +362,8 @@ run python3 mouthpiece/mouthpiece.py $T/mp.svg
 run python3 mouthpiece/mouthpiece-cup.py $T/mc.svg
 run python3 part-view.py $BS $T/t1.html
 run python3 part-view.py $MS $T/t2.html
-n=$((n+1))
-python3 bell/ramp_bell.py $T/sheet.svg 2>&1 | grep -q 'ramp not applied' \
-  || { bad=$((bad+1)); echo "  FAILS: ramp_bell.py no longer refuses a flat sheet"; }
 rm -rf $T
-say "every bell and mouthpiece tool still runs" "$( [ $bad = 0 ] && [ $n -ge 8 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
+say "every bell and mouthpiece tool still runs" "$( [ $bad = 0 ] && [ $n -ge 7 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
 
 # Nothing reads the NAMES. Every gate above compares an artefact with the code
 # that draws it, and the reproduction gate is handed the stem on the command
