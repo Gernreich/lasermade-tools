@@ -216,6 +216,32 @@ own `aria-label`. The two had already drifted — `living-hinge-guide.md` says
 drawing's own label alone where it has one. Every published page regenerates
 byte-identical.
 
+## `all-gates.sh`
+
+Runs every gate in every repository and prints one tally.
+
+    bash all-gates.sh
+    ...
+    GATES FAILING: 0
+
+Fourteen ribbon bore runs, `regress.py` over 26 block designs, `doc-audit` over
+every page in nine repositories, `svg-stroke-check` over every SVG, and
+`flat-part-check` over the flat parts -- then whether every repository is clean
+and pushed. Five minutes, nearly all of it `regress.py`.
+
+**It exists because of a failure of reading, not of checking.** Every one of
+those gates already existed and every one was passing; what kept going wrong was
+running them one at a time and not reading one of the answers -- a page
+regenerated and its audit then run in a different repository, a tally printed
+and pushed over. Nine gates run by hand are nine chances to read only eight.
+
+**Where it has been wrong.** Its first run printed nothing at all for
+`lasermade-tools`, `Gernreich.github.io` and `trumpet` -- the three most-edited
+repositories -- because it paired `README.md` with `README.html` and those build
+`index.html`. Nine repositories, six lines, and no complaint. A filter that
+matches nothing reports a clean run over no files, which `check.py` had already
+learned once and this then repeated.
+
 ## `svg-stroke-check.py`
 
 ```

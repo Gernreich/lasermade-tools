@@ -36,3 +36,15 @@ ghost.js
 
 living-hinge-guide.md
 panel-convention.svg
+
+# all-gates.sh runs these two from trumpet/tools; they are named to say what it
+# covers, and they live in the repository they gate.
+
+check.py
+regress.py
+
+# The page that does NOT exist, which is the whole point of the sentence naming
+# it: pairing README.md with README.html is what made the script silently skip
+# three repositories.
+
+README.html
