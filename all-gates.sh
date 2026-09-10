@@ -332,8 +332,12 @@ run $PYB coils.py
 run $PYB $G/test-ladder.py $T/ladder.svg
 # mcwalk.py searches walks and has no bounded run, so it is asked only to import
 run $PYB -c "import sys; sys.path.insert(0,'.'); import mcwalk"
+# bore_render.py joins them on 2026-09-10. It could not be run without changing
+# the tree -- a fixed output name in the current directory, no --out -- which is
+# exactly why it had no line here. It has one now, so it does.
+run $PYB bore_render.py "W D3 E4 N" --out=$T/r.svg
 rm -rf $T
-say "every entry-point tool still runs" "$( [ $bad = 0 ] && [ $n -ge 6 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
+say "every entry-point tool still runs" "$( [ $bad = 0 ] && [ $n -ge 7 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
 
 # THE BELL AND THE MOUTHPIECE. The comment above names six tools that were run
 # by nothing and stops there; twelve more, every one under parts/, were in the
