@@ -291,9 +291,14 @@ prose = re.sub(r"https?://\S+", "", prose)
 # character that is neither word nor space breaks the pair. All three states of
 # this were introduced and caught on 2026-09-09, by the check itself, on prose
 # written to document something else.
-prose = re.sub(r"`[^`]*`", "\x00", prose)
-dbl = [m.group(1) for m in re.finditer(r"\b([A-Za-z]{3,})\s+\1\b", prose)]
+spanless = re.sub(r"`[^`]*`", "\x00", prose)
+dbl = [m.group(1) for m in re.finditer(r"\b([A-Za-z]{3,})\s+\1\b", spanless)]
 ok("no doubled words", not dbl, str(dbl) if dbl else "")
+# The BALANCE check reads the original, not the stripped copy. Substituting a
+# span that runs across a line break joins those lines, which shifted every
+# line number after it -- a stray backtick on line 6 was reported as line 5 --
+# and it also swallowed the very backticks this check exists to count. Only the
+# doubled-word test above wants spans gone.
 odd = [i + 1 for i, l in enumerate(prose.split("\n")) if l.count("`") % 2]
 ok("code spans balanced on every line", not odd, f"lines {odd}" if odd else "")
 
