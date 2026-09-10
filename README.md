@@ -251,6 +251,26 @@ running them one at a time and not reading one of the answers -- a page
 regenerated and its audit then run in a different repository, a tally printed
 and pushed over. Nine gates run by hand are nine chances to read only eight.
 
+**Every gate in it has been watched fail.** That is this repository's own rule
+applied to the thing that enforces it, and it was not done when the script was
+written. Appending one byte to a shipped cut file fires three of them at once
+and nothing else:
+
+    ribbon sheets reproduce byte-identical    FAIL 1 differ
+    previews current with their cut files     FAIL 1 stale
+    every repo clean                          FAIL 1 changed
+
+Editing `parts.json` fires *search tools reproduce their output* and that alone,
+so the gates are specific rather than cascading. *Boxes install matches tools/*
+was watched fail by changing a default in the installed copy. *every repo
+pushed* was proved in a scratch repository, since breaking it in a real one
+means an unpushed commit. `doc-audit` and `flat-part-check` have failed
+repeatedly in ordinary use.
+
+The one exception is `regress.py`'s own verdict line, which has never been seen
+to fail here -- that gate is inherited whole from the repository it checks, and
+its history of catching things is recorded there rather than proved here.
+
 **Where it has been wrong.** Its first run printed nothing at all for
 `lasermade-tools`, `Gernreich.github.io` and `trumpet` -- the three most-edited
 repositories -- because it paired `README.md` with `README.html` and those build
