@@ -136,6 +136,36 @@ ok1=$(cmp -s /tmp/_ag_pj parts.json && echo y); ok2=$(cmp -s /tmp/_ag_sc SCORING
 rm -f /tmp/_ag_pj /tmp/_ag_sc
 say "search tools reproduce their output" "$( [ "$ok1$ok2" = yy ] && echo ok || echo "FAIL")"
 
+# Both reproduction gates above are trumpet-only, and every other repository
+# that ships generator-drawn SVGs had none. knotwork-soundholes draws 13 cut
+# files and living-hinge 15, and nothing checked any of them. They all do
+# reproduce -- but for four of the knots the command was recorded NOWHERE, and
+# had to be recovered on 2026-09-10 by reading the parameters back out of each
+# SVG's own description. .repro in each repository records them now.
+for repo in knotwork-soundholes living-hinge; do
+  cd $R/$repo 2>/dev/null || continue
+  o=$(python3 $G/repro-svg.py . 2>&1 | tail -1)
+  say "$repo SVGs reproduce" "$( [[ "$o" == *failing* || "$o" == *unclaimed* ]] && echo "FAIL ${o# }" || echo "ok  ${o# }")"
+done
+
+# The previews in the four hand-drawn repositories are made by make-preview.py
+# and were current with it, unwatched, the whole time. trumpet's are gated and
+# these were not, for no reason other than that nobody had looked.
+cd $R
+stale=0; n=0
+for repo in bullroarer buzz-disc kalimba slapstick; do
+  for f in $repo/previews/*.svg; do
+    [ -e "$f" ] || continue
+    src="$repo/$(basename "$f")"
+    [ -f "$src" ] || continue
+    n=$((n+1))
+    python3 $G/make-preview.py "$src" /tmp/_ag2.svg >/dev/null 2>&1
+    cmp -s /tmp/_ag2.svg "$f" || stale=$((stale+1))
+  done
+done
+rm -f /tmp/_ag2.svg
+say "previews current in the hand-drawn repos" "$( [ $stale = 0 ] && echo "ok  $n/$n" || echo "FAIL $stale stale")"
+
 cd $R/trumpet/tools
 o=$(python3 -c "
 import ast,pathlib,os,sys

@@ -251,6 +251,45 @@ running them one at a time and not reading one of the answers -- a page
 regenerated and its audit then run in a different repository, a tally printed
 and pushed over. Nine gates run by hand are nine chances to read only eight.
 
+### `repro-svg.py` — does a repository's shipped SVG still come out of its generator?
+
+Both of trumpet's reproduction gates are trumpet-only, and every other
+repository that ships generator-drawn cut files had none: knotwork-soundholes
+draws 13, living-hinge 15, and nothing checked any of them.
+
+They all reproduce. The finding was not drift — it was that **for four of the
+knots the command that drew them was recorded nowhere**: not in the README, not
+in the filename, not in a comment. `AMP` and `HW` do not scale with `R_HOLE`, and
+the filename carries only leads, bights and radius, so every sample drawn at a
+non-default radius was unreproducible from anything in the repository. They were
+recovered on 2026-09-10 by reading the parameters back out of each SVG's own
+description — the ribbon width is `2*HW`, the cosine amplitude is `AMP`, the rim
+overrun is `BITE` — and each then matched byte for byte.
+
+The manifest is `.repro` in the repository root, one line per shipped SVG:
+
+    shipped/path.svg :: shell command writing the file to $OUT
+
+A command of `!` means the file ships without a generator, deliberately, with
+the reason in the comment above it. It still has to be listed — an SVG no line
+claims is a failure, not a silence, which is how the 13 knotwork previews and
+the hand-nested coupon sheet were found in the first place. Three things ship
+under that marker and each was checked as far as it can be:
+
+- **knotwork's previews** are filled even-odd in gold; no script in any
+  repository draws that. Whatever made them is gone.
+- **living-hinge's previews** have geometry identical to what `make-preview.py`
+  draws today — 279 paths, same data — but a 0.6mm stroke where the tool now
+  writes 0.4mm, so they predate a change to it.
+- **the bridge-sweep coupon sheet** is a *cut* file with no generator, which is
+  the case this marker should almost never cover. It holds 756 paths, exactly
+  6 × 126, and every path of all six coupons is present in it by shape. So it is
+  the six coupons and nothing else, and each of those six reproduces.
+
+None of the three is a defect to fix silently: regenerating any of them chooses
+a new look for pictures on a repository's front page, or re-nests a sheet by
+hand. That is the author's call, so the gate records them and says so.
+
 ### What `doc-audit.py` got wrong on 27 documents
 
 It had only ever been pointed at the nine documents that have a published page.

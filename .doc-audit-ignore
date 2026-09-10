@@ -54,3 +54,8 @@ README.html
 # here.
 
 snakeboxvar.py
+
+# The placeholder in the .repro manifest format:  shipped/path.svg :: command
+# It names the SHAPE of a line, not a file. Documenting the format without
+# writing a filename-shaped token is worse writing than this exemption.
+path.svg
