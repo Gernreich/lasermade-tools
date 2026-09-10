@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Do a repository's shipped SVGs still come out of its generators?
+"""Do a repository's shipped drawings and pages still come out of its generators?
 
 trumpet had this twice over -- byte gates for the ribbon sheets and the block
 sheets -- and no other repository had it at all. knotwork-soundholes ships 13
@@ -43,13 +43,23 @@ def main(repo, quiet=False):
     acked = {n for n, c in rows if c == '!'}
     rows = [(n, c) for n, c in rows if c != '!']
     # A manifest that parses nothing passes. Say what was read, and treat a
-    # shipped SVG that no line claims as a failure rather than a silence.
+    # shipped drawing or page that no line claims as a failure rather than a
+    # silence.
+    #
+    # PAGES TOO, since 2026-09-10. This walked *.svg only, so every published
+    # HTML page in reach of a manifest was unclaimed by construction: the two
+    # part turn-pages, and the four built from markdown by md2html.py. The
+    # markdown ones are compared a second way by doc-audit's page-currency
+    # check, which is no argument for this one not seeing them -- doc-audit
+    # pairs a page with a document of the same NAME, so a page whose source is
+    # named differently, or which has no markdown at all, falls outside it
+    # entirely. That is exactly where the turn pages sit.
     shipped = set()
     for base, _, files in os.walk(repo):
         if '.git' in base.split(os.sep):
             continue
         for f in files:
-            if f.endswith('.svg'):
+            if f.endswith(('.svg', '.html')):
                 shipped.add(os.path.relpath(os.path.join(base, f), repo))
     same = bad = 0
     with tempfile.TemporaryDirectory() as T:
@@ -75,10 +85,21 @@ def main(repo, quiet=False):
     unclaimed = sorted(shipped - {n for n, _ in rows} - acked)
     for u in unclaimed:
         print(f'  UNCLAIMED {u}')
+    # AND AN ACKNOWLEDGEMENT FOR A FILE THAT HAS GONE. A "!" line is a standing
+    # claim that a particular file ships without a generator. Nothing checked
+    # that the file was still there, so a deleted preview left its exemption
+    # behind: an assertion nobody re-reads, in a list whose whole job is to be
+    # trusted. Same fault ignore-audit.py exists to catch in the doc-audit
+    # exemption lists, in the one list it does not read.
+    stale = sorted(a for a in acked if not os.path.exists(os.path.join(repo, a)))
+    for a in stale:
+        print(f'  STALE !   {a}: acknowledged, and not there any more')
     tail = f', {len(acked)} shipped without a generator' if acked else ''
-    print(f'  {same} reproduce, {bad} failing, {len(unclaimed)} unclaimed{tail}'
-          if (bad or unclaimed) else f'  {same} reproduce{tail}')
-    return 1 if (bad or unclaimed) else 0
+    lost = f', {len(stale)} acknowledged and gone' if stale else ''
+    print(f'  {same} reproduce, {bad} failing, {len(unclaimed)} unclaimed'
+          f'{tail}{lost}'
+          if (bad or unclaimed or stale) else f'  {same} reproduce{tail}')
+    return 1 if (bad or unclaimed or stale) else 0
 
 
 if __name__ == '__main__':
