@@ -24,6 +24,18 @@
 # unreadable, which is the one thing it must not be.
 G=~/LaserMadeMusic/GIT/lasermade-tools
 R=~/LaserMadeMusic/GIT
+# EVERY verdict below is fail-CLOSED, and was not until 2026-09-11.
+#
+# The idiom this file grew was "FAIL if the output contains a failure word,
+# otherwise ok" -- which passes on an empty string, so a tool that crashed and
+# printed nothing read as a pass. Three gates were built that way. Four more
+# counted their subjects and compared the count of failures to zero, so an empty
+# subject list gave "ok 0/0": the glob matching nothing, which is precisely the
+# failure this script's own header says it exists to stop. And a repository with
+# no pages at all was skipped without printing a line.
+#
+# So a gate now has to see the SUCCESS it is looking for, and has to have found
+# something to look at. Absence of bad news is not good news.
 fail=0
 failed=()
 say () {
@@ -53,7 +65,7 @@ say "regress.py, 26 block designs" "$( [[ "$o" == *"all designs pass"* ]] && ech
 # overwrites the record of the instrument fails here rather than passing every
 # invariant in silence.
 o=$(~/Software/boxes/venv/bin/python repro.py 2>&1 | tail -1)
-say "block sheets reproduce, as-built pinned" "$( [[ "$o" == *"failing"* ]] && echo "FAIL ${o# }" || echo "ok  ${o# }")"
+say "block sheets reproduce, as-built pinned" "$( [[ "$o" == *reproduce* && "$o" != *failing* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 
 for repo in bullroarer buzz-disc kalimba knotwork-soundholes living-hinge slapstick lasermade-tools Gernreich.github.io trumpet; do
   cd $R/$repo 2>/dev/null || continue
@@ -67,7 +79,7 @@ for repo in bullroarer buzz-disc kalimba knotwork-soundholes living-hinge slapst
     n=$((n+1))
     echo "$(python3 $G/doc-audit.py "$md" --html "$h" --rebuild "python3 $G/md2html.py {md} {out}" 2>&1 | grep -E 'passed,')" | grep -q ' 0 failed' || bad=$((bad+1))
   done
-  [ $n -gt 0 ] && say "doc-audit $repo ($n pages)" "$( [ $bad = 0 ] && echo ok || echo "FAIL $bad page(s)")"
+  say "doc-audit $repo ($n pages)" "$( [ $bad = 0 ] && [ $n -gt 0 ] && echo ok || echo "FAIL ${bad} page(s), $n found")"
 done
 
 o=$(python3 $G/svg-stroke-check.py --dir $R --quiet 2>&1 | tail -1)
@@ -91,7 +103,7 @@ for f in $(find bullroarer buzz-disc kalimba knotwork-soundholes living-hinge \
   (cd "$(dirname "$f")" && python3 $G/doc-audit.py "$(basename "$f")" 2>&1 \
      | grep -q '0 failed') || u=$((u+1))
 done
-say "doc-audit, every markdown in every repo" "$( [ $u = 0 ] && echo "ok  $n docs" || echo "FAIL $u of $n")"
+say "doc-audit, every markdown in every repo" "$( [ $u = 0 ] && [ $n -gt 20 ] && echo "ok  $n docs" || echo "FAIL $u of $n")"
 
 o=$(python3 $G/flat-part-check.py --dir $R/bullroarer --dir $R/buzz-disc 2>&1 | tail -1)
 say "flat-part-check, flat parts" "$( [[ "$o" == *"0 failed"* ]] && echo "ok  $o" || echo "FAIL $o")"
@@ -124,7 +136,7 @@ rr dspiral/ribbon-dspiral-bore10-30deg-R62-pitch46 ribbon-dspiral-bore10-30deg-R
 rr dspiral/ribbon-dspiral-bore10-30deg-R62-pitch46-halftest ribbon-dspiral-bore10-30deg-R62-pitch46-half-196mm --shape=dspiral --ds-half --ds-facets=2
 rr volute/ribbon-volute-bore10-45deg-R94-step60 ribbon-volute-bore10-45deg-R94-step60-1180mm --shape=volute
 rm -rf $T
-say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && echo "ok  $same/40" || echo "FAIL $bad differ")"
+say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 40 ] && echo "ok  $same/40" || echo "FAIL $bad differ, $same of 40 compared")"
 
 # Walks EVERY previews/ directory in the repository, not just this one. It
 # checked swept-curve/previews and nothing else, so parts/bell/previews,
@@ -159,7 +171,7 @@ for pv in $(find . -type d -name previews -not -path './.git/*'); do
     fi
   done
 done; rm -f /tmp/_ag.svg
-say "previews current with their cut files" "$( [ $stale = 0 ] && echo "ok  $seen/$seen" || echo "FAIL $stale of $seen stale")"
+say "previews current with their cut files" "$( [ $stale = 0 ] && [ $seen -gt 0 ] && echo "ok  $seen/$seen" || echo "FAIL $stale of $seen stale")"
 
 cd $R/trumpet/parts/bore/concept/walk/no-elbows/coil/search
 # The generators' EXIT STATUS is checked, not just the files afterwards. Until
@@ -184,7 +196,7 @@ say "search tools reproduce their output" "$( [ "$ok1$ok2" = yy ] && echo ok || 
 for repo in knotwork-soundholes living-hinge; do
   cd $R/$repo 2>/dev/null || continue
   o=$(python3 $G/repro-svg.py . 2>&1 | tail -1)
-  say "$repo SVGs reproduce" "$( [[ "$o" == *failing* || "$o" == *unclaimed* ]] && echo "FAIL ${o# }" || echo "ok  ${o# }")"
+  say "$repo SVGs reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 done
 
 # The previews in the four hand-drawn repositories are made by make-preview.py
@@ -203,7 +215,7 @@ for repo in bullroarer buzz-disc kalimba slapstick; do
   done
 done
 rm -f /tmp/_ag2.svg
-say "previews current in the hand-drawn repos" "$( [ $stale = 0 ] && echo "ok  $n/$n" || echo "FAIL $stale stale")"
+say "previews current in the hand-drawn repos" "$( [ $stale = 0 ] && [ $n -gt 0 ] && echo "ok  $n/$n" || echo "FAIL $stale stale of $n")"
 
 # The one artefact that CROSSES repositories: gernreich.github.io publishes an
 # embed drawn by a generator that lives in trumpet, and its own notes said in
@@ -238,7 +250,7 @@ run $PYB $G/test-ladder.py $T/ladder.svg
 # mcwalk.py searches walks and has no bounded run, so it is asked only to import
 run $PYB -c "import sys; sys.path.insert(0,'.'); import mcwalk"
 rm -rf $T
-say "every entry-point tool still runs" "$( [ $bad = 0 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
+say "every entry-point tool still runs" "$( [ $bad = 0 ] && [ $n -ge 6 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
 
 # Nothing reads the NAMES. Every gate above compares an artefact with the code
 # that draws it, and the reproduction gate is handed the stem on the command
@@ -248,7 +260,7 @@ say "every entry-point tool still runs" "$( [ $bad = 0 ] && echo "ok  $n/$n" || 
 # machine, and for several of these numbers they are the only record.
 cd $G
 o=$(python3 name-check.py 2>&1 | tail -1)
-say "cut-file names match their geometry" "$( [[ "$o" == *disagree* ]] && echo "FAIL ${o# }" || echo "ok  ${o# }")"
+say "cut-file names match their geometry" "$( [[ "$o" == *"every name agrees"* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 
 # And nothing checked the SUPPRESSIONS. Every .doc-audit-ignore line is a
 # standing claim that a name is prose rather than a file, and an exemption that
@@ -268,8 +280,14 @@ print(','.join(bad) if bad else 'ok')" 2>&1)
 say "Boxes install matches tools/" "$( [ "$o" = ok ] && echo ok || echo "FAIL $o")"
 
 cd $R
-d=0; for r in */; do d=$((d + $(git -C $r status --porcelain 2>/dev/null | wc -l))); done
-say "every repo clean" "$( [ $d = 0 ] && echo ok || echo "FAIL $d changed")"
+# Counts the repositories as well as the changes: with no repositories at all
+# both come out zero, and "every repo clean" over nothing is not a result.
+d=0; nr=0
+for r in */; do
+  [ -d "$r/.git" ] || continue
+  nr=$((nr+1)); d=$((d + $(git -C $r status --porcelain 2>/dev/null | wc -l)))
+done
+say "every repo clean" "$( [ $d = 0 ] && [ $nr -ge 9 ] && echo "ok  $nr repos" || echo "FAIL $d changed in $nr repos")"
 # --pre-push skips this one gate, and exists because gating a push on a clean
 # run could otherwise never push: "every repo pushed" fails precisely BECAUSE
 # the push has not happened yet, so
@@ -284,8 +302,12 @@ say "every repo clean" "$( [ $d = 0 ] && echo ok || echo "FAIL $d changed")"
 #     bash all-gates.sh --pre-push && git push origin main
 #
 if [[ " $* " != *" --pre-push "* ]]; then
-  u=0; for r in */; do u=$((u + $(git -C $r rev-list --count @{u}..HEAD 2>/dev/null || echo 0))); done
-  say "every repo pushed" "$( [ $u = 0 ] && echo ok || echo "FAIL $u unpushed")"
+  u=0; nr=0
+  for r in */; do
+    [ -d "$r/.git" ] || continue
+    nr=$((nr+1)); u=$((u + $(git -C $r rev-list --count @{u}..HEAD 2>/dev/null || echo 0)))
+  done
+  say "every repo pushed" "$( [ $u = 0 ] && [ $nr -ge 9 ] && echo "ok  $nr repos" || echo "FAIL $u unpushed across $nr repos")"
 fi
 
 echo
