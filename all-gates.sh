@@ -25,7 +25,11 @@
 G=~/LaserMadeMusic/GIT/lasermade-tools
 R=~/LaserMadeMusic/GIT
 fail=0
-say () { printf '%-46s %s\n' "$1" "$2"; [[ "$2" == *FAIL* ]] && fail=$((fail+1)); }
+failed=()
+say () {
+  printf '%-46s %s\n' "$1" "$2"
+  if [[ "$2" == *FAIL* ]]; then fail=$((fail+1)); failed+=("$1  --  $2"); fi
+}
 
 cd $R/trumpet/parts/bore/concept/swept-curve
 for s in coupon serpentine opposed wave spiral dspiral volute; do
@@ -231,6 +235,14 @@ cd $G
 o=$(python3 name-check.py 2>&1 | tail -1)
 say "cut-file names match their geometry" "$( [[ "$o" == *disagree* ]] && echo "FAIL ${o# }" || echo "ok  ${o# }")"
 
+# And nothing checked the SUPPRESSIONS. Every .doc-audit-ignore line is a
+# standing claim that a name is prose rather than a file, and an exemption that
+# has stopped suppressing anything is worse than none: an assertion nobody
+# re-reads, in the one list whose whole job is to be trusted.
+cd $G
+o=$(python3 ignore-audit.py 2>&1 | tail -1)
+say "every exemption still suppresses something" "$( [[ "$o" == *", 0 suppressing"* ]] && echo "ok  ${o# }" || echo "FAIL ${o# }")"
+
 cd $R/trumpet/tools
 o=$(python3 -c "
 import ast,pathlib,os,sys
@@ -247,5 +259,22 @@ u=0; for r in */; do u=$((u + $(git -C $r rev-list --count @{u}..HEAD 2>/dev/nul
 say "every repo pushed" "$( [ $u = 0 ] && echo ok || echo "FAIL $u unpushed")"
 
 echo
+# The failing gates are NAMED here, and the script EXITS non-zero.
+#
+# Until 2026-09-11 it ended on an echo, so it returned 0 however many gates
+# failed: `all-gates.sh && git push` pushed regardless, and the only signal was
+# a line of text. This file's own header records the fault it was written to
+# stop -- "a tally printed and pushed over, twice" -- and its answer to that was
+# another line to read. It was then pushed over four more times in one session.
+#
+# So: a caller can now branch on it, and the names sit at the END, where someone
+# reading the last few lines cannot see clean-and-pushed without also seeing
+# what failed.
+if (( fail )); then
+  echo "FAILING GATES:"
+  for f in "${failed[@]}"; do echo "  $f"; done
+  echo
+fi
 echo "GATES FAILING: $fail"
+exit $(( fail > 0 ))
 

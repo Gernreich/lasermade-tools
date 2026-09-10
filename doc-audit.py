@@ -22,6 +22,7 @@ ap.add_argument("--run-blocks", action="store_true",
                 help="re-run fenced blocks that look like terminal sessions and diff; "
                      "any file a block writes is restored afterwards")
 ap.add_argument("--ignore", default="", help="comma-separated filenames named in prose, not shipped")
+ap.add_argument("--ignore-file", default="", help="use this instead of the repository's .doc-audit-ignore")
 ap.add_argument("--strict-h1", action="store_true",
                 help="require exactly one <h1>; off by default, since a chaptered document may use several")
 a = ap.parse_args()
@@ -121,7 +122,12 @@ prose_only = {x.strip() for x in a.ignore.split(",") if x.strip()}
 # disk. Passing --ignore each time works until someone forgets, and then the same two
 # false failures come back looking like a regression. A repository states its own
 # exceptions once, in .doc-audit-ignore at the root: one name per line, # for comments.
-IGNORE_FILE = ROOT / ".doc-audit-ignore"
+# --ignore-file points that somewhere else, so the exemption list can be audited
+# against a COPY with one line removed rather than by editing the repository's
+# own file in a loop. Every entry is a standing claim -- "this name is prose,
+# not a file" -- and a claim nothing re-tests is one that quietly stops being
+# true; but proving that must not be able to damage what it is testing.
+IGNORE_FILE = pathlib.Path(a.ignore_file) if a.ignore_file else ROOT / ".doc-audit-ignore"
 if IGNORE_FILE.exists():
     for ln in IGNORE_FILE.read_text().split("\n"):
         ln = ln.split("#", 1)[0].strip()

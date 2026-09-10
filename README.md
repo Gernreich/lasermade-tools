@@ -251,6 +251,34 @@ running them one at a time and not reading one of the answers -- a page
 regenerated and its audit then run in a different repository, a tally printed
 and pushed over. Nine gates run by hand are nine chances to read only eight.
 
+### `ignore-audit.py` — does every exemption still suppress something?
+
+Every line of a `.doc-audit-ignore` is a standing claim: *this name is prose, not
+a file here*. Every other gate checks an artefact, some code, or a document.
+Nothing checked the **suppressions**, and an exemption that has stopped doing
+anything is worse than none — an assertion nobody re-reads, sitting in the one
+list whose entire job is to be trusted.
+
+It removes one entry at a time from a **copy** and re-runs every document in that
+repository. If nothing starts failing, the entry is dead weight. 51 exemptions
+across seven repositories; two were dead, both in trumpet, which exempted
+`parts/LICENSE` and `tools/LICENSE` from the orphan check. That check matches a
+tracked file by basename as well as by path, so the README's own mention of
+`LICENSE` had always covered every copy.
+
+`doc-audit.py` grew `--ignore-file` for this, so the audit never edits the file
+it is auditing.
+
+### The harness exits non-zero now
+
+Until 2026-09-11 `all-gates.sh` ended on an `echo`, so it returned 0 however many
+gates failed — `all-gates.sh && git push` pushed regardless. The only signal was
+a line of text to read. This file's own header records the fault it was written
+to stop, *"a tally printed and pushed over, twice"*, and its answer was another
+line to read; it was then pushed over four more times in a single session. The
+failing gates are now named again at the **end**, where the last few lines cannot
+show clean-and-pushed without also showing what failed.
+
 ### `name-check.py` — does a cut file's name agree with the geometry inside it?
 
 `ribbon-volute-bore10-45deg-R94-step60-1180mm` asserts a section, a facet angle,
