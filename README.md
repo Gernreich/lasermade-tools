@@ -251,6 +251,38 @@ running them one at a time and not reading one of the answers -- a page
 regenerated and its audit then run in a different repository, a tally printed
 and pushed over. Nine gates run by hand are nine chances to read only eight.
 
+### What `doc-audit.py` got wrong on 27 documents
+
+It had only ever been pointed at the nine documents that have a published page.
+Aimed at the eighteen design notes as well, it produced 20 failures, of which
+**one** was real. The four defects behind the other nineteen, all fixed
+2026-09-10:
+
+- **Indented code blocks were not stripped.** `strip_fences` knew about backtick
+  fences only, so a gate's own quoted output four spaces in was read as prose.
+  `393 checks, 0 failed` became a claim to be introducing a list that long --
+  six false positives in one file.
+- **Line numbers were reported against the stripped copy.** The balance check
+  named lines 165 and 166 of a document whose wrapped span is on 178 and 179.
+  Anything with a fenced block above the defect pointed at the wrong place.
+  Stripped lines are now blanked, not deleted, which also stops a removed block
+  making neighbours of two words that were never adjacent.
+- **Code spans were balanced per line.** A span may wrap across a line break and
+  close on the next; CommonMark renders it. Both of the only two things this
+  check reported across 27 documents were that.
+- **List items were counted only when bold-led.** "Two things had to be true"
+  over two bullets reported *claimed 2, found 1*, because both opened with a
+  code span -- and the 1 it found was a bold paragraph past the end of the list.
+  Counting the wrong list is worse than counting none: the number looks measured.
+
+A numeral before "checks" is now taken as a gate's assertion count rather than a
+list claim. Across nine repositories every claim written in digits is one of
+those and every genuine one spells the number out -- 17 instances, no
+exceptions. `Three checks` over two items is still caught.
+
+The real finding, for the record: **"Two things to know:" over three bullets**,
+in the notes for the coil whose parts are cut.
+
 **Every gate in it has been watched fail.** That is this repository's own rule
 applied to the thing that enforces it, and it was not done when the script was
 written. Appending one byte to a shipped cut file fires three of them at once

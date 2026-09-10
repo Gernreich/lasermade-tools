@@ -60,12 +60,49 @@ def strip_fences(text):
     code. Filename mentions are deliberately NOT stripped: `node foo.js` inside a
     block is a real reference to foo.js."""
     out, inblock = [], False
-    for ln in text.split("\n"):
+    lines = text.split("\n")
+    # An INDENTED code block is quoted content too, and was not being stripped:
+    # tools/CLAUDE.md quotes a gate's own output four spaces in, and the counts
+    # check below read "393 checks, 0 failed" as a claim to be listing 393
+    # things. Six false positives in one document, in a file nothing gated --
+    # so the bug survived because the doc was never audited, not because the
+    # check was sound.
+    #
+    # CommonMark: an indented block needs a blank line before it and cannot
+    # interrupt a paragraph. Four spaces under a LIST is list continuation, not
+    # code, so a run is only treated as a block when the last ordinary line
+    # above it was neither a list item nor itself indented. Getting this wrong
+    # in the loose direction would silently blind every check below to real
+    # prose, which is the more expensive mistake.
+    incode, prev = [False] * len(lines), ""
+    for i, ln in enumerate(lines):
+        if ln.strip() and not ln.startswith((" " * 4, "\t")):
+            prev = ln
+            continue
+        if not ln.strip():
+            continue
+        j = i - 1
+        while j >= 0 and not lines[j].strip():
+            j -= 1
+        opens = j < 0 or (not lines[j].startswith((" " * 4, "\t"))
+                          and lines[j].strip() == prev.strip()
+                          and not re.match(r"\s*(?:[-*+]|\d+\.)\s", prev))
+        if opens or (i and incode[i - 1]):
+            incode[i] = True
+    # Stripped lines are BLANKED, not deleted, so every line number the checks
+    # below report is the line number in the file. They were not: the balance
+    # check pointed at 165 and 166 of a document whose wrapped code span is on
+    # 178 and 179, because it was counting lines in the stripped copy. Anything
+    # with a fenced block above the defect reported the wrong place, and the
+    # bigger the quoted output the further off it was. Blanking also stops a
+    # removed block making neighbours of two words that were never adjacent --
+    # the same fault the \x00 placeholder fixes for code spans on 2026-09-09.
+    for i, ln in enumerate(lines):
         if ln.startswith("```"):
             inblock = not inblock
+            out.append("")
             continue
-        if not inblock:
-            out.append(ln)
+        out.append("" if inblock or incode[i] else ln)
     return "\n".join(out)
 
 
@@ -266,9 +303,31 @@ for m in re.finditer(r"\b(One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|\d+)\
     after = prose_src[m.end(): m.end() + 1]
     if before in '"“`' and after in '"”`':
         continue
-    # the list belongs to the section the claim sits in: stop at the next heading
+    # A NUMERAL before "checks" is a gate reporting how many assertions it ran,
+    # not prose introducing a list. Across the nine repositories every claim
+    # written as digits is one of those -- 195, 226, 393, 7700 checks -- and
+    # every genuine list claim spells the number out: "Two things", "Three
+    # ways". 17 instances, no exceptions. Read as claims, the digits produced
+    # six false positives in tools/CLAUDE.md alone and never once caught a real
+    # miscount. "Three checks" over two items is still checked.
+    if m.group(2) == "checks" and m.group(1).isdigit():
+        continue
+    # Count the list that FOLLOWS the claim, and count every item in it -- not
+    # only the ones with a bold lead. "Two things had to be true" over two
+    # bullets was reported as claimed 2, found 1, because both bullets opened
+    # with a code span instead of bold and the bold-lead pattern matched neither;
+    # the 1 it did find was a bold paragraph further down, past the end of the
+    # list. Counting the wrong list is worse than counting nothing, because the
+    # number it prints looks like a measurement.
     tail = re.split(r"(?m)^#{1,6}\s", prose_src[m.end():])[0]
-    items = len(re.findall(r"(?m)^(?:\d+\.|[-*])\s+\*\*", tail))
+    items, seen = 0, False
+    for ln in tail.split("\n"):
+        if re.match(r"\s*(?:\d+\.|[-*+])\s", ln):
+            items, seen = items + 1, True
+        elif seen and not ln.strip():
+            continue            # a blank line between items keeps the list open
+        elif seen and not ln.startswith((" ", "\t")):
+            break               # unindented prose ends the list
     if not items:  # some lists are bold-lead paragraphs rather than markdown list items
         items = len(re.findall(r"(?m)^\*\*[^*]+\*\*", tail))
     if items:
@@ -299,8 +358,27 @@ ok("no doubled words", not dbl, str(dbl) if dbl else "")
 # line number after it -- a stray backtick on line 6 was reported as line 5 --
 # and it also swallowed the very backticks this check exists to count. Only the
 # doubled-word test above wants spans gone.
-odd = [i + 1 for i, l in enumerate(prose.split("\n")) if l.count("`") % 2]
-ok("code spans balanced on every line", not odd, f"lines {odd}" if odd else "")
+#
+# Balanced per PARAGRAPH, not per line. A code span may wrap across a line break
+# and CommonMark closes it in the next line -- `plate_span_mm()` sums ... it used
+# to be `blocksize x\nblocks` renders correctly and read as two broken lines.
+# Two of those were the only thing this check reported across 27 documents, so
+# per-line was finding nothing real and hiding behind noise. A span that never
+# closes leaves its paragraph odd, which is the defect worth reporting, and the
+# line given is where the paragraph starts.
+para, start, odd = 0, 1, []
+for i, l in enumerate(prose.split("\n") + [""]):
+    if l.strip():
+        if not para:
+            start = i + 1
+        para += l.count("`")
+    elif para % 2:
+        odd.append(start)
+        para = 0
+    else:
+        para = 0
+ok("code spans balanced in every paragraph", not odd,
+   f"paragraphs starting at {odd}" if odd else "")
 
 # ── 6. the generated page ────────────────────────────────────────────────────
 if page:

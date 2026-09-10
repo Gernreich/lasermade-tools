@@ -40,6 +40,17 @@ cd $R/trumpet/tools
 o=$(~/Software/boxes/venv/bin/python regress.py 2>&1 | tail -1)
 say "regress.py, 26 block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
 
+# regress.py MEASURES the committed sheets; it never redraws them. Every
+# invariant can hold while the SVG on disk is one the current code would no
+# longer produce -- the hole this file closed for the 40 ribbon sheets and left
+# open on the 84 Boxes.py draws. repro.py redraws them. Its second direction is
+# the one that matters: the 18 sheets describing the coil that was actually cut
+# are checked against pinned hashes instead, so a regenerate sweep that
+# overwrites the record of the instrument fails here rather than passing every
+# invariant in silence.
+o=$(~/Software/boxes/venv/bin/python repro.py 2>&1 | tail -1)
+say "block sheets reproduce, as-built pinned" "$( [[ "$o" == *"failing"* ]] && echo "FAIL ${o# }" || echo "ok  ${o# }")"
+
 for repo in bullroarer buzz-disc kalimba knotwork-soundholes living-hinge slapstick lasermade-tools Gernreich.github.io trumpet; do
   cd $R/$repo 2>/dev/null || continue
   bad=0; n=0
@@ -57,6 +68,26 @@ done
 
 o=$(python3 $G/svg-stroke-check.py --dir $R --quiet 2>&1 | tail -1)
 say "svg-stroke-check, every repo" "$( [[ "$o" == *"0 conflicting"* ]] && echo "ok  ${o% file*} files" || echo "FAIL $o")"
+
+# The doc-audit gate above pairs a *.md with its published page, so it only ever
+# saw the 9 documents at the repository roots. The other 18 -- every CLAUDE.md
+# in the trumpet tree, the design notes that say what may and may not be recut --
+# went unaudited from the day they were written. They held 20 failures. Most
+# were the checker being wrong about a genre it had never been pointed at
+# (indented output read as prose, "393 checks" read as a list claim), but one
+# was real: a "Two things to know" over three bullets. A document nothing checks
+# is a document that drifts, and these are the ones a person reads before
+# cutting.
+cd $R
+u=0; n=0
+for f in $(find bullroarer buzz-disc kalimba knotwork-soundholes living-hinge \
+                slapstick lasermade-tools Gernreich.github.io trumpet \
+                -name '*.md' -not -path '*/.git/*' | sort); do
+  n=$((n+1))
+  (cd "$(dirname "$f")" && python3 $G/doc-audit.py "$(basename "$f")" 2>&1 \
+     | grep -q '0 failed') || u=$((u+1))
+done
+say "doc-audit, every markdown in every repo" "$( [ $u = 0 ] && echo "ok  $n docs" || echo "FAIL $u of $n")"
 
 o=$(python3 $G/flat-part-check.py --dir $R/bullroarer --dir $R/buzz-disc 2>&1 | tail -1)
 say "flat-part-check, flat parts" "$( [[ "$o" == *"0 failed"* ]] && echo "ok  $o" || echo "FAIL $o")"
