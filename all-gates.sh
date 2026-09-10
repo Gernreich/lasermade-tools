@@ -184,6 +184,13 @@ cd $R/trumpet/parts/bore/concept/walk/no-elbows/coil/search
 # with its own backup -- so a script that crashed left the file untouched and
 # the comparison passed. The gate could not tell "reproduced correctly" from
 # "did not run at all", which is the one distinction it exists to make.
+# Remove the backups FIRST, for the reason the preview loop above gives: these are
+# fixed paths, and a run interrupted before the rm at the end leaves them lying there.
+# cp then fails silently on a file that has been DELETED from the repository, the
+# generator recreates it, and cmp compares it against yesterday's copy and passes --
+# so a deletion like a7e36bc, which is why README.md is watched here at all, would
+# read as ok 3/3.
+rm -f /tmp/_ag_pj /tmp/_ag_sc /tmp/_ag_rm
 cp parts.json /tmp/_ag_pj; cp SCORING.md /tmp/_ag_sc; cp README.md /tmp/_ag_rm
 node tools/parts.js >/dev/null 2>&1;      r1=$?
 node tools/gen_scoring.js >/dev/null 2>&1; r2=$?
@@ -196,7 +203,8 @@ ok2=$([ $r2 = 0 ] && cmp -s /tmp/_ag_sc SCORING.md && echo y)
 # left its generator behind.
 ok3=$([ $r3 = 0 ] && cmp -s /tmp/_ag_rm README.md && echo y)
 rm -f /tmp/_ag_pj /tmp/_ag_sc /tmp/_ag_rm
-say "search tools reproduce their output" "$( [ "$ok1$ok2$ok3" = yyy ] && echo "ok  3/3" || echo "FAIL $ok1$ok2$ok3")"
+say "search tools reproduce their output" "$( [ "$ok1$ok2$ok3" = yyy ] && echo "ok  3/3" \
+  || echo "FAIL parts.json=${ok1:-n} SCORING.md=${ok2:-n} README.md=${ok3:-n}")"
 
 # Both reproduction gates above are trumpet-only, and every other repository
 # that ships generator-drawn SVGs had none. knotwork-soundholes draws 13 cut
