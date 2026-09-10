@@ -230,8 +230,17 @@ for repo in bullroarer buzz-disc kalimba slapstick; do
     src="$repo/$(basename "$f")"
     [ -f "$src" ] || continue
     n=$((n+1))
+    # Same fixed-path-round-a-loop hazard the trumpet preview loop above guards
+    # against, and this loop did not: without the rm, a generator that failed on
+    # one source left the PREVIOUS source's preview lying there to be compared,
+    # and the gate counted it ok.
+    rm -f /tmp/_ag2.svg
     python3 $G/make-preview.py "$src" /tmp/_ag2.svg >/dev/null 2>&1
-    cmp -s /tmp/_ag2.svg "$f" || stale=$((stale+1))
+    if [ ! -f /tmp/_ag2.svg ]; then
+      stale=$((stale+1)); echo "  preview would not draw: $(basename "$f")"
+    else
+      cmp -s /tmp/_ag2.svg "$f" || stale=$((stale+1))
+    fi
   done
 done
 rm -f /tmp/_ag2.svg
@@ -244,9 +253,16 @@ say "previews current in the hand-drawn repos" "$( [ $stale = 0 ] && [ $n -gt 0 
 # site was not the file the generator draws. Inert, as it happens: the embed is
 # canvas-only and never reads that field. The next one need not be.
 cd $R/trumpet/parts/bore/concept/swept-curve
+# Leftover and exit status both matter here, for the two reasons the gates above
+# give: a run interrupted before the rm leaves the file behind, and the
+# generator's status was thrown away, so a crash that wrote nothing was compared
+# against that leftover and read as ok.
+rm -f /tmp/_ag_bv.html
 python3 ribbon_view.py --shape=serpentine --embed --out=/tmp/_ag_bv.html \
-    --home=https://gernreich.github.io/trumpet/ >/dev/null 2>&1
-cmp -s /tmp/_ag_bv.html $R/Gernreich.github.io/bore-viewer.html && o=ok || o="FAIL stale"
+    --home=https://gernreich.github.io/trumpet/ >/dev/null 2>&1; rv=$?
+if [ $rv != 0 ] || [ ! -f /tmp/_ag_bv.html ]; then o="FAIL generator exited $rv"
+elif cmp -s /tmp/_ag_bv.html $R/Gernreich.github.io/bore-viewer.html; then o=ok
+else o="FAIL stale"; fi
 rm -f /tmp/_ag_bv.html
 say "published embed matches its generator" "$o"
 
