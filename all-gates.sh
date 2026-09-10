@@ -7,7 +7,8 @@
 # nine chances to read only eight.
 #
 # It ends with "GATES FAILING: n", and that line is the whole point of it.
-# About five minutes, nearly all of it regress.py.
+# About eight minutes: regress.py is most of it, and run_checks.sh another two
+# and a half.
 #
 #     bash all-gates.sh
 #
@@ -410,6 +411,28 @@ print('; '.join(d) if d else 'ok')" 2>/dev/null)
 # error, anything. That is not agreement either.
 [ -n "$o" ] || o="the drift check would not run at all"
 say "Boxes install matches tools/" "$( [ "$o" = ok ] && echo ok || echo "FAIL $o")"
+
+# THE TEN CHECK TRANSCRIPTS in coil/search/checks/ are an INPUT to a published
+# page: gen_readme.js reads the "N checks, N failed" line out of each one and
+# prints the total in README.md, which build.sh then renders into index.html.
+# Nothing regenerated them. run_checks.sh writes them and no gate ran it, so a
+# stale transcript would have gone on publishing a stale number for as long as
+# nobody re-ran it by hand -- the same shape as every other artefact this file
+# had to grow a gate for, in the one place where the artefact is a number in
+# prose rather than a drawing.
+#
+# Regenerating them in place is the check: if any transcript has moved, the tree
+# is dirty and the clean gate below says so. Verified current on 2026-09-10 by
+# diffing all ten against live runs before this line existed.
+#
+# It costs about two and a half minutes, which is why the header above now says
+# eight and not five.
+cd $R/trumpet/parts/bore/concept/walk/no-elbows/coil/search
+o=$(bash tools/run_checks.sh 2>&1); rc=$?
+n=$(echo "$o" | grep -cE "[0-9]+ checks, [0-9]+ failed")
+say "the search transcripts regenerate" "$( [ $rc = 0 ] && [ "$n" -ge 10 ] \
+  && ! echo "$o" | grep -q 'NO SUMMARY' && echo "ok  $n walks" \
+  || echo "FAIL rc=$rc, $n summary line(s)")"
 
 cd $R
 # Counts the repositories as well as the changes: with no repositories at all
