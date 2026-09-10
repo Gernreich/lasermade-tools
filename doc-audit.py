@@ -23,6 +23,7 @@ ap.add_argument("--run-blocks", action="store_true",
                      "any file a block writes is restored afterwards")
 ap.add_argument("--ignore", default="", help="comma-separated filenames named in prose, not shipped")
 ap.add_argument("--ignore-file", default="", help="use this instead of the repository's .doc-audit-ignore")
+ap.add_argument("--generated-file", default="", help="use this instead of the repository's .doc-audit-generated")
 ap.add_argument("--strict-h1", action="store_true",
                 help="require exactly one <h1>; off by default, since a chaptered document may use several")
 a = ap.parse_args()
@@ -141,7 +142,12 @@ if IGNORE_FILE.exists():
 # one path per line, # for comments. Declared rather than inferred on purpose - taking
 # "this folder has its own README" as the signal would let any repository hide files
 # from the check by dropping a README into a directory.
-GENERATED_FILE = ROOT / ".doc-audit-generated"
+# --generated-file, for the same reason --ignore-file exists: a directory-level
+# exemption is a standing claim too, and a blunter one -- six lines exempt 378
+# tracked files in trumpet -- so it needs auditing against a COPY rather than by
+# editing the repository's own file.
+GENERATED_FILE = (pathlib.Path(a.generated_file) if a.generated_file
+                  else ROOT / ".doc-audit-generated")
 generated_dirs = []
 if GENERATED_FILE.exists():
     for ln in GENERATED_FILE.read_text().split("\n"):

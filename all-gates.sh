@@ -64,7 +64,12 @@ say "regress.py, 26 block designs" "$( [[ "$o" == *"all designs pass"* ]] && ech
 # are checked against pinned hashes instead, so a regenerate sweep that
 # overwrites the record of the instrument fails here rather than passing every
 # invariant in silence.
-o=$(~/Software/boxes/venv/bin/python repro.py 2>&1 | tail -1)
+# Exit status AND the success line. Check 27 made these verdicts require the
+# words they are looking for, which closes the "printed nothing" hole but not
+# the "printed the success line and then crashed" one. These four tools were
+# tested and do exit non-zero on failure, so use both.
+ro=$(~/Software/boxes/venv/bin/python repro.py 2>&1); rc=$?
+o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
 say "block sheets reproduce, as-built pinned" "$( [[ "$o" == *reproduce* && "$o" != *failing* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 
 for repo in bullroarer buzz-disc kalimba knotwork-soundholes living-hinge slapstick lasermade-tools Gernreich.github.io trumpet; do
@@ -195,7 +200,8 @@ say "search tools reproduce their output" "$( [ "$ok1$ok2" = yy ] && echo ok || 
 # SVG's own description. .repro in each repository records them now.
 for repo in knotwork-soundholes living-hinge; do
   cd $R/$repo 2>/dev/null || continue
-  o=$(python3 $G/repro-svg.py . 2>&1 | tail -1)
+  ro=$(python3 $G/repro-svg.py . 2>&1); rc=$?
+  o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
   say "$repo SVGs reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 done
 
@@ -259,7 +265,8 @@ say "every entry-point tool still runs" "$( [ $bad = 0 ] && [ $n -ge 6 ] && echo
 # moves underneath it. The names are what a person reads off a sheet at the
 # machine, and for several of these numbers they are the only record.
 cd $G
-o=$(python3 name-check.py 2>&1 | tail -1)
+ro=$(python3 name-check.py 2>&1); rc=$?
+o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
 say "cut-file names match their geometry" "$( [[ "$o" == *"every name agrees"* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 
 # And nothing checked the SUPPRESSIONS. Every .doc-audit-ignore line is a
@@ -267,7 +274,8 @@ say "cut-file names match their geometry" "$( [[ "$o" == *"every name agrees"* ]
 # has stopped suppressing anything is worse than none: an assertion nobody
 # re-reads, in the one list whose whole job is to be trusted.
 cd $G
-o=$(python3 ignore-audit.py 2>&1 | tail -1)
+ro=$(python3 ignore-audit.py 2>&1); rc=$?
+o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
 say "every exemption still suppresses something" "$( [[ "$o" == *", 0 suppressing"* ]] && echo "ok  ${o# }" || echo "FAIL ${o# }")"
 
 cd $R/trumpet/tools

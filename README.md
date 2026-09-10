@@ -260,11 +260,18 @@ anything is worse than none — an assertion nobody re-reads, sitting in the one
 list whose entire job is to be trusted.
 
 It removes one entry at a time from a **copy** and re-runs every document in that
-repository. If nothing starts failing, the entry is dead weight. 51 exemptions
-across seven repositories; two were dead, both in trumpet, which exempted
-`parts/LICENSE` and `tools/LICENSE` from the orphan check. That check matches a
-tracked file by basename as well as by path, so the README's own mention of
-`LICENSE` had always covered every copy.
+repository. If nothing starts failing, the entry is dead weight. Two were dead,
+both in trumpet, which exempted `parts/LICENSE` and `tools/LICENSE` from the
+orphan check. That check matches a tracked file by basename as well as by path,
+so the README's own mention of `LICENSE` had always covered every copy.
+
+It audits **both** suppression files. `.doc-audit-ignore` exempts a name;
+`.doc-audit-generated` exempts a whole directory, and is much the blunter
+instrument — six lines in trumpet exempt 378 tracked files. That second one went
+unaudited when the first was, which is the fault this repository keeps
+rediscovering: fixing an instance without asking where else it lives. 57
+exemptions across seven repositories, and every directory-level one does still
+suppress something.
 
 `doc-audit.py` grew `--ignore-file` for this, so the audit never edits the file
 it is auditing.

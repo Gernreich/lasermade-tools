@@ -26,13 +26,24 @@ AUDIT = os.path.join(HERE, 'doc-audit.py')
 ROOT = os.path.expanduser('~/LaserMadeMusic/GIT')
 
 
-def failures(repo, ignore_file):
+# Both suppression files, not just one. .doc-audit-ignore exempts a NAME and
+# .doc-audit-generated exempts a DIRECTORY -- six of those lines exempt 378
+# tracked files in trumpet, so it is much the blunter instrument and it went
+# unaudited when the named exemptions were audited on 2026-09-11. Fixing one
+# instance of a fault and not asking where else it lives is the fault this
+# repository keeps rediscovering.
+FILES = ['.doc-audit-ignore', '.doc-audit-generated']
+FLAG = {'.doc-audit-ignore': '--ignore-file',
+        '.doc-audit-generated': '--generated-file'}
+
+
+def failures(repo, which, path):
     docs = subprocess.run(['git', '-C', repo, 'ls-files', '*.md'],
                           capture_output=True, text=True).stdout.split()
     n = 0
     for d in docs:
         r = subprocess.run([sys.executable, AUDIT, os.path.basename(d),
-                            '--ignore-file', ignore_file],
+                            FLAG[which], path],
                            cwd=os.path.join(repo, os.path.dirname(d)),
                            capture_output=True, text=True)
         n += r.stdout.count('✗')
@@ -44,25 +55,26 @@ def main():
     with tempfile.TemporaryDirectory() as T:
         for name in sorted(os.listdir(ROOT)):
             repo = os.path.join(ROOT, name)
-            f = os.path.join(repo, '.doc-audit-ignore')
-            if not os.path.isfile(f):
-                continue
-            lines = open(f).read().split('\n')
-            entries = [l.strip() for l in lines
-                       if l.strip() and not l.strip().startswith('#')]
-            total += len(entries)
-            # With the full list a repository must be clean, or "removing this
-            # line changes nothing" cannot mean anything.
-            if failures(repo, f):
-                print(f'  SKIP  {name}: fails with the full list')
-                continue
-            for e in entries:
-                tmp = os.path.join(T, 'ig')
-                open(tmp, 'w').write(
-                    '\n'.join(l for l in lines if l.strip() != e))
-                if failures(repo, tmp) == 0:
-                    print(f'  DEAD  {name}: {e} suppresses nothing')
-                    dead += 1
+            for which in FILES:
+                f = os.path.join(repo, which)
+                if not os.path.isfile(f):
+                    continue
+                lines = open(f).read().split('\n')
+                entries = [l.strip() for l in lines
+                           if l.strip() and not l.strip().startswith('#')]
+                total += len(entries)
+                # With the full list a repository must be clean, or "removing
+                # this line changes nothing" cannot mean anything.
+                if failures(repo, which, f):
+                    print(f'  SKIP  {name} {which}: fails with the full list')
+                    continue
+                for e in entries:
+                    tmp = os.path.join(T, 'list')
+                    open(tmp, 'w').write(
+                        '\n'.join(l for l in lines if l.strip() != e))
+                    if failures(repo, which, tmp) == 0:
+                        print(f'  DEAD  {name} {which}: {e} suppresses nothing')
+                        dead += 1
     print(f'  {total} exemptions, {dead} suppressing nothing')
     return 1 if dead else 0
 
