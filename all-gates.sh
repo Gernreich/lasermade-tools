@@ -255,8 +255,23 @@ say "Boxes install matches tools/" "$( [ "$o" = ok ] && echo ok || echo "FAIL $o
 cd $R
 d=0; for r in */; do d=$((d + $(git -C $r status --porcelain 2>/dev/null | wc -l))); done
 say "every repo clean" "$( [ $d = 0 ] && echo ok || echo "FAIL $d changed")"
-u=0; for r in */; do u=$((u + $(git -C $r rev-list --count @{u}..HEAD 2>/dev/null || echo 0))); done
-say "every repo pushed" "$( [ $u = 0 ] && echo ok || echo "FAIL $u unpushed")"
+# --pre-push skips this one gate, and exists because gating a push on a clean
+# run could otherwise never push: "every repo pushed" fails precisely BECAUSE
+# the push has not happened yet, so
+#
+#     bash all-gates.sh && git push
+#
+# was unsatisfiable the moment there was anything to push. Every other gate here
+# reports a defect; this one reports a state, and it is the only gate whose
+# failure the very next command is meant to fix. Without the flag the honest
+# workflow is:
+#
+#     bash all-gates.sh --pre-push && git push origin main
+#
+if [[ " $* " != *" --pre-push "* ]]; then
+  u=0; for r in */; do u=$((u + $(git -C $r rev-list --count @{u}..HEAD 2>/dev/null || echo 0))); done
+  say "every repo pushed" "$( [ $u = 0 ] && echo ok || echo "FAIL $u unpushed")"
+fi
 
 echo
 # The failing gates are NAMED here, and the script EXITS non-zero.
