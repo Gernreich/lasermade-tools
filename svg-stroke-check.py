@@ -91,12 +91,19 @@ def main():
     if not targets:
         ap.error("no SVG files given")
 
-    n_conf = n_dup = n_files = n_fixed = 0
+    n_conf = n_dup = n_files = n_fixed = n_unread = 0
     for f in targets:
         try:
             text = f.read_text()
         except (OSError, UnicodeDecodeError) as exc:
-            print(f"  {f}: unreadable ({exc})")
+            # AN UNREADABLE FILE IS A FINDING, not a skip. This printed a line
+            # and carried on, and the line reached no counter: the tally and
+            # the exit status are both built from n_conf, so a corrupt SVG left
+            # "0 conflicting" standing and the harness read that as ok. The one
+            # file the tool could not look at is the one it should refuse to
+            # pass.
+            print(f"  UNREADABLE {f}: {exc}")
+            n_unread += 1
             continue
         conflicts, duplicates = scan(text)
         if not conflicts and not duplicates:
@@ -129,10 +136,11 @@ def main():
                 n_fixed += 1
                 print("    fixed — redundant stroke=\"\" attributes removed")
 
-    print(f"\n  {len(targets)} file(s) scanned, {n_files} with findings: "
-          f"{n_conf} conflicting, {n_dup} redundant-but-agreeing"
+    print(f"\n  {len(targets) - n_unread} file(s) scanned, {n_files} with "
+          f"findings: {n_conf} conflicting, {n_dup} redundant-but-agreeing"
+          + (f", {n_unread} unreadable" if n_unread else "")
           + (f", {n_fixed} file(s) rewritten" if args.fix else ""))
-    return 1 if n_conf else 0
+    return 1 if (n_conf or n_unread) else 0
 
 
 if __name__ == "__main__":

@@ -38,20 +38,34 @@ FLAG = {'.doc-audit-ignore': '--ignore-file',
 
 
 def failures(repo, which, path):
+    """(count of failing checks, the documents whose audit did not complete).
+
+    The count was read off the ✗ lines alone, and a doc-audit that CRASHED
+    prints none of those -- its traceback goes to stderr. So a broken audit
+    came back as a clean document, and "removing this line changes nothing"
+    was then measured against nothing at all: every exemption in the repository
+    would have been reported dead, or the full-list run would have been called
+    clean, on the strength of a tool that never ran. doc-audit exits 0 when it
+    passes and 1 when it fails, so anything else, or a status that disagrees
+    with the marks printed, means it did not finish.
+    """
     docs = subprocess.run(['git', '-C', repo, 'ls-files', '*.md'],
                           capture_output=True, text=True).stdout.split()
-    n = 0
+    n, broke = 0, []
     for d in docs:
         r = subprocess.run([sys.executable, AUDIT, os.path.basename(d),
                             FLAG[which], path],
                            cwd=os.path.join(repo, os.path.dirname(d)),
                            capture_output=True, text=True)
-        n += r.stdout.count('✗')
-    return n
+        hits = r.stdout.count('✗')
+        if r.returncode not in (0, 1) or (r.returncode == 1) != (hits > 0):
+            broke.append(d)
+        n += hits
+    return n, broke
 
 
 def main():
-    dead = total = 0
+    dead = total = skipped = broken = 0
     with tempfile.TemporaryDirectory() as T:
         for name in sorted(os.listdir(ROOT)):
             repo = os.path.join(ROOT, name)
@@ -62,21 +76,41 @@ def main():
                 lines = open(f).read().split('\n')
                 entries = [l.strip() for l in lines
                            if l.strip() and not l.strip().startswith('#')]
-                total += len(entries)
                 # With the full list a repository must be clean, or "removing
                 # this line changes nothing" cannot mean anything.
-                if failures(repo, which, f):
-                    print(f'  SKIP  {name} {which}: fails with the full list')
+                #
+                # A SKIP IS A FAILURE, AND ITS ENTRIES WERE NEVER AUDITED. Both
+                # branches below used to `continue` after the whole list had
+                # already been added to `total`, so the closing line counted
+                # exemptions nothing had looked at and the run still exited 0.
+                # A repository whose documents start failing would have taken
+                # its entire exemption list out of this audit, silently, in the
+                # one list whose whole job is to be trusted.
+                n, broke = failures(repo, which, f)
+                if broke:
+                    print(f'  ERROR {name} {which}: doc-audit did not finish on '
+                          + ', '.join(broke[:3])
+                          + (' ...' if len(broke) > 3 else ''))
+                    broken += len(entries)
                     continue
+                if n:
+                    print(f'  SKIP  {name} {which}: {n} check(s) fail with the '
+                          f'full list, so its {len(entries)} exemption(s) go '
+                          f'unaudited')
+                    skipped += len(entries)
+                    continue
+                total += len(entries)
                 for e in entries:
                     tmp = os.path.join(T, 'list')
                     open(tmp, 'w').write(
                         '\n'.join(l for l in lines if l.strip() != e))
-                    if failures(repo, which, tmp) == 0:
+                    if failures(repo, which, tmp)[0] == 0:
                         print(f'  DEAD  {name} {which}: {e} suppresses nothing')
                         dead += 1
-    print(f'  {total} exemptions, {dead} suppressing nothing')
-    return 1 if dead else 0
+    print(f'  {total} exemptions audited, {dead} suppressing nothing'
+          + (f', {skipped} unaudited behind a failing list' if skipped else '')
+          + (f', {broken} behind an audit that crashed' if broken else ''))
+    return 1 if (dead or skipped or broken) else 0
 
 
 if __name__ == '__main__':
