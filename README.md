@@ -201,7 +201,11 @@ that contradicts its list, and a figure with no text alternative all fail.
 - *no doubled words* is case-sensitive: `names names` is caught, `The the` is
   not — and a doubling across a sentence boundary is the common one.
 - *"N things" matches the list under it* only counts **bold-lead** items. A
-  claim over a plain list is not checked at all.
+  claim over a plain list is not checked at all. It also reads any number
+  followed by `checks` as a claim, which in these repositories is nearly always
+  a measurement -- and its quoted-example guard fires only when a backtick
+  abuts the matched words on BOTH sides, so backticking a longer phrase does
+  nothing. Write `115 checks` exactly, or reword.
 
 **What the figure check found.** An inlined SVG carries no `alt`, and
 `md2html.py` was dropping it: the description written in the markdown reached
