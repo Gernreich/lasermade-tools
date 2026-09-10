@@ -330,8 +330,12 @@ run $PYB sizes.py coil_fold2 $T/s.html
 run $PYB piece_render.py --out $T/p.svg
 run $PYB coils.py
 run $PYB $G/test-ladder.py $T/ladder.svg
-# mcwalk.py searches walks and has no bounded run, so it is asked only to import
-run $PYB -c "import sys; sys.path.insert(0,'.'); import mcwalk"
+# mcwalk.py was asked only to IMPORT, on the grounds that it "searches walks and
+# has no bounded run". It does neither: there is no search anywhere in the file,
+# and it takes a walk and writes one page, exactly like the tools around it.
+# Importing proves the module parses and nothing else -- build() and main() went
+# untested behind a claim about the tool that was not true of it.
+run $PYB mcwalk.py "N N3 U3 W5 N10 E5 S8 W3 S3 N12 N" --out $T/w.html
 # bore_render.py joins them on 2026-09-10. It could not be run without changing
 # the tree -- a fixed output name in the current directory, no --out -- which is
 # exactly why it had no line here. It has one now, so it does.
