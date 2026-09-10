@@ -54,7 +54,7 @@ done
 
 cd $R/trumpet/tools
 o=$(~/Software/boxes/venv/bin/python regress.py 2>&1 | tail -1)
-say "regress.py, 26 block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
+say "regress.py, 27 block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
 
 # regress.py MEASURES the committed sheets; it never redraws them. Every
 # invariant can hold while the SVG on disk is one the current code would no
@@ -229,6 +229,20 @@ for repo in knotwork-soundholes living-hinge; do
   say "$repo SVGs reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 done
 
+# And trumpet's OTHER two part directories, which had no reproduction gate of
+# any kind. The block bores had one, the ribbon sheets had one, and the bell and
+# the mouthpiece -- seven shipped SVGs from six generators -- had none: the only
+# thing that touched them was the previews gate, and that compares a preview
+# with a cut file rather than a cut file with the code. Scoped to the two
+# directories rather than run over trumpet whole, because the bore tree holds
+# hundreds of sheets that the two byte gates above already account for.
+for d in parts/bell parts/mouthpiece; do
+  cd $R/trumpet
+  ro=$(python3 $G/repro-svg.py $d 2>&1); rc=$?
+  o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
+  say "${d#parts/} SVGs reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
+done
+
 # The previews in the four hand-drawn repositories are made by make-preview.py
 # and were current with it, unwatched, the whole time. trumpet's are gated and
 # these were not, for no reason other than that nobody had looked.
@@ -298,6 +312,40 @@ run $PYB -c "import sys; sys.path.insert(0,'.'); import mcwalk"
 rm -rf $T
 say "every entry-point tool still runs" "$( [ $bad = 0 ] && [ $n -ge 6 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
 
+# THE BELL AND THE MOUTHPIECE. The comment above names six tools that were run
+# by nothing and stops there; twelve more, every one under parts/, were in the
+# same state. Seven of their shipped SVGs are now claimed by parts/bell/.repro
+# and parts/mouthpiece/.repro below. These five write nothing that ships, so no
+# manifest can reach them, and they are the ones that had never been run at all.
+#
+# Two of them REWRITE THE SHEET THEY ARE GIVEN, in place, so they are handed a
+# copy in $T and never the tracked file. number_rings.py is asked for
+# --order=document because it refuses to guess the order on a sheet that could
+# have been hand-nested, which is the right refusal and not a failure.
+#
+# ramp_bell.py is expected to REFUSE, and that is what is checked. Its ramp
+# belongs to a nested sheet, the one that needed it was deleted on 2026-08-25,
+# and every sheet here is a single black stage -- so the tool has no valid input
+# left in the repository. It still has to parse the sheet, compute the ramp and
+# decline to write, which is what this catches if any of that breaks.
+cd $R/trumpet/parts
+T=$(mktemp -d); bad=0; n=0
+BS=bell/cut-files/bell-round10-153mm-17rings-x3-rim86-cut-files.svg
+MS=mouthpiece/cut-files/mouthpiece-bore10-trumpet-parts-cut-files.svg
+cp $BS $T/sheet.svg
+run python3 bell/bell.py 20 --out=$T/b.svg
+run python3 bell/verify_bell.py $BS
+run python3 bell/number_rings.py $T/sheet.svg --order=document
+run python3 mouthpiece/mouthpiece.py $T/mp.svg
+run python3 mouthpiece/mouthpiece-cup.py $T/mc.svg
+run python3 part-view.py $BS $T/t1.html
+run python3 part-view.py $MS $T/t2.html
+n=$((n+1))
+python3 bell/ramp_bell.py $T/sheet.svg 2>&1 | grep -q 'ramp not applied' \
+  || { bad=$((bad+1)); echo "  FAILS: ramp_bell.py no longer refuses a flat sheet"; }
+rm -rf $T
+say "every bell and mouthpiece tool still runs" "$( [ $bad = 0 ] && [ $n -ge 8 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
+
 # Nothing reads the NAMES. Every gate above compares an artefact with the code
 # that draws it, and the reproduction gate is handed the stem on the command
 # line -- so a design called -1180mm reproduces perfectly whatever its
@@ -319,12 +367,21 @@ o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
 say "every exemption still suppresses something" "$( [[ "$o" == *", 0 suppressing"* ]] && echo "ok  ${o# }" || echo "FAIL ${o# }")"
 
 cd $R/trumpet/tools
+# Asks BORE_SPLIT rather than re-implementing the comparison, and so looks at
+# the checkout that actually draws. This had ~/Software/boxes written into it
+# while bore_split.py resolves SNAKEBOX_BOXES first and falls back to a search,
+# so with that variable set the gate and the writer were reading two different
+# installs -- a gate that agrees with itself and not with the thing it watches.
+# One copy of the rule now, in the file that depends on it.
 o=$(python3 -c "
-import ast,pathlib,os,sys
-bad=[f for f in ('snakebox.py','snakeboxvar.py')
-     if ast.dump(ast.parse(pathlib.Path(f).read_text()))
-     != ast.dump(ast.parse(pathlib.Path(os.path.expanduser('~/Software/boxes/boxes/generators/'+f)).read_text()))]
-print(','.join(bad) if bad else 'ok')" 2>&1)
+import sys
+sys.path.insert(0, '.')
+import bore_split as B
+d = B._installed_matches_source()
+print('; '.join(d) if d else 'ok')" 2>/dev/null)
+# Empty means the import died before it could answer -- no checkout, a syntax
+# error, anything. That is not agreement either.
+[ -n "$o" ] || o="the drift check would not run at all"
 say "Boxes install matches tools/" "$( [ "$o" = ok ] && echo ok || echo "FAIL $o")"
 
 cd $R

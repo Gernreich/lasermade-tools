@@ -224,7 +224,7 @@ Runs every gate in every repository and prints one tally.
     ...
     GATES FAILING: 0
 
-Fourteen ribbon bore runs, `regress.py` over 26 block designs, `doc-audit` over
+Fourteen ribbon bore runs, `regress.py` over 27 block designs, `doc-audit` over
 every page in nine repositories, `svg-stroke-check` over every SVG, and
 `flat-part-check` over the flat parts -- then four questions about what is
 committed, and finally whether every repository is clean and pushed.
