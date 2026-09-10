@@ -283,7 +283,15 @@ prose = re.sub(r"https?://\S+", "", prose)
 # not, so a document that quotes `names names` as an EXAMPLE of a doubled word
 # was reported as containing one. Found by this file's own audit section doing
 # exactly that on 2026-09-09.
-prose = re.sub(r"`[^`]*`", "", prose)
+# A NON-SPACE placeholder, and it took three goes to get right. Removing the
+# span outright made neighbours of words that were never adjacent -- "and
+# `-w80` and" read as a doubled "and". Substituting a space did not help,
+# because the doubled-word pattern spans any run of whitespace and a line like
+# "`a` and `b` and `c` all work" still collapsed to "and   and". Only a
+# character that is neither word nor space breaks the pair. All three states of
+# this were introduced and caught on 2026-09-09, by the check itself, on prose
+# written to document something else.
+prose = re.sub(r"`[^`]*`", "\x00", prose)
 dbl = [m.group(1) for m in re.finditer(r"\b([A-Za-z]{3,})\s+\1\b", prose)]
 ok("no doubled words", not dbl, str(dbl) if dbl else "")
 odd = [i + 1 for i, l in enumerate(prose.split("\n")) if l.count("`") % 2]
