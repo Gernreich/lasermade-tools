@@ -179,6 +179,28 @@ cmp -s /tmp/_ag_bv.html $R/Gernreich.github.io/bore-viewer.html && o=ok || o="FA
 rm -f /tmp/_ag_bv.html
 say "published embed matches its generator" "$o"
 
+# Every gate above checks an ARTEFACT. A tool that ships no artefact is checked
+# by nothing at all, and five of them were: coils.py, mcwalk.py, nest.py,
+# piece_render.py and sizes.py in trumpet, test-ladder.py here. sizes.py had
+# been raising AttributeError on every run since 4cbf437 renamed the function it
+# calls -- five days, truncating its own output file each time, and nothing said
+# so. This runs each entry point once and asks only that it exit 0. That is a
+# low bar and it is the bar that was missing; the tools with shipped output are
+# held to byte-identity elsewhere.
+cd $R/trumpet/tools
+PYB=~/Software/boxes/venv/bin/python
+T=$(mktemp -d); bad=0; n=0
+run() { n=$((n+1)); "$@" >/dev/null 2>&1 || { bad=$((bad+1)); echo "  FAILS: $2"; }; }
+run $PYB nest.py "N N10 U2 W2 S7 U2 E4 N9 W2 D2 N4 N" --out $T/n.svg
+run $PYB sizes.py coil_fold2 $T/s.html
+run $PYB piece_render.py --out $T/p.svg
+run $PYB coils.py
+run $PYB $G/test-ladder.py $T/ladder.svg
+# mcwalk.py searches walks and has no bounded run, so it is asked only to import
+run $PYB -c "import sys; sys.path.insert(0,'.'); import mcwalk"
+rm -rf $T
+say "every entry-point tool still runs" "$( [ $bad = 0 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
+
 cd $R/trumpet/tools
 o=$(python3 -c "
 import ast,pathlib,os,sys
