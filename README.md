@@ -251,6 +251,31 @@ running them one at a time and not reading one of the answers -- a page
 regenerated and its audit then run in a different repository, a tally printed
 and pushed over. Nine gates run by hand are nine chances to read only eight.
 
+### `name-check.py` — does a cut file's name agree with the geometry inside it?
+
+`ribbon-volute-bore10-45deg-R94-step60-1180mm` asserts a section, a facet angle,
+a radius, a step and a centreline. Every other gate here compares an artefact
+with the code that draws it; none of them reads the name. The reproduction gate
+is handed the stem on the command line, so a design called `-1180mm` reproduces
+perfectly whatever its centreline actually is, and a folder called
+`R62-pitch46` keeps that name after the pitch moves underneath it.
+
+That matters because for several of these numbers the name is the only record,
+and it is what a person reads off a sheet at the machine to know which bore they
+are holding.
+
+It runs each design and compares nine kinds of claim — bore, facet angle,
+centreline, single radius, radius span, pitch, step, lobes, shape — against what
+the generator prints. All ten designs agree: `R72` against R71.754, `R35to113`
+against R34.662 and R112.903, `1180mm` against 1179.9.
+
+Designs are read from `all-gates.sh`'s own `rr` lines rather than listed twice,
+and it takes a path so that table can be a copy. That is not a convenience: the
+first attempt at proving the check can fail edited the live `all-gates.sh` in
+place, once per claim type, and was interrupted mid-loop with five stems
+corrupted. Restored from git, and the tool changed so that demonstrating it
+works cannot damage what it checks.
+
 ### `repro-svg.py` — does a repository's shipped SVG still come out of its generator?
 
 Both of trumpet's reproduction gates are trumpet-only, and every other
