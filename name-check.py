@@ -91,12 +91,18 @@ def main(path=None):
                 g = re.search(r'(\d+) half-circles', desc)
                 claims.append(('lobes', int(m[1]), int(g[1]) if g else None))
             claims.append(('shape', stem.split('-')[1], shape))
+            wrong = 0
             for what, said, got in claims:
                 if said != got:
                     print(f'  FAIL  {stem}: name says {what} {said}, '
                           f'the generator says {got}')
                     bad += 1
-            print(f'  ok    {stem[:56]:56} {len(claims)} claims')
+                    wrong += 1
+            # The ok line was printed unconditionally, so a design that had just
+            # reported failures got an "ok" of its own underneath them. The
+            # tally at the end was right; the line a reader stops at was not.
+            print(f'  ok    {stem[:56]:56} {len(claims)} claims' if not wrong
+                  else f'  ----  {stem[:56]:56} {wrong} of {len(claims)} wrong')
     print(f'\n  {len(rows)} designs, {bad} name(s) disagreeing'
           if bad else f'\n  {len(rows)} designs, every name agrees')
     return 1 if bad else 0
