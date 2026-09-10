@@ -205,9 +205,21 @@ unresolved = sorted({u for u in link_targets(src)
 ok("every link and image path resolves from the document", not unresolved,
    str(unresolved) if unresolved else "")
 
+# ONLY THE GIT CALL IS ALLOWED TO FAIL QUIETLY. This whole block sat inside one
+# `except Exception`, and its handler appends to `notes` -- which is the list of
+# PASSES. So any error at all in the seventy lines below, from any cause, was
+# recorded as a passing check that blamed the absence of a repository, and the
+# three checks it guards simply stopped being counted. Injecting an unrelated
+# error took a real run from "13 passed, 0 failed" to "11 passed, 0 failed",
+# still exit 0. Nothing pins the number of checks, so nothing could notice.
 try:
-    tracked = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True,
-                             check=True).stdout.split()
+    tracked = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True,
+                             text=True, check=True).stdout.split()
+except (subprocess.CalledProcessError, OSError) as _e:
+    tracked = None
+    notes.append("  – not a git repo, skipped the orphan check")
+
+if tracked is not None:
     # "Somewhere" is the whole repository, not just the document being audited: a repo may
     # carry several writeups plus a README, and a file named in any of them is documented.
     # Pooling them stops each document reporting its siblings' files as orphans.
@@ -277,8 +289,6 @@ try:
     unshown = sorted(n for n in named_here if n not in shown and n not in prose_only)
     ok("every image is displayed, not just named", not unshown,
        str(unshown) if unshown else "")
-except Exception:
-    notes.append("  – not a git repo, skipped the orphan check")
 
 # ── 2. in-page anchors ───────────────────────────────────────────────────────
 def slug(t):
