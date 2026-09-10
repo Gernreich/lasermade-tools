@@ -122,12 +122,32 @@ rr volute/ribbon-volute-bore10-45deg-R94-step60 ribbon-volute-bore10-45deg-R94-s
 rm -rf $T
 say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && echo "ok  $same/40" || echo "FAIL $bad differ")"
 
-stale=0
-for f in */*/cut-files/*.svg; do
-  python3 $G/make-preview.py "$f" /tmp/_ag.svg >/dev/null 2>&1
-  cmp -s /tmp/_ag.svg "previews/$(basename "$f")" || stale=$((stale+1))
+# Walks EVERY previews/ directory in the repository, not just this one. It
+# checked swept-curve/previews and nothing else, so parts/bell/previews,
+# tools/coupon-16mm/previews and a stray single preview under the frozen 1.5t
+# coil -- three files -- were watched by nothing. All three were current; that
+# they were is luck rather than a result, since nothing would have said
+# otherwise. Counted rather than hardcoded at 40, because a number written into
+# a gate stops being a measurement the moment a file is added.
+cd $R/trumpet
+stale=0; seen=0
+for pv in $(find . -type d -name previews -not -path './.git/*'); do
+  d=$(dirname "$pv")
+  for f in "$pv"/*.svg; do
+    [ -e "$f" ] || continue
+    b=$(basename "$f")
+    src=""
+    for cand in "$d/$b" "$d/cut-files/$b" "$d"/*/cut-files/"$b" \
+                "$d"/*/*/cut-files/"$b"; do
+      [ -f "$cand" ] && { src="$cand"; break; }
+    done
+    seen=$((seen+1))
+    [ -n "$src" ] || { stale=$((stale+1)); echo "  preview with no cut file: $b"; continue; }
+    python3 $G/make-preview.py "$src" /tmp/_ag.svg >/dev/null 2>&1
+    cmp -s /tmp/_ag.svg "$f" || stale=$((stale+1))
+  done
 done; rm -f /tmp/_ag.svg
-say "previews current with their cut files" "$( [ $stale = 0 ] && echo "ok  40/40" || echo "FAIL $stale stale")"
+say "previews current with their cut files" "$( [ $stale = 0 ] && echo "ok  $seen/$seen" || echo "FAIL $stale of $seen stale")"
 
 cd $R/trumpet/parts/bore/concept/walk/no-elbows/coil/search
 cp parts.json /tmp/_ag_pj; cp SCORING.md /tmp/_ag_sc
@@ -200,6 +220,16 @@ run $PYB $G/test-ladder.py $T/ladder.svg
 run $PYB -c "import sys; sys.path.insert(0,'.'); import mcwalk"
 rm -rf $T
 say "every entry-point tool still runs" "$( [ $bad = 0 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
+
+# Nothing reads the NAMES. Every gate above compares an artefact with the code
+# that draws it, and the reproduction gate is handed the stem on the command
+# line -- so a design called -1180mm reproduces perfectly whatever its
+# centreline is, and a folder called R62-pitch46 keeps that name after the pitch
+# moves underneath it. The names are what a person reads off a sheet at the
+# machine, and for several of these numbers they are the only record.
+cd $G
+o=$(python3 name-check.py 2>&1 | tail -1)
+say "cut-file names match their geometry" "$( [[ "$o" == *disagree* ]] && echo "FAIL ${o# }" || echo "ok  ${o# }")"
 
 cd $R/trumpet/tools
 o=$(python3 -c "
