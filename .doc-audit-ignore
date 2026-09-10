@@ -48,3 +48,9 @@ regress.py
 # three repositories.
 
 README.html
+
+# The Boxes.py generator all-gates.sh compares against its installed copy. It
+# lives in trumpet/tools and is installed into the Boxes checkout; neither is
+# here.
+
+snakeboxvar.py

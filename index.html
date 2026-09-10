@@ -135,7 +135,14 @@ pre,.tw{break-inside:avoid}h1{break-after:avoid}}
 <pre><code>bash all-gates.sh
 ...
 GATES FAILING: 0</code></pre>
-<p>Fourteen ribbon bore runs, <code>regress.py</code> over 26 block designs, <code>doc-audit</code> over every page in nine repositories, <code>svg-stroke-check</code> over every SVG, and <code>flat-part-check</code> over the flat parts -- then whether every repository is clean and pushed. Five minutes, nearly all of it <code>regress.py</code>.</p>
+<p>Fourteen ribbon bore runs, <code>regress.py</code> over 26 block designs, <code>doc-audit</code> over every page in nine repositories, <code>svg-stroke-check</code> over every SVG, and <code>flat-part-check</code> over the flat parts -- then four questions about what is committed, and finally whether every repository is clean and pushed.</p>
+<p><strong>The four are the ones a gate usually forgets</strong>, because they compare the code with what shipped rather than running the code at all:</p>
+<pre><code>ribbon sheets reproduce byte-identical    40/40
+previews current with their cut files     40/40
+search tools reproduce their output
+Boxes install matches tools/</code></pre>
+<p>A harness that runs the generators and never diffs them against the artefacts cannot tell you the sheets on disk are the sheets the code draws, which is this project's entire claim. The last of the four matters most quietly: <code>bore_split</code> shells out to the INSTALLED copy of <code>snakeboxvar.py</code>, so editing the one in <code>tools/</code> and re-running changes nothing, silently.</p>
+<p>About six minutes, most of it <code>regress.py</code>.</p>
 <p><strong>It exists because of a failure of reading, not of checking.</strong> Every one of those gates already existed and every one was passing; what kept going wrong was running them one at a time and not reading one of the answers -- a page regenerated and its audit then run in a different repository, a tally printed and pushed over. Nine gates run by hand are nine chances to read only eight.</p>
 <p><strong>Where it has been wrong.</strong> Its first run printed nothing at all for <code>lasermade-tools</code>, <code>Gernreich.github.io</code> and <code>trumpet</code> -- the three most-edited repositories -- because it paired <code>README.md</code> with <code>README.html</code> and those build <code>index.html</code>. Nine repositories, six lines, and no complaint. A filter that matches nothing reports a clean run over no files, which <code>check.py</code> had already learned once and this then repeated.</p>
 <h2 id="svg-stroke-checkpy"><code>svg-stroke-check.py</code></h2>

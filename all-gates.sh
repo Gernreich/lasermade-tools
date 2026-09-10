@@ -61,6 +61,59 @@ say "svg-stroke-check, every repo" "$( [[ "$o" == *"0 conflicting"* ]] && echo "
 o=$(python3 $G/flat-part-check.py --dir $R/bullroarer --dir $R/buzz-disc 2>&1 | tail -1)
 say "flat-part-check, flat parts" "$( [[ "$o" == *"0 failed"* ]] && echo "ok  $o" || echo "FAIL $o")"
 
+# --- what the committed artefacts claim about themselves ---------------------
+# The four below were verified by hand all through 2026-09-09 and by nothing
+# else. A gate that runs the generators but never compares them with what ships
+# cannot tell you the sheets on disk are the sheets the code draws, which is
+# this project's whole claim.
+
+cd $R/trumpet/parts/bore/concept/swept-curve
+T=$(mktemp -d); same=0; bad=0
+rr () { d=$1; stem=$2; shift 2
+  for mode in "" "--port"; do
+    suf=""; [ -n "$mode" ] && suf="-ported"
+    python3 ribbon_bore.py "$@" $mode --out=$T/$stem$suf.svg >/dev/null 2>&1
+    for part in cheek-x2 panels; do
+      cmp -s "$d/cut-files/$stem$suf-$part-cut-files.svg" \
+             "$T/$stem$suf-$part-cut-files.svg" && same=$((same+1)) || bad=$((bad+1))
+    done
+  done; }
+rr coupon/ribbon-coupon-bore10-30deg-R30 ribbon-coupon-bore10-30deg-R30-180turn --shape=coupon
+rr serpentine/ribbon-serpentine-bore10-30deg-3lobes-R72 ribbon-serpentine-bore10-30deg-3lobes-R72-1000mm --shape=serpentine
+rr opposed/ribbon-opposed-bore10-30deg-3lobes-R64 ribbon-opposed-bore10-30deg-3lobes-R64-1000mm --shape=opposed
+rr wave/ribbon-wave-bore10-45deg-5arc ribbon-wave-bore10-45deg-5arc-836mm --shape=wave
+rr spiral/ribbon-spiral-bore10-45deg-R35to113 ribbon-spiral-bore10-45deg-R35to113-1000mm --shape=spiral
+rr spiral/ribbon-spiral-bore10-45deg-R36to144 ribbon-spiral-bore10-45deg-R36to144-1767mm --shape=spiral --spiral-facets=25 --spiral-ri=36.5 --spiral-ro=144
+rr spiral/ribbon-spiral-bore10-45deg-R74to144 ribbon-spiral-bore10-45deg-R74to144-1458mm --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144
+rr dspiral/ribbon-dspiral-bore10-30deg-R62-pitch46 ribbon-dspiral-bore10-30deg-R62-pitch46-1506mm --shape=dspiral
+rr dspiral/ribbon-dspiral-bore10-30deg-R62-pitch46-halftest ribbon-dspiral-bore10-30deg-R62-pitch46-half-196mm --shape=dspiral --ds-half --ds-facets=2
+rr volute/ribbon-volute-bore10-45deg-R94-step60 ribbon-volute-bore10-45deg-R94-step60-1180mm --shape=volute
+rm -rf $T
+say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && echo "ok  $same/40" || echo "FAIL $bad differ")"
+
+stale=0
+for f in */*/cut-files/*.svg; do
+  python3 $G/make-preview.py "$f" /tmp/_ag.svg >/dev/null 2>&1
+  cmp -s /tmp/_ag.svg "previews/$(basename "$f")" || stale=$((stale+1))
+done; rm -f /tmp/_ag.svg
+say "previews current with their cut files" "$( [ $stale = 0 ] && echo "ok  40/40" || echo "FAIL $stale stale")"
+
+cd $R/trumpet/parts/bore/concept/walk/no-elbows/coil/search
+cp parts.json /tmp/_ag_pj; cp SCORING.md /tmp/_ag_sc
+node tools/parts.js >/dev/null 2>&1; node tools/gen_scoring.js >/dev/null 2>&1
+ok1=$(cmp -s /tmp/_ag_pj parts.json && echo y); ok2=$(cmp -s /tmp/_ag_sc SCORING.md && echo y)
+rm -f /tmp/_ag_pj /tmp/_ag_sc
+say "search tools reproduce their output" "$( [ "$ok1$ok2" = yy ] && echo ok || echo "FAIL")"
+
+cd $R/trumpet/tools
+o=$(python3 -c "
+import ast,pathlib,os,sys
+bad=[f for f in ('snakebox.py','snakeboxvar.py')
+     if ast.dump(ast.parse(pathlib.Path(f).read_text()))
+     != ast.dump(ast.parse(pathlib.Path(os.path.expanduser('~/Software/boxes/boxes/generators/'+f)).read_text()))]
+print(','.join(bad) if bad else 'ok')" 2>&1)
+say "Boxes install matches tools/" "$( [ "$o" = ok ] && echo ok || echo "FAIL $o")"
+
 cd $R
 d=0; for r in */; do d=$((d + $(git -C $r status --porcelain 2>/dev/null | wc -l))); done
 say "every repo clean" "$( [ $d = 0 ] && echo ok || echo "FAIL $d changed")"

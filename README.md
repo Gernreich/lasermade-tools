@@ -226,8 +226,24 @@ Runs every gate in every repository and prints one tally.
 
 Fourteen ribbon bore runs, `regress.py` over 26 block designs, `doc-audit` over
 every page in nine repositories, `svg-stroke-check` over every SVG, and
-`flat-part-check` over the flat parts -- then whether every repository is clean
-and pushed. Five minutes, nearly all of it `regress.py`.
+`flat-part-check` over the flat parts -- then four questions about what is
+committed, and finally whether every repository is clean and pushed.
+
+**The four are the ones a gate usually forgets**, because they compare the code
+with what shipped rather than running the code at all:
+
+    ribbon sheets reproduce byte-identical    40/40
+    previews current with their cut files     40/40
+    search tools reproduce their output
+    Boxes install matches tools/
+
+A harness that runs the generators and never diffs them against the artefacts
+cannot tell you the sheets on disk are the sheets the code draws, which is this
+project's entire claim. The last of the four matters most quietly: `bore_split`
+shells out to the INSTALLED copy of `snakeboxvar.py`, so editing the one in
+`tools/` and re-running changes nothing, silently.
+
+About six minutes, most of it `regress.py`.
 
 **It exists because of a failure of reading, not of checking.** Every one of
 those gates already existed and every one was passing; what kept going wrong was
