@@ -147,16 +147,31 @@ for pv in $(find . -type d -name previews -not -path './.git/*'); do
     done
     seen=$((seen+1))
     [ -n "$src" ] || { stale=$((stale+1)); echo "  preview with no cut file: $b"; continue; }
+    # Remove the target FIRST. This is a fixed path reused round a loop, so a
+    # generator that failed on one file left the previous file's preview lying
+    # there to be compared against -- the wrong two things, silently.
+    rm -f /tmp/_ag.svg
     python3 $G/make-preview.py "$src" /tmp/_ag.svg >/dev/null 2>&1
-    cmp -s /tmp/_ag.svg "$f" || stale=$((stale+1))
+    if [ ! -f /tmp/_ag.svg ]; then
+      stale=$((stale+1)); echo "  preview would not draw: $b"
+    else
+      cmp -s /tmp/_ag.svg "$f" || stale=$((stale+1))
+    fi
   done
 done; rm -f /tmp/_ag.svg
 say "previews current with their cut files" "$( [ $stale = 0 ] && echo "ok  $seen/$seen" || echo "FAIL $stale of $seen stale")"
 
 cd $R/trumpet/parts/bore/concept/walk/no-elbows/coil/search
+# The generators' EXIT STATUS is checked, not just the files afterwards. Until
+# 2026-09-11 this ran them with output discarded and then compared each file
+# with its own backup -- so a script that crashed left the file untouched and
+# the comparison passed. The gate could not tell "reproduced correctly" from
+# "did not run at all", which is the one distinction it exists to make.
 cp parts.json /tmp/_ag_pj; cp SCORING.md /tmp/_ag_sc
-node tools/parts.js >/dev/null 2>&1; node tools/gen_scoring.js >/dev/null 2>&1
-ok1=$(cmp -s /tmp/_ag_pj parts.json && echo y); ok2=$(cmp -s /tmp/_ag_sc SCORING.md && echo y)
+node tools/parts.js >/dev/null 2>&1;      r1=$?
+node tools/gen_scoring.js >/dev/null 2>&1; r2=$?
+ok1=$([ $r1 = 0 ] && cmp -s /tmp/_ag_pj parts.json && echo y)
+ok2=$([ $r2 = 0 ] && cmp -s /tmp/_ag_sc SCORING.md && echo y)
 rm -f /tmp/_ag_pj /tmp/_ag_sc
 say "search tools reproduce their output" "$( [ "$ok1$ok2" = yy ] && echo ok || echo "FAIL")"
 
