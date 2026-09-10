@@ -60,6 +60,7 @@ WELD_TOL = 0.05                    # mm
 # always the cut that frees the part. Violet means skip.
 ORDER = ["#0000ff", "#00ff00", "#ff8000", "#00ffff", "#000000"]
 SKIP = "#8000ff"
+ENGRAVE = "#0000ff"   # marks the part, never cuts it
 NAMED = {"black": "#000000", "lime": "#00ff00", "blue": "#0000ff",
          "cyan": "#00ffff", "aqua": "#00ffff", "red": "#ff0000",
          "white": "#ffffff", "green": "#008000", "none": "none"}
@@ -325,11 +326,23 @@ def shape_subpaths(el):
     return []
 
 
-def ink(el):
-    """The stroke colour this element cuts in, or None if it is not a cut."""
+def ink(el, inherited=None):
+    """The stroke colour this element cuts in, or None if it is not a cut.
+
+    STROKE IS INHERITED. An element with no stroke of its own takes its
+    ancestors', which is ordinary SVG and what most generators here emit: a
+    <g stroke="#000000"> around a run of bare <path d="...">. Reading only the
+    element's own attributes made every such path "not a cut", so a file full
+    of geometry came out as "no stroked geometry" and stopped after two checks.
+    Found 2026-09-09 by running this over the bore cut files, which is a thing
+    nobody had done: 69 shipped files across knotwork-soundholes, living-hinge
+    and the ribbon bores were getting 2 checks each where bullroarer got 9.
+    The count was the tell -- 13 files and 26 checks against 5 files and 45.
+    """
     style = el.get("style") or ""
     m = re.search(r"(?<![-\w])stroke\s*:\s*([^;]+)", style)
-    c = norm(m.group(1) if m else el.get("stroke"))
+    own = m.group(1) if m else el.get("stroke")
+    c = norm(own if own is not None else inherited)
     if c in ("none", "", None):
         # a filled shape with no stroke still cuts on some importers, but in these
         # repositories every cut is stroked; treat it as artwork, not geometry
@@ -342,16 +355,21 @@ def collect(root):
     out = []
     scale = user_scale(root)
 
-    def walk(el, m):
+    def walk(el, m, stroke=None):
         m = mul(m, parse_transform(el.get("transform")))
+        style = el.get("style") or ""
+        sm = re.search(r"(?<![-\w])stroke\s*:\s*([^;]+)", style)
+        here = sm.group(1) if sm else el.get("stroke")
+        if here is not None:
+            stroke = here
         for kid in el:
             tag = kid.tag.split("}")[-1]
             if tag in ("g", "a", "svg"):
-                walk(kid, m)
+                walk(kid, m, stroke)
                 continue
             if tag in ("defs", "metadata", "title", "desc"):
                 continue
-            c = ink(kid)
+            c = ink(kid, stroke)
             if c is None:
                 continue
             km = mul(m, parse_transform(kid.get("transform")))
@@ -507,6 +525,15 @@ def check(path, bed, min_edge, min_hole, weld=WELD_TOL):
 
     cuts = [(c, p, cl) for c, p, cl in geo if c != SKIP]
     inks = sorted({c for c, _, _ in cuts})
+    # Blue ENGRAVES -- line 59 says so and the palette starts with it -- and an
+    # engraved line is not a cut: it is meant to be open, it frees nothing, and
+    # it is not a hole. It stays in `cuts` so the palette check still sees it,
+    # and comes out of the geometry below. Nothing here had ever met a file
+    # with an engrave layer until the stroke-inheritance fix let this tool read
+    # the knotwork rosettes, which draw <g id="cut"> and <g id="engrave">: 25
+    # engraved polylines were reported as open cut paths and 15 as holes
+    # outside the outline.
+    cuts = [(c, p, cl) for c, p, cl in cuts if c != ENGRAVE]
     strange = [c for c in inks if c not in ORDER]
     row("ink is in the palette", not strange,
         ", ".join(inks) + (f"   unknown: {', '.join(strange)}" if strange else ""))
