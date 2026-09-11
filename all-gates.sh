@@ -237,11 +237,12 @@ done
 # with a cut file rather than a cut file with the code. Scoped to the two
 # directories rather than run over trumpet whole, because the bore tree holds
 # hundreds of sheets that the two byte gates above already account for.
-for d in parts/bell parts/mouthpiece; do
+for d in parts/bell parts/mouthpiece \
+         parts/bore/concept/walk/no-elbows/coil/search; do
   cd $R/trumpet
   ro=$(python3 $G/repro-svg.py $d 2>&1); rc=$?
   o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
-  say "${d#parts/} drawings and pages reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
+  say "${d##*/} drawings and pages reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 done
 
 # The previews in the four hand-drawn repositories are made by make-preview.py
