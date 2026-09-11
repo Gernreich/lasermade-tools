@@ -412,6 +412,22 @@ print('; '.join(d) if d else 'ok')" 2>/dev/null)
 [ -n "$o" ] || o="the drift check would not run at all"
 say "Boxes install matches tools/" "$( [ "$o" = ok ] && echo ok || echo "FAIL $o")"
 
+# THE CORPUS IS SUPPOSED TO BE IN STANDARD FORM -- north, counter-clockwise,
+# whole periods nearest the common target, one block in and one out -- and that
+# is the whole basis on which two coils in it are compared. Nothing checked it.
+# standardise.js --write is idempotent on a standard corpus, so running it and
+# requiring the tree to stay clean IS the check, the same way the transcripts
+# below are checked by regenerating them. Three seconds.
+#
+# A walk that had drifted out of standard form would not be wrong, exactly: it
+# would still cut. It would just no longer be comparable with the nine beside it,
+# which is the one thing the whole search directory is for.
+cd $R/trumpet/parts/bore/concept/walk/no-elbows/coil/search
+o=$(node tools/standardise.js --write 2>&1); rc=$?
+n=$(echo "$o" | grep -oE '^[0-9]+ standardised' | grep -oE '^[0-9]+')
+say "the coil corpus is in standard form" "$( [ $rc = 0 ] && [ "${n:-0}" -ge 10 ] \
+  && echo "ok  $n walks" || echo "FAIL rc=$rc, ${n:-no} walk(s) read")"
+
 # THE TEN CHECK TRANSCRIPTS in coil/search/checks/ are an INPUT to a published
 # page: gen_readme.js reads the "N checks, N failed" line out of each one and
 # prints the total in README.md, which build.sh then renders into index.html.
