@@ -5,8 +5,16 @@ import re
 import sys
 import pathlib
 
+# A MISSING ARGUMENT CAME BACK AS AN IndexError. This is the most-used tool in
+# the repository -- every published page in nine repositories goes through it --
+# and run bare it answered with a stack trace on sys.argv[1] rather than saying
+# what it takes.
+if len(sys.argv) < 3:
+    sys.exit("usage: md2html.py SOURCE.md OUTPUT.html")
 src = pathlib.Path(sys.argv[1])
 dst = pathlib.Path(sys.argv[2])
+if not src.exists():
+    sys.exit(f"md2html: no such file: {src}")
 lines = src.read_text().split("\n")
 
 # The tab title is the document's own first h1, so one converter serves several

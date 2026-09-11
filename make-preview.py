@@ -77,7 +77,12 @@ def build(src, stroke_fraction=0.002, min_stroke=0.05):
 
 
 def main():
+    # Same fault as md2html.py beside it: run bare this died on sys.argv[1].
+    if len(sys.argv) < 2:
+        sys.exit("usage: make-preview.py CUTFILE.svg [OUTPUT.svg]")
     src_path = pathlib.Path(sys.argv[1])
+    if not src_path.exists():
+        sys.exit(f"make-preview: no such file: {src_path}")
     dst_path = (pathlib.Path(sys.argv[2]) if len(sys.argv) > 2
                 else src_path.parent / "previews" / src_path.name)
     src = src_path.read_text()
