@@ -406,6 +406,12 @@ BS=bell/cut-files/bell-round10-153mm-17rings-x3-rim86-cut-files.svg
 MS=mouthpiece/cut-files/mouthpiece-bore10-trumpet-parts-cut-files.svg
 cp $BS $T/sheet.svg
 run python3 bell/bell.py 20 --out=$T/b.svg
+# bell-adapter.py joined on 2026-09-13. It was the only generator in bell/ that
+# this gate did not run, and the gate could not have said so: it counts the
+# lines written here and compares that to itself, so a tool nobody listed is a
+# tool nobody misses. "every bell and mouthpiece tool still runs" was true of
+# the seven it knew about and silent about the eighth.
+run python3 bell/bell-adapter.py --out=$T/a.svg
 run python3 bell/verify_bell.py $BS
 run python3 bell/number_rings.py $T/sheet.svg --order=document
 run python3 mouthpiece/mouthpiece.py $T/mp.svg
@@ -413,7 +419,7 @@ run python3 mouthpiece/mouthpiece-cup.py $T/mc.svg
 run python3 part-view.py $BS $T/t1.html
 run python3 part-view.py $MS $T/t2.html
 rm -rf $T
-say "every bell and mouthpiece tool still runs" "$( [ $bad = 0 ] && [ $n -ge 7 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
+say "every bell and mouthpiece tool still runs" "$( [ $bad = 0 ] && [ $n -ge 8 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
 
 # Nothing reads the NAMES. Every gate above compares an artefact with the code
 # that draws it, and the reproduction gate is handed the stem on the command
