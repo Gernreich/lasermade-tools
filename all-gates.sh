@@ -121,28 +121,68 @@ say "flat-part-check, flat parts" "$( [[ "$o" == *"0 failed"* ]] && echo "ok  $o
 # this project's whole claim.
 
 cd $R/trumpet/parts/bore/concept/swept-curve
+# REWRITTEN 2026-09-13. Every shipped ribbon sheet became --narrow on that day,
+# and the ported ones grew --cap and, where the lead allows it, --port-square.
+# This gate still redrew the OLD full-width names, so all forty comparisons
+# looked for a file that had moved to cut-files/old/ and the gate reported
+# "40 differ, 0 of 40 compared" -- a failure whose text says plainly that it
+# compared nothing, which is the shape of a stale gate rather than a bad sheet.
+# The forty-two below were solved by redrawing each shipped sheet against
+# candidate flag sets until the bytes matched, not by reading the commit: all
+# twenty-one variants reproduce exactly, so the table is a measurement.
+#
+# The suffix is an ARGUMENT here rather than derived from --port, because it no
+# longer follows from the flags: three designs ship -ported-narrow and six ship
+# -ported-square-narrow, and the R35to113 spiral ships BOTH. --narrow is passed
+# for every one, and the generator refuses an --out whose name does not say
+# "narrow", so a suffix typed wrong here fails loudly instead of overwriting a
+# full-width twin.
 T=$(mktemp -d); same=0; bad=0
-rr () { d=$1; stem=$2; shift 2
-  for mode in "" "--port"; do
-    suf=""; [ -n "$mode" ] && suf="-ported"
-    python3 ribbon_bore.py "$@" $mode --out=$T/$stem$suf.svg >/dev/null 2>&1
-    for part in cheek-x2 panels; do
-      cmp -s "$d/cut-files/$stem$suf-$part-cut-files.svg" \
-             "$T/$stem$suf-$part-cut-files.svg" && same=$((same+1)) || bad=$((bad+1))
-    done
+rr () { d=$1; stem=$2; suf=$3; shift 3
+  python3 ribbon_bore.py "$@" --narrow --out=$T/$stem$suf.svg >/dev/null 2>&1
+  for part in cheek-x2 panels; do
+    cmp -s "$d/$stem$suf-$part-cut-files.svg" \
+           "$T/$stem$suf-$part-cut-files.svg" && same=$((same+1)) || bad=$((bad+1))
   done; }
-rr coupon/ribbon-coupon-bore10-30deg-R30 ribbon-coupon-bore10-30deg-R30-180turn --shape=coupon
-rr serpentine/ribbon-serpentine-bore10-30deg-3lobes-R72 ribbon-serpentine-bore10-30deg-3lobes-R72-1000mm --shape=serpentine
-rr opposed/ribbon-opposed-bore10-30deg-3lobes-R64 ribbon-opposed-bore10-30deg-3lobes-R64-1000mm --shape=opposed
-rr wave/ribbon-wave-bore10-45deg-5arc ribbon-wave-bore10-45deg-5arc-836mm --shape=wave
-rr spiral/ribbon-spiral-bore10-45deg-R35to113 ribbon-spiral-bore10-45deg-R35to113-1000mm --shape=spiral
-rr spiral/ribbon-spiral-bore10-45deg-R36to144 ribbon-spiral-bore10-45deg-R36to144-1767mm --shape=spiral --spiral-facets=25 --spiral-ri=36.5 --spiral-ro=144
-rr spiral/ribbon-spiral-bore10-45deg-R74to144 ribbon-spiral-bore10-45deg-R74to144-1458mm --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144
-rr dspiral/ribbon-dspiral-bore10-30deg-R62-pitch46 ribbon-dspiral-bore10-30deg-R62-pitch46-1506mm --shape=dspiral
-rr dspiral/ribbon-dspiral-bore10-30deg-R62-pitch46-halftest ribbon-dspiral-bore10-30deg-R62-pitch46-half-196mm --shape=dspiral --ds-half --ds-facets=2
-rr volute/ribbon-volute-bore10-45deg-R94-step60 ribbon-volute-bore10-45deg-R94-step60-1180mm --shape=volute
+
+# The three whose lead bends 15 degrees take a round port, not a square one:
+# --port-square needs a straight run to sit in, and coupon, serpentine and
+# opposed have not got one. They are the reason the suffix is an argument.
+#
+# Paths are written out in full rather than held in shell variables, because
+# name-check.py reads THESE LINES as its design table and needs the literal
+# stem to read bore10, 30deg and 1180mm off. Variables saved four lines and
+# blinded that check completely -- it reported "no rr lines found".
+CU=coupon/ribbon-coupon-bore10-30deg-R30
+SE=serpentine/ribbon-serpentine-bore10-30deg-3lobes-R72
+OP=opposed/ribbon-opposed-bore10-30deg-3lobes-R64
+WV=wave/ribbon-wave-bore10-45deg-5arc
+SP=spiral/ribbon-spiral-bore10-45deg
+DS=dspiral/ribbon-dspiral-bore10-30deg-R62-pitch46
+VO=volute/ribbon-volute-bore10-45deg-R94-step60
+rr $CU/cut-files ribbon-coupon-bore10-30deg-R30-180turn -narrow --shape=coupon
+rr $CU/cut-files ribbon-coupon-bore10-30deg-R30-180turn -ported-narrow --shape=coupon --port --cap
+rr $SE/cut-files ribbon-serpentine-bore10-30deg-3lobes-R72-1000mm -narrow --shape=serpentine
+rr $SE/cut-files ribbon-serpentine-bore10-30deg-3lobes-R72-1000mm -ported-narrow --shape=serpentine --port --cap
+rr $OP/cut-files ribbon-opposed-bore10-30deg-3lobes-R64-1000mm -narrow --shape=opposed
+rr $OP/cut-files ribbon-opposed-bore10-30deg-3lobes-R64-1000mm -ported-narrow --shape=opposed --port --cap
+rr $WV/cut-files ribbon-wave-bore10-45deg-5arc-836mm -narrow --shape=wave
+rr $WV/cut-files ribbon-wave-bore10-45deg-5arc-836mm -ported-square-narrow --shape=wave --port --port-square --cap
+rr $SP-R35to113/cut-files ribbon-spiral-bore10-45deg-R35to113-1000mm -narrow --shape=spiral
+rr $SP-R35to113/cut-files ribbon-spiral-bore10-45deg-R35to113-1000mm -ported-narrow --shape=spiral --port --cap
+rr $SP-R35to113/cut-files ribbon-spiral-bore10-45deg-R35to113-1000mm -ported-square-narrow --shape=spiral --port --port-square --cap
+rr $SP-R36to144/cut-files ribbon-spiral-bore10-45deg-R36to144-1767mm -narrow --shape=spiral --spiral-facets=25 --spiral-ri=36.5 --spiral-ro=144
+rr $SP-R36to144/cut-files ribbon-spiral-bore10-45deg-R36to144-1767mm -ported-square-narrow --shape=spiral --spiral-facets=25 --spiral-ri=36.5 --spiral-ro=144 --port --port-square --cap
+rr $SP-R74to144/cut-files ribbon-spiral-bore10-45deg-R74to144-1458mm -narrow --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144
+rr $SP-R74to144/cut-files ribbon-spiral-bore10-45deg-R74to144-1458mm -ported-square-narrow --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144 --port --port-square --cap
+rr $DS/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1506mm -narrow --shape=dspiral
+rr $DS/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1506mm -ported-square-narrow --shape=dspiral --port --port-square --cap
+rr $DS-halftest/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-half-196mm -narrow --shape=dspiral --ds-half --ds-facets=2
+rr $DS-halftest/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-half-196mm -ported-square-narrow --shape=dspiral --ds-half --ds-facets=2 --port --port-square --cap
+rr $VO/cut-files ribbon-volute-bore10-45deg-R94-step60-1180mm -narrow --shape=volute
+rr $VO/cut-files ribbon-volute-bore10-45deg-R94-step60-1180mm -ported-square-narrow --shape=volute --port --port-square --cap
 rm -rf $T
-say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 40 ] && echo "ok  $same/40" || echo "FAIL $bad differ, $same of 40 compared")"
+say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 42 ] && echo "ok  $same/42" || echo "FAIL $bad differ, $same of 42 compared")"
 
 # Walks EVERY previews/ directory in the repository, not just this one. It
 # checked swept-curve/previews and nothing else, so parts/bell/previews,

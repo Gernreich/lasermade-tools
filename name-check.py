@@ -37,11 +37,24 @@ def designs(path=None):
     a COPY of all-gates.sh with a name deliberately falsified, instead of
     editing the live harness in place -- which is how the first attempt at
     proving it can fail left five stems corrupted mid-loop."""
-    rows = []
+    rows, seen = [], set()
     for ln in open(path or GATES):
-        m = re.match(r'rr (\S+/\S+) (\S+) (--\S.*)', ln.strip())
-        if m:
-            rows.append((m[2], m[3].split()))
+        # The rr line grew a SUFFIX field on 2026-09-13, when the shipped
+        # sheets became --narrow and the ported ones split into round-port and
+        # square-port variants. The old three-field pattern matched none of the
+        # new lines, and this check reported "no rr lines found" rather than a
+        # wrong name -- which is the refusal the empty-list guard below exists
+        # for, working exactly as intended.
+        m = re.match(r'rr (\S+/\S+) (\S+) (\S+) (--\S.*)', ln.strip())
+        if m and m[2] not in seen:
+            # One row per STEM. A stem now appears two or three times, once per
+            # port variant, and every claim this file checks -- bore, facet,
+            # radius, pitch, step, lobes, shape -- is a property of the stem and
+            # identical across them. Checking it three times would say "30
+            # designs" over ten, and a count that overstates what was examined
+            # is the one thing a gate must not do.
+            seen.add(m[2])
+            rows.append((m[2], m[4].split()))
     return rows
 
 
