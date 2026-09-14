@@ -177,12 +177,13 @@ rr $SP-R74to144/cut-files ribbon-spiral-bore10-45deg-R74to144-1458mm -narrow --s
 rr $SP-R74to144/cut-files ribbon-spiral-bore10-45deg-R74to144-1458mm -ported-square-narrow --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144 --port --port-square --cap
 rr $DS/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1506mm -narrow --shape=dspiral
 rr $DS/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1506mm -ported-square-narrow --shape=dspiral --port --port-square --cap
+rr $DS-1000mm/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm -ported-both-square-narrow --shape=dspiral --ds-facets=9 --lead=42 --port --port-square --port-both --cap
 rr $DS-halftest/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-half-196mm -narrow --shape=dspiral --ds-half --ds-facets=2
 rr $DS-halftest/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-half-196mm -ported-square-narrow --shape=dspiral --ds-half --ds-facets=2 --port --port-square --cap
 rr $VO/cut-files ribbon-volute-bore10-45deg-R94-step60-1180mm -narrow --shape=volute
 rr $VO/cut-files ribbon-volute-bore10-45deg-R94-step60-1180mm -ported-square-narrow --shape=volute --port --port-square --cap
 rm -rf $T
-say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 42 ] && echo "ok  $same/42" || echo "FAIL $bad differ, $same of 42 compared")"
+say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 44 ] && echo "ok  $same/44" || echo "FAIL $bad differ, $same of 44 compared")"
 
 # Walks EVERY previews/ directory in the repository, not just this one. It
 # checked swept-curve/previews and nothing else, so parts/bell/previews,

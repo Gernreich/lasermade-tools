@@ -80,7 +80,15 @@ def main(path=None):
                 bad += 1
                 continue
             shape, bore, deg, mm = head[1], int(head[2]), int(head[3]), float(cl[1])
-            desc = out.split('\n')[1]
+            # The shape line is the one AFTER the header, not stdout line 1.
+            # --merge-lead prints before the report, so for a design whose only
+            # rr row is a merged one -- the 1000mm double spiral is the first --
+            # line 1 was the header itself, and every radius and pitch claim
+            # read None and "disagreed" with a name that was perfectly right.
+            # Every other design's first row is its unported variant, which
+            # prints nothing ahead of the report, so this sat here unseen.
+            lines = out.split('\n')
+            desc = lines[lines.index(head[0]) + 1] if head[0] in lines else ''
             claims = [('bore', int(re.search(r'bore(\d+)', stem)[1]), bore),
                       ('facet angle', int(re.search(r'-(\d+)deg', stem)[1]), deg)]
             if (m := re.search(r'-(\d+)mm$', stem)):
