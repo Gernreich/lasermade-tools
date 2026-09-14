@@ -171,6 +171,28 @@ while i < n:
         out.append("".join(t))
         continue
 
+    # AN IMAGE WHOSE MARKDOWN WRAPS ONTO A SECOND LINE. The match below anchors to
+    # the whole line, so an image was converted only when it fitted on one. These
+    # documents are written to 80 columns and an alt text is a whole sentence, so
+    # wrapping one is the natural thing to do and nothing said not to -- it fell
+    # through to the paragraph branch, whose inline() does not handle images, and
+    # published as literal ![...](...) text. It had been doing that to the two
+    # cheek plates on trumpet's own front page for as long as the photograph had
+    # been there, and no gate could see it until doc-audit learned to read the
+    # rendered page rather than the markdown.
+    #
+    # Join it back onto one line first. A run that never closes is left exactly as
+    # it was, so prose that merely opens with "![" is untouched -- and so are TWO
+    # images on one line, which is a different thing to want and gets raw HTML.
+    if ln.lstrip().startswith("![") and not re.match(r"^!\[[^\]]*\]\([^)\s]+\)\s*$", ln):
+        j, buf, whole = i, [], re.compile(r"^!\[[^\]]*\]\([^)\s]+\)$")
+        while j < n and lines[j].strip():
+            buf.append(lines[j].strip())
+            if whole.match(" ".join(buf)):
+                ln, i = " ".join(buf), j
+                break
+            j += 1
+
     mi = re.match(r"^!\[([^\]]*)\]\(([^)\s]+)\)\s*$", ln)
     if mi:
         alt, srcpath = mi.group(1), mi.group(2)
