@@ -354,7 +354,7 @@ say "published embed matches its generator" "$o"
 # fourth means the ports path has broken in some new way; two means one of the
 # objections has quietly stopped being raised.
 cd $R/trumpet/tools
-o=$(~/Software/boxes/venv/bin/python check.py "U U2 E2 S2 U2 U" --ports 2>&1)
+o=$(~/Software/boxes/venv/bin/python check.py "U2 E2 S2 U2" --ports 2>&1)
 tot=$(echo "$o" | tail -1); hit=0
 for w in "the section closes round its bore" \
          "no wall finger left unengaged" \
@@ -367,7 +367,7 @@ cd $R/trumpet/tools
 PYB=~/Software/boxes/venv/bin/python
 T=$(mktemp -d); bad=0; n=0
 run() { n=$((n+1)); "$@" >/dev/null 2>&1 || { bad=$((bad+1)); echo "  FAILS: $2"; }; }
-run $PYB nest.py "N N10 U2 W2 S7 U2 E4 N9 W2 D2 N4 N" --out $T/n.svg
+run $PYB nest.py "N10 U2 W2 S7 U2 E4 N9 W2 D2 N4" --out $T/n.svg
 run $PYB sizes.py coil_fold2 $T/s.html
 run $PYB piece_render.py --out $T/p.svg
 run $PYB coils.py
@@ -377,11 +377,11 @@ run $PYB $G/test-ladder.py $T/ladder.svg
 # and it takes a walk and writes one page, exactly like the tools around it.
 # Importing proves the module parses and nothing else -- build() and main() went
 # untested behind a claim about the tool that was not true of it.
-run $PYB mcwalk.py "N N3 U3 W5 N10 E5 S8 W3 S3 N12 N" --out $T/w.html
+run $PYB mcwalk.py "N3 U3 W5 N10 E5 S8 W3 S3 N12" --out $T/w.html
 # bore_render.py joins them on 2026-09-10. It could not be run without changing
 # the tree -- a fixed output name in the current directory, no --out -- which is
 # exactly why it had no line here. It has one now, so it does.
-run $PYB bore_render.py "W D3 E4 N" --out=$T/r.svg
+run $PYB bore_render.py "D3 E4" --out=$T/r.svg
 rm -rf $T
 say "every entry-point tool still runs" "$( [ $bad = 0 ] && [ $n -ge 7 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
 
