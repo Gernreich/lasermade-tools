@@ -417,6 +417,24 @@ if page:
     bad = [i + 1 for i, f in enumerate(figs)
            if ("<svg" in f and "aria-label" not in f) or ("<img" in f and not re.search(r'alt="[^"]+"', f))]
     ok("every figure has a text alternative", not bad, f"figures {bad}" if bad else "")
+    # MARKDOWN THAT THE RENDERER DECLINED TO CONVERT reaches the page as literal
+    # text, and every check above still passes it. The link checker reads
+    # ![alt](path) out of the MARKDOWN, so the path resolves and the file exists;
+    # the picture is simply not there. On 2026-09-13 two images written on one
+    # line -- a form md2html converts only when an image is alone on its line --
+    # published as visible "![The bell as built...](../parts/...jpg)" on a page
+    # that had just reported 17 passed, 0 failed. Nothing local could see it;
+    # only looking at the page could.
+    #
+    # Search the page's TEXT, not its markup. Tags carry bracket-and-paren
+    # characters in attributes, and <pre>/<code> quote markdown on purpose --
+    # this repository's own README does it -- so both come out first.
+    body = re.sub(r"<(pre|code)\b[^>]*>.*?</\1>", " ", page, flags=re.S)
+    body = H.unescape(re.sub(r"<[^>]+>", " ", body))
+    leftover = re.findall(r"!?\[[^\]\n]*\]\([^)\s]+\)", body)
+    ok("no markdown left unrendered in the page", not leftover,
+       (str(leftover[:3]) + (f" and {len(leftover) - 3} more" if len(leftover) > 3 else ""))
+       if leftover else "")
     ok("wide tables scroll inside their own box",
        page.count("<table>") == 0 or "overflow-x:auto" in page)
     ok("print stylesheet present", "@media print" in page)

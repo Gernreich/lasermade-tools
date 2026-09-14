@@ -216,6 +216,32 @@ own `aria-label`. The two had already drifted — `living-hinge-guide.md` says
 drawing's own label alone where it has one. Every published page regenerates
 byte-identical.
 
+**What the unrendered-markdown check found, on its first sweep.** `md2html.py`
+converts an image only when it is **alone on its line**. Anything else — two on
+one line, or one whose alt text is hard-wrapped, which at 80 columns is easy to
+write without noticing — falls through to the inline pass, which does not handle
+images, and reaches the page as visible image markdown — a literal
+exclamation mark, the alt text in brackets, the path in parentheses — instead of
+a picture.
+
+Nothing caught it. *every link and image path resolves* reads that same
+unconverted syntax out of the **markdown**, so the path resolves, the file
+exists, and the check passes: the picture is simply not on the page. Two images on one
+line published that way on 2026-09-13 from a document reporting 17 passed, 0
+failed, and the sweep that added this check then found a second, older one —
+the two cheek plates on `trumpet/README.md`, the repository's front page, where
+a four-line alt text had been printing as literal markdown for as long as the
+photograph had been there.
+
+The check reads the page's **text**: `<pre>` and `<code>` come out first, since
+a writeup may quote markdown on purpose and this README does, then the remaining
+tags, so no attribute value can trip it. Nine repositories, twenty-four
+documents, one real failure and no false ones.
+
+**It catches the symptom, not the cause.** The renderer still only converts an
+image alone on its line. Keep image markdown on one line however long the alt
+text runs, or the gate will tell you.
+
 ## `all-gates.sh`
 
 Runs every gate in every repository and prints one tally.
