@@ -186,6 +186,7 @@ rr $SP-R74to144/cut-files ribbon-spiral-bore10-45deg-R74to144-1458mm -ported-squ
 rr $DS/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1506mm -narrow --shape=dspiral
 rr $DS/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1506mm -ported-square-narrow --shape=dspiral --port --port-square --cap
 rr $DS-1000mm/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm -narrow --shape=dspiral --ds-facets=9 --lead=42
+rr $DS-1000mm/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm -ported-square-narrow --shape=dspiral --ds-facets=9 --lead=42 --port --port-square --cap
 rrc $DS-1000mm/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm -ported-both-square-narrow --shape=dspiral --ds-facets=9 --lead=42 --port --port-square --port-both --port-per-cheek --cap
 rrc $DS-halftest-both/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-half-240mm -ported-both-square-narrow --shape=dspiral --ds-half --ds-facets=2 --lead=42 --port --port-square --port-both --port-per-cheek --cap
 rr $DS-halftest/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-half-196mm -narrow --shape=dspiral --ds-half --ds-facets=2
@@ -193,7 +194,7 @@ rr $DS-halftest/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-half-196mm -po
 rr $VO/cut-files ribbon-volute-bore10-45deg-R94-step60-1180mm -narrow --shape=volute
 rr $VO/cut-files ribbon-volute-bore10-45deg-R94-step60-1180mm -ported-square-narrow --shape=volute --port --port-square --cap
 rm -rf $T
-say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 46 ] && echo "ok  $same/46" || echo "FAIL $bad differ, $same of 46 compared")"
+say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 48 ] && echo "ok  $same/48" || echo "FAIL $bad differ, $same of 48 compared")"
 
 # Walks EVERY previews/ directory in the repository, not just this one. It
 # checked swept-curve/previews and nothing else, so parts/bell/previews,
@@ -376,9 +377,10 @@ vp volute/ribbon-volute-bore10-45deg-R94-step60/ribbon-volute-bore10-45deg-R94-s
 vp $DSP/ribbon-dspiral-bore10-30deg-R62-pitch46.html --shape=dspiral
 vp $DSP-halftest/ribbon-dspiral-bore10-30deg-R62-pitch46-halftest.html --shape=dspiral --ds-half --ds-facets=2
 vp $DSP-1000mm/ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm.html --shape=dspiral --ds-facets=9 --lead=42 --port --port-square --port-both --port-per-cheek --cap
+vp $DSP-1000mm/ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm-ported-square.html --shape=dspiral --ds-facets=9 --lead=42 --port --port-square --cap
 vp $DSP-halftest-both/ribbon-dspiral-bore10-30deg-R62-pitch46-halftest-both.html --shape=dspiral --ds-half --ds-facets=2 --lead=42 --port --port-square --port-both --port-per-cheek --cap
 vp ribbon-traced-volute-bore10-45deg.html --trace=traces/volute.json
-say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 12 ] && echo "ok  $pg/12" || echo "FAIL $pgbad stale, $pg of 12 current")"
+say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 13 ] && echo "ok  $pg/13" || echo "FAIL $pgbad stale, $pg of 13 current")"
 
 # Every gate above checks an ARTEFACT. A tool that ships no artefact is checked
 # by nothing at all, and five of them were: coils.py, mcwalk.py, nest.py,
