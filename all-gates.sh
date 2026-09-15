@@ -343,6 +343,43 @@ else o="FAIL stale"; fi
 rm -f /tmp/_ag_bv.html
 say "published embed matches its generator" "$o"
 
+# THE DESIGN PAGES WERE GATED BY NOTHING, and went stale the first time the
+# viewer changed under them. Ten of twelve were a viewer revision behind, and
+# every gate above passed while they were: the embed gate watches ONE page in
+# another repository, and nothing watched the eleven that sit beside the cut
+# files they describe. That is the same hole "previews current with their cut
+# files" exists to close for the sheets.
+#
+# Each page is rebuilt into a temp and compared, which is what the embed row
+# does. The flags are the design's own; a page whose flags are typed wrong here
+# fails loudly rather than being quietly skipped, because the file it would
+# write to is named by the generator and not by this list.
+cd $R/trumpet/parts/bore/concept/swept-curve
+pg=0; pgbad=0
+vp () {
+  rm -rf /tmp/_ag_vp && mkdir -p /tmp/_ag_vp
+  f=$1; shift
+  python3 ribbon_view.py "$@" --out=/tmp/_ag_vp/p.html >/dev/null 2>&1; rv=$?
+  if [ $rv != 0 ] || [ ! -f /tmp/_ag_vp/p.html ]; then pgbad=$((pgbad+1))
+  elif cmp -s /tmp/_ag_vp/p.html "$f"; then pg=$((pg+1))
+  else pgbad=$((pgbad+1)); fi
+  rm -rf /tmp/_ag_vp
+}
+DSP=dspiral/ribbon-dspiral-bore10-30deg-R62-pitch46
+vp serpentine/ribbon-serpentine-bore10-30deg-3lobes-R72/ribbon-serpentine-bore10-30deg-3lobes-R72.html --shape=serpentine
+vp opposed/ribbon-opposed-bore10-30deg-3lobes-R64/ribbon-opposed-bore10-30deg-3lobes-R64.html --shape=opposed
+vp wave/ribbon-wave-bore10-45deg-5arc/ribbon-wave-bore10-45deg-5arc.html --shape=wave
+vp spiral/ribbon-spiral-bore10-45deg-R35to113/ribbon-spiral-bore10-45deg-R35to113.html --shape=spiral
+vp spiral/ribbon-spiral-bore10-45deg-R36to144/ribbon-spiral-bore10-45deg-R36to144.html --shape=spiral --spiral-facets=25 --spiral-ri=36.5 --spiral-ro=144
+vp spiral/ribbon-spiral-bore10-45deg-R74to144/ribbon-spiral-bore10-45deg-R74to144.html --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144
+vp volute/ribbon-volute-bore10-45deg-R94-step60/ribbon-volute-bore10-45deg-R94-step60.html --shape=volute
+vp $DSP/ribbon-dspiral-bore10-30deg-R62-pitch46.html --shape=dspiral
+vp $DSP-halftest/ribbon-dspiral-bore10-30deg-R62-pitch46-halftest.html --shape=dspiral --ds-half --ds-facets=2
+vp $DSP-1000mm/ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm.html --shape=dspiral --ds-facets=9 --lead=42 --port --port-square --port-both --port-per-cheek --cap
+vp $DSP-halftest-both/ribbon-dspiral-bore10-30deg-R62-pitch46-halftest-both.html --shape=dspiral --ds-half --ds-facets=2 --lead=42 --port --port-square --port-both --port-per-cheek --cap
+vp ribbon-traced-volute-bore10-45deg.html --trace=traces/volute.json
+say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 12 ] && echo "ok  $pg/12" || echo "FAIL $pgbad stale, $pg of 12 current")"
+
 # Every gate above checks an ARTEFACT. A tool that ships no artefact is checked
 # by nothing at all, and five of them were: coils.py, mcwalk.py, nest.py,
 # piece_render.py and sizes.py in trumpet, test-ladder.py here. sizes.py had
