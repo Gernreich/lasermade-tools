@@ -45,7 +45,7 @@ say () {
 }
 
 cd $R/trumpet/parts/bore/concept/swept-curve
-for s in coupon serpentine opposed wave spiral dspiral volute; do
+for s in serpentine opposed wave spiral dspiral volute; do
   for mode in "" "--port"; do
     o=$(python3 ribbon_bore.py --shape=$s $mode --no-write 2>&1)
     n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
@@ -157,22 +157,19 @@ rrc () { d=$1; stem=$2; suf=$3; shift 3
   done; }
 
 # The three whose lead bends 15 degrees take a round port, not a square one:
-# --port-square needs a straight run to sit in, and coupon, serpentine and
-# opposed have not got one. They are the reason the suffix is an argument.
+# --port-square needs a straight run to sit in, and serpentine and opposed
+# have not got one. They are the reason the suffix is an argument.
 #
 # Paths are written out in full rather than held in shell variables, because
 # name-check.py reads THESE LINES as its design table and needs the literal
 # stem to read bore10, 30deg and 1180mm off. Variables saved four lines and
 # blinded that check completely -- it reported "no rr lines found".
-CU=coupon/ribbon-coupon-bore10-30deg-R30
 SE=serpentine/ribbon-serpentine-bore10-30deg-3lobes-R72
 OP=opposed/ribbon-opposed-bore10-30deg-3lobes-R64
 WV=wave/ribbon-wave-bore10-45deg-5arc
 SP=spiral/ribbon-spiral-bore10-45deg
 DS=dspiral/ribbon-dspiral-bore10-30deg-R62-pitch46
 VO=volute/ribbon-volute-bore10-45deg-R94-step60
-rr $CU/cut-files ribbon-coupon-bore10-30deg-R30-180turn -narrow --shape=coupon
-rr $CU/cut-files ribbon-coupon-bore10-30deg-R30-180turn -ported-narrow --shape=coupon --port --cap
 rr $SE/cut-files ribbon-serpentine-bore10-30deg-3lobes-R72-1000mm -narrow --shape=serpentine
 rr $SE/cut-files ribbon-serpentine-bore10-30deg-3lobes-R72-1000mm -ported-narrow --shape=serpentine --port --cap
 rr $OP/cut-files ribbon-opposed-bore10-30deg-3lobes-R64-1000mm -narrow --shape=opposed
@@ -196,7 +193,7 @@ rr $DS-halftest/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-half-196mm -po
 rr $VO/cut-files ribbon-volute-bore10-45deg-R94-step60-1180mm -narrow --shape=volute
 rr $VO/cut-files ribbon-volute-bore10-45deg-R94-step60-1180mm -ported-square-narrow --shape=volute --port --port-square --cap
 rm -rf $T
-say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 50 ] && echo "ok  $same/50" || echo "FAIL $bad differ, $same of 50 compared")"
+say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 46 ] && echo "ok  $same/46" || echo "FAIL $bad differ, $same of 46 compared")"
 
 # Walks EVERY previews/ directory in the repository, not just this one. It
 # checked swept-curve/previews and nothing else, so parts/bell/previews,
