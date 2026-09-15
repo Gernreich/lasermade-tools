@@ -1,6 +1,6 @@
 # lasermade-tools
 
-Six scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
+Ten scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
 build repositories — [trumpet](https://github.com/Gernreich/trumpet),
 [knotwork-soundholes](https://github.com/Gernreich/knotwork-soundholes),
 [living-hinge](https://github.com/Gernreich/living-hinge),
