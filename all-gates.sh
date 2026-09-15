@@ -168,6 +168,13 @@ SE=serpentine/ribbon-serpentine-bore10-30deg-3lobes-R72
 OP=opposed/ribbon-opposed-bore10-30deg-3lobes-R64
 WV=wave/ribbon-wave-bore10-45deg-5arc
 SP=spiral/ribbon-spiral-bore10-45deg
+# R35to113 IS NOT UNDER swept-curve ANY MORE. It was cut, glued up and fitted
+# with both ends, so trumpet 156fa71 moved it to built/ with the instruments and
+# left its siblings here as candidates. Both gates below reached it by the old
+# path and both failed silently-ish -- three of the 48 rr sheets and one of the
+# 13 vp pages. The path is a variable, which the stem may never be: name-check.py
+# mines these lines for the STEM and the FLAGS, never the folder.
+BSP=../../../../built/ribbon-spiral-bore10-45deg-R35to113
 DS=dspiral/ribbon-dspiral-bore10-30deg-R62-pitch46
 VO=volute/ribbon-volute-bore10-45deg-R94-step60
 rr $SE/cut-files ribbon-serpentine-bore10-30deg-3lobes-R72-1000mm -narrow --shape=serpentine
@@ -176,9 +183,9 @@ rr $OP/cut-files ribbon-opposed-bore10-30deg-3lobes-R64-1000mm -narrow --shape=o
 rr $OP/cut-files ribbon-opposed-bore10-30deg-3lobes-R64-1000mm -ported-narrow --shape=opposed --port --cap
 rr $WV/cut-files ribbon-wave-bore10-45deg-5arc-836mm -narrow --shape=wave
 rr $WV/cut-files ribbon-wave-bore10-45deg-5arc-836mm -ported-square-narrow --shape=wave --port --port-square --cap
-rr $SP-R35to113/cut-files ribbon-spiral-bore10-45deg-R35to113-1000mm -narrow --shape=spiral
-rr $SP-R35to113/cut-files ribbon-spiral-bore10-45deg-R35to113-1000mm -ported-narrow --shape=spiral --port --cap
-rr $SP-R35to113/cut-files ribbon-spiral-bore10-45deg-R35to113-1000mm -ported-square-narrow --shape=spiral --port --port-square --cap
+rr $BSP/cut-files ribbon-spiral-bore10-45deg-R35to113-1000mm -narrow --shape=spiral
+rr $BSP/cut-files ribbon-spiral-bore10-45deg-R35to113-1000mm -ported-narrow --shape=spiral --port --cap
+rr $BSP/cut-files ribbon-spiral-bore10-45deg-R35to113-1000mm -ported-square-narrow --shape=spiral --port --port-square --cap
 rr $SP-R36to144/cut-files ribbon-spiral-bore10-45deg-R36to144-1767mm -narrow --shape=spiral --spiral-facets=25 --spiral-ri=36.5 --spiral-ro=144
 rr $SP-R36to144/cut-files ribbon-spiral-bore10-45deg-R36to144-1767mm -ported-square-narrow --shape=spiral --spiral-facets=25 --spiral-ri=36.5 --spiral-ro=144 --port --port-square --cap
 rr $SP-R74to144/cut-files ribbon-spiral-bore10-45deg-R74to144-1458mm -narrow --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144
@@ -370,7 +377,7 @@ DSP=dspiral/ribbon-dspiral-bore10-30deg-R62-pitch46
 vp serpentine/ribbon-serpentine-bore10-30deg-3lobes-R72/ribbon-serpentine-bore10-30deg-3lobes-R72.html --shape=serpentine
 vp opposed/ribbon-opposed-bore10-30deg-3lobes-R64/ribbon-opposed-bore10-30deg-3lobes-R64.html --shape=opposed
 vp wave/ribbon-wave-bore10-45deg-5arc/ribbon-wave-bore10-45deg-5arc.html --shape=wave
-vp spiral/ribbon-spiral-bore10-45deg-R35to113/ribbon-spiral-bore10-45deg-R35to113.html --shape=spiral
+vp $BSP/ribbon-spiral-bore10-45deg-R35to113.html --shape=spiral
 vp spiral/ribbon-spiral-bore10-45deg-R36to144/ribbon-spiral-bore10-45deg-R36to144.html --shape=spiral --spiral-facets=25 --spiral-ri=36.5 --spiral-ro=144
 vp spiral/ribbon-spiral-bore10-45deg-R74to144/ribbon-spiral-bore10-45deg-R74to144.html --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144
 vp volute/ribbon-volute-bore10-45deg-R94-step60/ribbon-volute-bore10-45deg-R94-step60.html --shape=volute
