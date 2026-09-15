@@ -144,6 +144,17 @@ rr () { d=$1; stem=$2; suf=$3; shift 3
     cmp -s "$d/$stem$suf-$part-cut-files.svg" \
            "$T/$stem$suf-$part-cut-files.svg" && same=$((same+1)) || bad=$((bad+1))
   done; }
+# --port-per-cheek writes THREE sheets, not two: the two cheeks are different
+# parts, each cut once, so there is no -cheek-x2 to compare and rr's two-part
+# loop would look for a file that is not there and report it as a difference --
+# the same shape of stale gate the note above records, which is why this is a
+# second function rather than a cleverer first one.
+rrc () { d=$1; stem=$2; suf=$3; shift 3
+  python3 ribbon_bore.py "$@" --narrow --out=$T/$stem$suf.svg >/dev/null 2>&1
+  for part in cheek-a cheek-b panels; do
+    cmp -s "$d/$stem$suf-$part-cut-files.svg" \
+           "$T/$stem$suf-$part-cut-files.svg" && same=$((same+1)) || bad=$((bad+1))
+  done; }
 
 # The three whose lead bends 15 degrees take a round port, not a square one:
 # --port-square needs a straight run to sit in, and coupon, serpentine and
@@ -177,13 +188,15 @@ rr $SP-R74to144/cut-files ribbon-spiral-bore10-45deg-R74to144-1458mm -narrow --s
 rr $SP-R74to144/cut-files ribbon-spiral-bore10-45deg-R74to144-1458mm -ported-square-narrow --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144 --port --port-square --cap
 rr $DS/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1506mm -narrow --shape=dspiral
 rr $DS/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1506mm -ported-square-narrow --shape=dspiral --port --port-square --cap
-rr $DS-1000mm/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm -ported-both-square-narrow --shape=dspiral --ds-facets=9 --lead=42 --port --port-square --port-both --cap
+rr $DS-1000mm/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm -narrow --shape=dspiral --ds-facets=9 --lead=42
+rrc $DS-1000mm/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm -ported-both-square-narrow --shape=dspiral --ds-facets=9 --lead=42 --port --port-square --port-both --port-per-cheek --cap
+rrc $DS-halftest-both/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-half-240mm -ported-both-square-narrow --shape=dspiral --ds-half --ds-facets=2 --lead=42 --port --port-square --port-both --port-per-cheek --cap
 rr $DS-halftest/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-half-196mm -narrow --shape=dspiral --ds-half --ds-facets=2
 rr $DS-halftest/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-half-196mm -ported-square-narrow --shape=dspiral --ds-half --ds-facets=2 --port --port-square --cap
 rr $VO/cut-files ribbon-volute-bore10-45deg-R94-step60-1180mm -narrow --shape=volute
 rr $VO/cut-files ribbon-volute-bore10-45deg-R94-step60-1180mm -ported-square-narrow --shape=volute --port --port-square --cap
 rm -rf $T
-say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 44 ] && echo "ok  $same/44" || echo "FAIL $bad differ, $same of 44 compared")"
+say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 50 ] && echo "ok  $same/50" || echo "FAIL $bad differ, $same of 50 compared")"
 
 # Walks EVERY previews/ directory in the repository, not just this one. It
 # checked swept-curve/previews and nothing else, so parts/bell/previews,

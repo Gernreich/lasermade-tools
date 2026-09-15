@@ -45,7 +45,11 @@ def designs(path=None):
         # new lines, and this check reported "no rr lines found" rather than a
         # wrong name -- which is the refusal the empty-list guard below exists
         # for, working exactly as intended.
-        m = re.match(r'rr (\S+/\S+) (\S+) (\S+) (--\S.*)', ln.strip())
+        # 'rrc' as well as 'rr': --port-per-cheek writes two cheek sheets
+        # instead of one, so it has its own helper in all-gates.sh -- and a
+        # pattern anchored to 'rr ' alone silently dropped those designs out of
+        # this table, which is the failure this file's own guard is about.
+        m = re.match(r'rrc? (\S+/\S+) (\S+) (\S+) (--\S.*)', ln.strip())
         if m and m[2] not in seen:
             # One row per STEM. A stem now appears two or three times, once per
             # port variant, and every claim this file checks -- bore, facet,
