@@ -36,13 +36,17 @@ Python 3, no dependencies. Nothing here reads or writes outside the paths you gi
 | `make-preview.py` | a cut file rendered so it can be read on a page |
 | `test-ladder.py` | a strip of squares that finds the cut speed for the sheet in front of you |
 | `flat-part-check.py` | the pre-cut gate for a flat single-sheet part: size, closure, cut order, holes |
+| `all-gates.sh` | every gate in every repository, one output, one tally |
+| `repro-svg.py` | does a repository's shipped SVG still come out of its generator? |
+| `name-check.py` | does a cut file's name agree with the geometry inside it? |
+| `ignore-audit.py` | does every `.doc-audit-ignore` line still suppress something? |
 
 ## Why these live in their own repository
 
 They are used by every repository above, so none of them can own the tools without all the
 others depending on it. Tools that know one build — `torus-octagonal/verify_torus.js`
 knows that build's apothems and panel sizes — stay inside the repository they describe.
-These five know nothing about any particular object, so they sit here.
+These ten know nothing about any particular object, so they sit here.
 
 Until 2026-08-08 they lived in `~/Claude`, which is not version controlled. Their bugs
 are the reason that mattered: the failures below were found by accident, and without
@@ -87,7 +91,16 @@ so a failure is always a real inconsistency — never a matter of taste. It repo
 - figures with no text alternative, print stylesheet, dark theme, language attribute
 - whether the HTML is older than the markdown or than any SVG figure inlined into it
 - `--run-blocks`: fenced blocks that look like terminal sessions, re-run and diffed
-  against what the document claims they print. Any file a block writes is restored
+  against what the document claims they print. Any file a block writes is restored.
+  **Two shapes, since 2026-09-15.** A bare fence opening `$ command`, and a fence
+  tagged `bash`/`sh`/`console` holding one command line with its output commented
+  out beneath it — the form a guide uses when it does not want a prompt in the
+  paste. The second is deliberately narrow: one command, every other line a `#`,
+  or it does not match. Recipe blocks annotated with `#` commentary are the common
+  case in these repositories, running them would redraw cut files, and comparing
+  commentary to stdout would report nonsense. Across 34 documents the rule matches
+  one block. Runs of spaces are collapsed before comparing, because the tools
+  column-pad and the guides retype; a quoted line ending `...` is a prefix
 - `--links`: external URLs actually resolve
 
 File references in prose resolve against the **repository root**, not the document's
@@ -271,6 +284,28 @@ every page in nine repositories, `svg-stroke-check` over every SVG, and
 `flat-part-check` over the flat parts -- then four questions about what is
 committed, and finally whether every repository is clean and pushed.
 
+**Three gates were added on 2026-09-15, all for holes this harness had.**
+
+    external links resolve, every markdown       101 links in 34 docs
+    every published page is current with README   10 pages
+    doc-audit ... --run-blocks                    34 docs
+
+The first is the one that cost something. `gernreich.github.io` served a
+full-height GitHub 404 panel where a bore viewer belongs, because `trumpet` moved
+a design into `built/` and the front page still embedded the old path. Every gate
+here passed the whole time: the link is **absolute**, so no relative-path check
+resolves it, and neither `doc-audit` loop passed `--links`. It needs the network
+and it FAILS rather than skips without one, for the reason the whole file gives
+below -- a run that checked no links has not checked the links.
+
+The second exists because the paired-page loop is `for md in *.md` at each
+repository root, so it sees nine documents. `trumpet` publishes five more from
+subdirectory READMEs, and the every-markdown loop drops `--html`, so none of them
+had ever been compared with its source. All ten were current when the gate was
+written, which is luck.
+
+`Gernreich`, the profile README, was in no loop at all and is now in both.
+
 **The four are the ones a gate usually forgets**, because they compare the code
 with what shipped rather than running the code at all:
 
@@ -285,7 +320,8 @@ project's entire claim. The last of the four matters most quietly: `bore_split`
 shells out to the INSTALLED copy of `snakeboxvar.py`, so editing the one in
 `tools/` and re-running changes nothing, silently.
 
-About six minutes, most of it `regress.py`.
+About ten minutes. `regress.py` is most of it; the link pass adds roughly a
+minute and is the only gate here that needs the network.
 
 **It exists because of a failure of reading, not of checking.** Every one of
 those gates already existed and every one was passing; what kept going wrong was

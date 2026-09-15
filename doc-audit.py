@@ -20,6 +20,8 @@ ap.add_argument("--rebuild", help='command template with {md} and {out}')
 ap.add_argument("--links", action="store_true", help="check external URLs resolve")
 ap.add_argument("--run-blocks", action="store_true",
                 help="re-run fenced blocks that look like terminal sessions and diff; "
+                     "a bare fence opening '$ cmd', or a bash/sh/console fence of one "
+                     "command with its output commented out; "
                      "any file a block writes is restored afterwards")
 ap.add_argument("--ignore", default="", help="comma-separated filenames named in prose, not shipped")
 ap.add_argument("--ignore-file", default="", help="use this instead of the repository's .doc-audit-ignore")
@@ -474,7 +476,32 @@ if page:
 
 # ── 7. fenced blocks presented as terminal sessions ──────────────────────────
 BLOCKS = re.findall(r"```\n\$ ([^\n]+)\n((?:.*\n)*?)```", src)
-if a.run_blocks and BLOCKS:
+
+# A second shape, added 2026-09-15: a tagged fence holding one command and its
+# output commented out, which is how a guide writes an example it does not want
+# the reader to paste a prompt from.
+#
+#     ```bash
+#     ./living-hinge.js -p dogbone --bridge 2.5 --hole 0.4 --dry-run
+#     # dogbone  slit=10.5  bridge=2.5  ...
+#     ```
+#
+# That block was wrong for as long as anyone had been reading it -- the generator
+# prints slit=10.625 -- and this tool passed the document 18/18 every time,
+# because a `#` line is not a `$ ` line and the fence carried a language tag.
+#
+# THE RULE IS DELIBERATELY NARROW, and the narrowness is the whole safety
+# argument. Section 13 of that same guide, and every recipe block in the trumpet
+# tree, is a fence of commands annotated with `#` commentary -- running those
+# would redraw cut files, and comparing prose commentary to stdout would report
+# nonsense. So: the fence is tagged, it holds exactly one command line, and
+# every remaining line is a comment. Across the 34 documents in these
+# repositories that matches one block, which is this one.
+#
+# A quoted line ending in `...` is compared as a prefix, because truncating the
+# tail is the reason the form exists.
+CBLOCKS = re.findall(r"```(?:bash|sh|console)\n([^\n#][^\n]*)\n((?:#[^\n]*\n)+)```", src)
+if a.run_blocks and (BLOCKS or CBLOCKS):
     # A quoted command is often a generator, not a read-only query: the octagonal
     # torus writeup quotes torus-geometry-diagram.js, which rewrites the very figure
     # the document displays. Auditing must not mutate the tree it audits, and the
@@ -522,6 +549,26 @@ if a.run_blocks and BLOCKS:
         have = [l for l in got.rstrip("\n").split("\n")][:len(want)]
         ok(f"quoted output of `$ {cmd[:44]}` is verbatim", want == have,
            "" if want == have else "block differs from a live run")
+
+    for cmd, body in CBLOCKS:
+        try:
+            got = subprocess.run(cmd, shell=True, cwd=ROOT, capture_output=True,
+                                 text=True, timeout=60).stdout
+        except Exception as e:
+            ok(f"`{cmd}` runs", False, str(e)); continue
+        # Runs of spaces are collapsed on both sides. The tool column-pads
+        # ("dogbone" then five spaces); the guide retypes it with two. Holding
+        # this form to padding would fail every block it is meant to check, and
+        # padding is not what the line is quoted for -- the numbers are.
+        sq = lambda s: re.sub(r"[ \t]+", " ", s).strip()
+        want = [sq(re.sub(r"^#\s?", "", l)) for l in body.rstrip("\n").split("\n")]
+        have = [sq(l) for l in got.rstrip("\n").split("\n")][:len(want)]
+        bad = next((w for w, h in zip(want, have)
+                    if not (h.startswith(sq(w[:-3])) if w.endswith("...")
+                            else h == w)), None)
+        agree = bad is None and len(have) == len(want)
+        ok(f"quoted output of `{cmd[:44]}` is verbatim", agree,
+           "" if agree else f"document has {bad!r}, the run does not")
 
     put_back, unrestorable = [], []
     for p in walk():                                    # changed, or newly created

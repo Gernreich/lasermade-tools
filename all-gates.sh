@@ -7,8 +7,9 @@
 # nine chances to read only eight.
 #
 # It ends with "GATES FAILING: n", and that line is the whole point of it.
-# About eight minutes: regress.py is most of it, and run_checks.sh another two
-# and a half.
+# About ten minutes: regress.py is most of it, run_checks.sh another two and a
+# half, and the link pass roughly one. The link pass is the only gate here that
+# needs the network, and it fails rather than skips without one.
 #
 #     bash all-gates.sh
 #
@@ -100,16 +101,65 @@ say "svg-stroke-check, every repo" "$( [[ "$o" == *"0 conflicting"* ]] && echo "
 # was real: a "Two things to know" over three bullets. A document nothing checks
 # is a document that drifts, and these are the ones a person reads before
 # cutting.
+# Gernreich added 2026-09-15. It is the GitHub profile README, one file, in no
+# loop in this script from the day the repository existed -- neither this one nor
+# the paired-page one above, which skips it correctly because it publishes no
+# page. It audits clean, and that is worth knowing rather than assuming.
+#
+# --run-blocks added the same day, for the living-hinge guide's quick start,
+# which quoted slit=10.5 against a generator printing 10.625 and passed 18/18
+# every run. doc-audit.py only knew the `$ `-prompt form; it now also reads a
+# tagged fence of one command and its output commented out. It executes what it
+# matches, and doc-audit snapshots and restores the tree around that.
 cd $R
 u=0; n=0
 for f in $(find bullroarer buzz-disc kalimba knotwork-soundholes living-hinge \
-                slapstick lasermade-tools Gernreich.github.io trumpet \
+                slapstick lasermade-tools Gernreich.github.io Gernreich trumpet \
                 -name '*.md' -not -path '*/.git/*' | sort); do
   n=$((n+1))
-  (cd "$(dirname "$f")" && python3 $G/doc-audit.py "$(basename "$f")" 2>&1 \
+  (cd "$(dirname "$f")" && python3 $G/doc-audit.py "$(basename "$f")" --run-blocks 2>&1 \
      | grep -q '0 failed') || u=$((u+1))
 done
 say "doc-audit, every markdown in every repo" "$( [ $u = 0 ] && [ $n -gt 20 ] && echo "ok  $n docs" || echo "FAIL $u of $n")"
+
+# THE 404 GATE. On 2026-09-15 gernreich.github.io served a full-height GitHub
+# "File not found" panel where a bore viewer belongs, for as long as it took
+# someone to screenshot the deployed page. trumpet had moved the spiral into
+# built/ that morning and the front page still embedded the old path. Every gate
+# in this file passed throughout: the link is ABSOLUTE, so no relative-path check
+# resolves it, and neither doc-audit loop above passes --links.
+#
+# It needs the network, and it FAILS rather than skips when the network is gone,
+# because this file's whole argument is that absence of bad news is not good
+# news. A run with no link checked has not checked the links.
+u=0; n=0; seen=0
+for f in $(find bullroarer buzz-disc kalimba knotwork-soundholes living-hinge \
+                slapstick lasermade-tools Gernreich.github.io Gernreich trumpet \
+                -name '*.md' -not -path '*/.git/*' | sort); do
+  n=$((n+1))
+  o=$(cd "$(dirname "$f")" && python3 $G/doc-audit.py "$(basename "$f")" --links 2>&1)
+  seen=$((seen + $(echo "$o" | grep -cE '^\s+[✓✗] https?://')))
+  echo "$o" | grep -q '0 failed' || u=$((u+1))
+done
+say "external links resolve, every markdown" "$( [ $u = 0 ] && [ $seen -gt 50 ] && echo "ok  $seen links in $n docs" || echo "FAIL $u of $n docs, $seen links seen")"
+
+# The paired-page loop above is `for md in *.md` at each repository root, so it
+# sees nine documents and no more. trumpet publishes five further pages from
+# subdirectory READMEs -- three-turn, switchback, greek-spiral, ribbon-spiral,
+# ends -- and the every-markdown loop drops --html, so none of them has ever been
+# compared with the markdown it is built from. They were all current when this
+# was written, which is luck rather than a gate.
+cd $R
+u=0; n=0
+for md in $(find . -name README.md -not -path '*/.git/*' | sort); do
+  d=$(dirname $md)
+  [ -f "$d/index.html" ] || continue
+  [ -f "$d/index.md" ] && continue
+  n=$((n+1))
+  (cd $d && python3 $G/md2html.py README.md /tmp/_ag_sub.html >/dev/null 2>&1) || { u=$((u+1)); continue; }
+  cmp -s /tmp/_ag_sub.html $d/index.html || { u=$((u+1)); echo "    stale: $d/index.html"; }
+done
+say "every published page is current with its README" "$( [ $u = 0 ] && [ $n -gt 5 ] && echo "ok  $n pages" || echo "FAIL $u of $n")"
 
 o=$(python3 $G/flat-part-check.py --dir $R/bullroarer --dir $R/buzz-disc 2>&1 | tail -1)
 say "flat-part-check, flat parts" "$( [[ "$o" == *"0 failed"* ]] && echo "ok  $o" || echo "FAIL $o")"
