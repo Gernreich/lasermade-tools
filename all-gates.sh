@@ -119,7 +119,7 @@ say "ribbon --port-at=0 is plain --port" "$( [ "$f" = 0 ] && [ "$n" = 12 ] && ec
 
 cd $R/trumpet/tools
 o=$(~/Software/boxes/venv/bin/python regress.py 2>&1 | tail -1)
-say "regress.py, 24 block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
+say "regress.py, 25 block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
 
 # regress.py MEASURES the committed sheets; it never redraws them. Every
 # invariant can hold while the SVG on disk is one the current code would no
