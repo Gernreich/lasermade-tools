@@ -63,11 +63,23 @@ done
 #
 # SEPARATE ROWS BECAUSE A RING HAS NO ENDS. Bare --port refuses with "the port
 # spans 3.00 to 17.00mm along the mouth lead", correctly, so the loop's --port
-# mode would have read as a failure. The ported form names two facets, and needs
-# --radius=120: at the default radius a facet is 15.53mm and the port wants 14mm
-# plus its margins, so --port-at=0,6 refuses there. --facet=60 widens the facet
-# but then fails "the web outboard of a slot is cuttable" at 0.951mm. 120 is the
-# smallest round radius that passes all twelve.
+# mode would have read as a failure. The ported form names two facets, and the
+# default radius will not take one: a facet there is 15.53mm and a port needs
+# PORT_FROM_TIP + PORT_ALONG/2 = 17mm of it, so --port-at=0,6 refuses.
+#
+# R120 IS NOT THE FLOOR, and an earlier version of this comment said it was.
+# The floor is arithmetic -- a ring's facet is 2*R*sin(pi/n), so the port needs
+# R >= 17/(2 sin(pi/n)), which is R32.84 at n=12: R32.8 refuses with 16.98mm of
+# facet and R32.9 passes all twelve. Measured, both ways, 2026-09-15. R120 is
+# kept here because a row wants room either side of the limit it is not
+# testing, not because it is the least that works.
+#
+# --facet=60 is not the alternative dial either. It widens the facet, and the
+# ring then fails "the web outboard of a slot is cuttable" at 0.951mm against
+# 1.5mm -- at EVERY radius, default and R60 alike, because 60 degree facets put
+# the mortices that close to the rim whatever the ring's size. (It also leaves
+# six facets, so --port-at=0,6 is out of range there; --port-at=0,3 is the
+# comparable run.) Opening the radius does not clear it.
 for spec in "" "--radius=120 --port --port-at=0,6"; do
   o=$(python3 ribbon_bore.py --shape=torus $spec --no-write 2>&1)
   n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
