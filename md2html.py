@@ -78,7 +78,7 @@ while i < n:
     # An indented code block: four spaces at the start of a line, CommonMark's older
     # fence-free form. Without this branch the lines fall through to the paragraph
     # joiner and are run together into prose, which turned a column-aligned table of
-    # walks into "N N3 U1 N3 U1 N3 N y and z only 1 section, 0 elbows N N3 U2..." on
+    # walks into "N N3 U1 N3 U1 N3 N y and z only 1 section, 0 stranded N N3 U2..." on
     # the published page while reading correctly on GitHub. Blank lines inside the
     # block are kept; a run of them at the end is not.
     if ln.startswith("    ") and ln.strip():
