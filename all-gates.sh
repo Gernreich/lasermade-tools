@@ -70,7 +70,9 @@ done
 # R120 IS NOT THE FLOOR, and an earlier version of this comment said it was.
 # The floor is arithmetic -- a ring's facet is 2*R*sin(pi/n), so the port needs
 # R >= 17/(2 sin(pi/n)), which is R32.84 at n=12: R32.8 refuses with 16.98mm of
-# facet and R32.9 passes all twelve. Measured, both ways, 2026-09-15. R120 is
+# facet and R32.9 passes all twelve -- at n=12, which is what --facet=30 gives
+# and what this row runs; the 13 ring floors at R36 and tops out at R135 rather
+# than R133. Measured, both ways, 2026-09-15. R120 is
 # kept here because a row wants room either side of the limit it is not
 # testing, not because it is the least that works.
 #
@@ -79,8 +81,9 @@ done
 # 1.5mm -- the same 0.951 at R30, R60 and R120, because 60 degree facets put the
 # mortices that close to the rim whatever the ring's size. (It also leaves six
 # facets, so --port-at=0,6 is out of range there; --port-at=0,3 is the
-# comparable run.) It has no passing radius: from R150 the bed refuses the cheek
-# before any check runs, so --facet=60 --radius=300 prints ZERO FAIL lines and
+# comparable run.) It has no passing radius: at R133 the bed refuses the cheek
+# before any check runs -- R132 still reaches them and fails the web, R133 does
+# not -- so --facet=60 --radius=300 prints ZERO FAIL lines and
 # that means zero checks. Which is why every row here asserts the pass count and
 # not just the failure count -- the header's rule, in one concrete case.
 for spec in "" "--radius=120 --port --port-at=0,6"; do
