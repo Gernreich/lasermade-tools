@@ -54,6 +54,34 @@ for s in serpentine opposed wave spiral dspiral volute; do
   done
 done
 
+# TORUS GETS ITS OWN TWO ROWS, and cannot join the loop above. It is the seventh
+# entry in ribbon_bore.py's SHAPES and was the only one this file never ran --
+# found 2026-09-15, the same day a seam bug in it was fixed. Before that fix
+# EVERY torus ever drawn failed "no two wall panels share plan area" with two
+# jamming pairs, one per wall, and nothing here would have said so. The pre-fix
+# generator scores 11 pass 1 fail against these rows, so they reject it.
+#
+# SEPARATE ROWS BECAUSE A RING HAS NO ENDS. Bare --port refuses with "the port
+# spans 3.00 to 17.00mm along the mouth lead", correctly, so the loop's --port
+# mode would have read as a failure. The ported form names two facets, and needs
+# --radius=120: at the default radius a facet is 15.53mm and the port wants 14mm
+# plus its margins, so --port-at=0,6 refuses there. --facet=60 widens the facet
+# but then fails "the web outboard of a slot is cuttable" at 0.951mm. 120 is the
+# smallest round radius that passes all twelve.
+for spec in "" "--radius=120 --port --port-at=0,6"; do
+  o=$(python3 ribbon_bore.py --shape=torus $spec --no-write 2>&1)
+  n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
+  say "ribbon torus ${spec:-plain}" "$( [ "$f" = 0 ] && [ "$n" = 12 ] && echo "ok  $n/12" || echo "FAIL $n pass $f fail")"
+done
+
+# --port-at=0 REPRODUCES PLAIN --port on every open shape, 12/12 with no
+# failure on all six, so the new flag subsumes the old path rather than sitting
+# beside it. One row watches that, because the torus rows above exercise
+# --port-at only on the shape that has no alternative.
+o=$(python3 ribbon_bore.py --shape=serpentine --port --port-at=0 --no-write 2>&1)
+n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
+say "ribbon --port-at=0 is plain --port" "$( [ "$f" = 0 ] && [ "$n" = 12 ] && echo "ok  $n/12" || echo "FAIL $n pass $f fail")"
+
 cd $R/trumpet/tools
 o=$(~/Software/boxes/venv/bin/python regress.py 2>&1 | tail -1)
 say "regress.py, 24 block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
