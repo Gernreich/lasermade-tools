@@ -288,7 +288,7 @@ for pv in $(find . -type d -name previews -not -path './.git/*'); do
 done; rm -f /tmp/_ag.svg
 say "previews current with their cut files" "$( [ $stale = 0 ] && [ $seen -gt 0 ] && echo "ok  $seen/$seen" || echo "FAIL $stale of $seen stale")"
 
-cd $R/trumpet/parts/bore/concept/walk/no-elbows/coil/search
+cd $R/trumpet/parts/bore/concept/walk/coil/search
 # The generators' EXIT STATUS is checked, not just the files afterwards. Until
 # 2026-09-11 this ran them with output discarded and then compared each file
 # with its own backup -- so a script that crashed left the file untouched and
@@ -347,7 +347,7 @@ done
 # directories rather than run over trumpet whole, because the bore tree holds
 # hundreds of sheets that the two byte gates above already account for.
 for d in parts/bell parts/mouthpiece tools/examples \
-         parts/bore/concept/walk/no-elbows/coil/search; do
+         parts/bore/concept/walk/coil/search; do
   cd $R/trumpet
   ro=$(python3 $G/repro-svg.py $d 2>&1); rc=$?
   o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
@@ -576,7 +576,7 @@ say "Boxes install matches tools/" "$( [ "$o" = ok ] && echo ok || echo "FAIL $o
 # A walk that had drifted out of standard form would not be wrong, exactly: it
 # would still cut. It would just no longer be comparable with the nine beside it,
 # which is the one thing the whole search directory is for.
-cd $R/trumpet/parts/bore/concept/walk/no-elbows/coil/search
+cd $R/trumpet/parts/bore/concept/walk/coil/search
 o=$(node tools/standardise.js --write 2>&1); rc=$?
 n=$(echo "$o" | grep -oE '^[0-9]+ standardised' | grep -oE '^[0-9]+')
 say "the coil corpus is in standard form" "$( [ $rc = 0 ] && [ "${n:-0}" -ge 10 ] \
@@ -597,7 +597,7 @@ say "the coil corpus is in standard form" "$( [ $rc = 0 ] && [ "${n:-0}" -ge 10 
 #
 # It costs about two and a half minutes, which is why the header above now says
 # eight and not five.
-cd $R/trumpet/parts/bore/concept/walk/no-elbows/coil/search
+cd $R/trumpet/parts/bore/concept/walk/coil/search
 o=$(bash tools/run_checks.sh 2>&1); rc=$?
 n=$(echo "$o" | grep -cE "[0-9]+ checks, [0-9]+ failed")
 say "the search transcripts regenerate" "$( [ $rc = 0 ] && [ "$n" -ge 10 ] \
