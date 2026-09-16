@@ -46,11 +46,16 @@ say () {
 }
 
 cd $R/trumpet/parts/bore/concept/swept-curve
+# 13, not 12, since 2026-09-16: "no cut line crosses the airway". Every ring
+# cheek -- torus, scallop, racetrack -- was written as ONE path that stepped
+# across its band at the seam, a slit through the airway on the cut part, and
+# all twelve checks passed it because none of them asked where the black lines
+# ran.
 for s in serpentine opposed wave spiral dspiral volute; do
   for mode in "" "--port"; do
     o=$(python3 ribbon_bore.py --shape=$s $mode --no-write 2>&1)
     n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
-    say "ribbon $s ${mode:-plain}" "$( [ "$f" = 0 ] && [ "$n" = 12 ] && echo "ok  $n/12" || echo "FAIL $n pass $f fail")"
+    say "ribbon $s ${mode:-plain}" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13" || echo "FAIL $n pass $f fail")"
   done
 done
 
@@ -89,7 +94,7 @@ done
 for spec in "" "--radius=120 --port --port-at=0,6"; do
   o=$(python3 ribbon_bore.py --shape=torus $spec --no-write 2>&1)
   n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
-  say "ribbon torus ${spec:-plain}" "$( [ "$f" = 0 ] && [ "$n" = 12 ] && echo "ok  $n/12" || echo "FAIL $n pass $f fail")"
+  say "ribbon torus ${spec:-plain}" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13" || echo "FAIL $n pass $f fail")"
 done
 
 # The SAME HOLE, one shape later. scallop closes on itself like the torus, so
@@ -98,7 +103,7 @@ done
 # given it, and it is the row that would have caught the torus seam bug.
 o=$(python3 ribbon_bore.py --shape=scallop --no-write 2>&1)
 n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
-say "ribbon scallop plain" "$( [ "$f" = 0 ] && [ "$n" = 12 ] && echo "ok  $n/12" || echo "FAIL $n pass $f fail")"
+say "ribbon scallop plain" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13" || echo "FAIL $n pass $f fail")"
 
 # racetrack, the third closed shape, for the same reason as the other two --
 # and --narrow, which the torus and scallop rows do not need. 1600mm of closed
@@ -107,15 +112,15 @@ say "ribbon scallop plain" "$( [ "$f" = 0 ] && [ "$n" = 12 ] && echo "ok  $n/12"
 # full width would be reporting on a design that cannot be cut.
 o=$(python3 ribbon_bore.py --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=134.115704 --race-straight=30 --narrow --no-write 2>&1)
 n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
-say "ribbon racetrack narrow" "$( [ "$f" = 0 ] && [ "$n" = 12 ] && echo "ok  $n/12" || echo "FAIL $n pass $f fail")"
+say "ribbon racetrack narrow" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13" || echo "FAIL $n pass $f fail")"
 
-# --port-at=0 REPRODUCES PLAIN --port on every open shape, 12/12 with no
+# --port-at=0 REPRODUCES PLAIN --port on every open shape, 13/13 with no
 # failure on all six, so the new flag subsumes the old path rather than sitting
 # beside it. One row watches that, because the torus rows above exercise
 # --port-at only on the shape that has no alternative.
 o=$(python3 ribbon_bore.py --shape=serpentine --port --port-at=0 --no-write 2>&1)
 n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
-say "ribbon --port-at=0 is plain --port" "$( [ "$f" = 0 ] && [ "$n" = 12 ] && echo "ok  $n/12" || echo "FAIL $n pass $f fail")"
+say "ribbon --port-at=0 is plain --port" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13" || echo "FAIL $n pass $f fail")"
 
 cd $R/trumpet/tools
 o=$(~/Software/boxes/venv/bin/python regress.py 2>&1 | tail -1)
