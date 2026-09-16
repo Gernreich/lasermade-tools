@@ -119,7 +119,7 @@ say "ribbon --port-at=0 is plain --port" "$( [ "$f" = 0 ] && [ "$n" = 12 ] && ec
 
 cd $R/trumpet/tools
 o=$(~/Software/boxes/venv/bin/python regress.py 2>&1 | tail -1)
-say "regress.py, 25 block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
+say "regress.py, 26 block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
 
 # regress.py MEASURES the committed sheets; it never redraws them. Every
 # invariant can hold while the SVG on disk is one the current code would no
@@ -522,6 +522,35 @@ vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm-ported-square.html --shape=
 vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm.html --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek
 vp ribbon-traced-volute-bore10-45deg.html --trace=traces/volute.json
 say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 17 ] && echo "ok  $pg/17" || echo "FAIL $pgbad stale, $pg of 17 current")"
+
+# THE PAGE AND THE SHEETS READ ONE COMMAND LINE. ribbon_view.py kept its own copy
+# of the generator's flag handling and the two drifted four ways: the generator
+# ignored a flag the viewer refused (--lobe-radius=50 built the default lobe),
+# the viewer drew pages the generator refuses (--port-at with --cap, a facet
+# named twice), both quoted R30 for the scallop and the racetrack, and a viewer
+# run without --out guessed a path that, for three shipped designs, was another
+# design's page. The viewer now calls ribbon_bore.read_flags(), bend_radius()
+# and port_holes(). The rows above only ever passed --out and legal lines, which
+# is how every one of these stayed green; this row runs the lines they never did.
+cd $R/trumpet/parts/bore/concept/swept-curve
+rf=0; rn=0
+refuses () {  # refuses WHAT CMD...: exits non-zero, writes no page, says WHAT
+  local want=$1; shift; rn=$((rn+1)); rm -f /tmp/_ag_rf.html
+  o=$("$@" 2>&1); rv=$?
+  if [ $rv = 0 ] || [ -f /tmp/_ag_rf.html ] || [[ "$o" != *"$want"* ]]; then
+    rf=$((rf+1)); echo "  DID NOT REFUSE: $*"; fi
+  rm -f /tmp/_ag_rf.html
+}
+TOR=(--shape=torus --facet=27.6923076923 --radius=128.571738 --port)
+refuses "not a flag" python3 ribbon_bore.py --lobe-radius=50 --no-write
+refuses "not a flag" python3 ribbon_view.py --lobe-radius=50 --out=/tmp/_ag_rf.html
+refuses "--out=PATH" python3 ribbon_view.py --shape=serpentine
+refuses "ports none" python3 ribbon_view.py "${TOR[@]}" --port-at=0,6 --cap --out=/tmp/_ag_rf.html
+refuses "same facet twice" python3 ribbon_view.py "${TOR[@]}" --port-at=0,0 --out=/tmp/_ag_rf.html
+refuses "no facet at all" python3 ribbon_view.py "${TOR[@]}" --port-at= --out=/tmp/_ag_rf.html
+rr=$(python3 ribbon_bore.py --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=134.115704 --race-straight=30 --narrow --no-write 2>&1 | grep -c 'inner wall runs at R17$')
+rs=$(python3 ribbon_bore.py --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=36 --lobe-r=72.961813 --scallop-in-r=40 --port --port-at=0,9 --port-per-cheek --port-square --narrow --no-write 2>&1 | grep -c 'inner wall runs at R35$')
+say "ribbon page and sheets refuse alike" "$( [ $rf = 0 ] && [ $rn = 6 ] && [ "$rr" = 1 ] && [ "$rs" = 1 ] && echo "ok  $rn refusals, 2 radii" || echo "FAIL $rf of $rn not refused, radius rows $rr $rs")"
 
 # Every gate above checks an ARTEFACT. A tool that ships no artefact is checked
 # by nothing at all, and five of them were: coils.py, mcwalk.py, nest.py,

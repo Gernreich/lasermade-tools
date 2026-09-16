@@ -281,10 +281,16 @@ Runs every gate in every repository and prints one tally.
 
 Seventeen ribbon bore runs -- twelve over the six open shapes, two over the
 torus, one each over the scallop and the racetrack, and one on `--port-at` --
-`regress.py` over 25 block designs, `doc-audit` over
+`regress.py` over 26 block designs, `doc-audit` over
 every page in nine repositories, `svg-stroke-check` over every SVG, and
 `flat-part-check` over the flat parts -- then four questions about what is
 committed, and finally whether every repository is clean and pushed.
+
+`ribbon page and sheets refuse alike` (2026-09-16) runs the command lines the
+design-page rows never did: an unknown flag to both tools, the viewer with no
+`--out`, three `--port-at` lines the generator refuses, and the scallop's and
+racetrack's reported radius. Every one of those passed before, because the
+viewer kept its own copy of the generator's flag handling.
 
 **Three gates were added on 2026-09-15, all for holes this harness had.**
 
