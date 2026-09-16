@@ -76,10 +76,13 @@ done
 #
 # --facet=60 is not the alternative dial either. It widens the facet, and the
 # ring then fails "the web outboard of a slot is cuttable" at 0.951mm against
-# 1.5mm -- at EVERY radius, default and R60 alike, because 60 degree facets put
-# the mortices that close to the rim whatever the ring's size. (It also leaves
-# six facets, so --port-at=0,6 is out of range there; --port-at=0,3 is the
-# comparable run.) Opening the radius does not clear it.
+# 1.5mm -- the same 0.951 at R30, R60 and R120, because 60 degree facets put the
+# mortices that close to the rim whatever the ring's size. (It also leaves six
+# facets, so --port-at=0,6 is out of range there; --port-at=0,3 is the
+# comparable run.) It has no passing radius: from R150 the bed refuses the cheek
+# before any check runs, so --facet=60 --radius=300 prints ZERO FAIL lines and
+# that means zero checks. Which is why every row here asserts the pass count and
+# not just the failure count -- the header's rule, in one concrete case.
 for spec in "" "--radius=120 --port --port-at=0,6"; do
   o=$(python3 ribbon_bore.py --shape=torus $spec --no-write 2>&1)
   n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
