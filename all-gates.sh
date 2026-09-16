@@ -273,6 +273,10 @@ SP=spiral/ribbon-spiral-bore10-45deg
 BSP=../../../../built/ribbon-spiral-bore10-45deg-R35to113
 DS=dspiral/ribbon-dspiral-bore10-30deg-R62-pitch46
 VO=volute/ribbon-volute-bore10-45deg-R94-step60
+# The first CLOSED RING kept in this tree. Its facet angle is 360/13 and is not
+# a whole number of degrees, which is why name-check.py had to learn to hold a
+# name to the precision it states rather than to the nearest integer.
+TO=torus/ribbon-torus-bore10-27.6923deg-R128.572-800mm
 rr $SE/cut-files ribbon-serpentine-bore10-30deg-3lobes-R72-1000mm -narrow --shape=serpentine
 rr $SE/cut-files ribbon-serpentine-bore10-30deg-3lobes-R72-1000mm -ported-narrow --shape=serpentine --port --cap
 rr $OP/cut-files ribbon-opposed-bore10-30deg-3lobes-R64-1000mm -narrow --shape=opposed
@@ -296,8 +300,9 @@ rr $DS-halftest/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-half-196mm -na
 rr $DS-halftest/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-half-196mm -ported-square-narrow --shape=dspiral --ds-half --ds-facets=2 --port --port-square --cap
 rr $VO/cut-files ribbon-volute-bore10-45deg-R94-step60-1180mm -narrow --shape=volute
 rr $VO/cut-files ribbon-volute-bore10-45deg-R94-step60-1180mm -ported-square-narrow --shape=volute --port --port-square --cap
+rrc $TO/cut-files ribbon-torus-bore10-27.6923deg-R128.572-800mm -ported-at0-6-narrow --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek
 rm -rf $T
-say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 48 ] && echo "ok  $same/48" || echo "FAIL $bad differ, $same of 48 compared")"
+say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 51 ] && echo "ok  $same/51" || echo "FAIL $bad differ, $same of 51 compared")"
 
 # Walks EVERY previews/ directory in the repository, not just this one. It
 # checked swept-curve/previews and nothing else, so parts/bell/previews,
@@ -482,8 +487,9 @@ vp $DSP-halftest/ribbon-dspiral-bore10-30deg-R62-pitch46-halftest.html --shape=d
 vp $DSP-1000mm/ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm.html --shape=dspiral --ds-facets=9 --lead=42 --port --port-square --port-both --port-per-cheek --cap
 vp $DSP-1000mm/ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm-ported-square.html --shape=dspiral --ds-facets=9 --lead=42 --port --port-square --cap
 vp $DSP-halftest-both/ribbon-dspiral-bore10-30deg-R62-pitch46-halftest-both.html --shape=dspiral --ds-half --ds-facets=2 --lead=42 --port --port-square --port-both --port-per-cheek --cap
+vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm.html --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek
 vp ribbon-traced-volute-bore10-45deg.html --trace=traces/volute.json
-say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 13 ] && echo "ok  $pg/13" || echo "FAIL $pgbad stale, $pg of 13 current")"
+say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 14 ] && echo "ok  $pg/14" || echo "FAIL $pgbad stale, $pg of 14 current")"
 
 # Every gate above checks an ARTEFACT. A tool that ships no artefact is checked
 # by nothing at all, and five of them were: coils.py, mcwalk.py, nest.py,

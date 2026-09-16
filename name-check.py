@@ -77,13 +77,15 @@ def main(path=None):
                                cwd=SWEPT, capture_output=True, text=True)
             out = r.stdout
             head = re.search(
-                r'ribbon bore, (\S+)\s+(\d+)mm square, (\d+) degree facets', out)
+                r'ribbon bore, (\S+)\s+(\d+)mm square, ([\d.]+) degree facets',
+                out)
             cl = re.search(r'centreline ([\d.]+)mm', out)
             if not head or not cl:
                 print(f'  FAIL  {stem}: the generator printed no report')
                 bad += 1
                 continue
-            shape, bore, deg, mm = head[1], int(head[2]), int(head[3]), float(cl[1])
+            shape, bore, deg, mm = (head[1], int(head[2]), float(head[3]),
+                                    float(cl[1]))
             # The shape line is the one AFTER the header, not stdout line 1.
             # --merge-lead prints before the report, so for a design whose only
             # rr row is a merged one -- the 1000mm double spiral is the first --
@@ -94,7 +96,8 @@ def main(path=None):
             lines = out.split('\n')
             desc = lines[lines.index(head[0]) + 1] if head[0] in lines else ''
             claims = [('bore', int(re.search(r'bore(\d+)', stem)[1]), bore),
-                      ('facet angle', int(re.search(r'-(\d+)deg', stem)[1]), deg)]
+                      ('facet angle',
+                       re.search(r'-([\d.]+)deg', stem)[1], deg)]
             if (m := re.search(r'-(\d+)mm$', stem)):
                 claims.append(('centreline', int(m[1]), round(mm)))
             # radii: a span (R35to113) or a single start radius (R30, R62, R94)
@@ -102,10 +105,10 @@ def main(path=None):
                 got = [round(float(x)) for x in re.findall(r'R([\d.]+)', desc)]
                 claims += [('inner R', int(m[1]), got[0] if got else None),
                            ('outer R', int(m[2]), got[1] if len(got) > 1 else None)]
-            elif (m := re.search(r'-R(\d+)', stem)):
+            elif (m := re.search(r'-R([\d.]+)', stem)):
                 got = re.search(r'R([\d.]+)', desc)
-                claims.append(('radius', int(m[1]),
-                               round(float(got[1])) if got else None))
+                claims.append(('radius', m[1],
+                               float(got[1]) if got else None))
             if (m := re.search(r'pitch(\d+)', stem)):
                 g = re.search(r'rising ([\d.]+)mm a turn', desc)
                 claims.append(('pitch', int(m[1]), round(float(g[1])) if g else None))
@@ -118,7 +121,25 @@ def main(path=None):
             claims.append(('shape', stem.split('-')[1], shape))
             wrong = 0
             for what, said, got in claims:
-                if said != got:
+                # A NAME IS HELD TO THE PRECISION IT STATES, and no further.
+                # Two conventions have to live together here. -R72 names a
+                # serpentine whose radius is really 71.754 -- solved to give
+                # exactly 1000mm, and rounded in the name on purpose -- so an
+                # exact compare calls a correct name wrong. -R128.572 and
+                # -27.6923deg name a ring that cannot be written any shorter:
+                # a ring's facet angle is 360/n, a whole number only when n
+                # divides 360, and rounding 27.6923 to 27 throws away the only
+                # digits that tell one ring from the next. Both are right, and
+                # what separates them is how many decimals the NAME spends.
+                # So round the generator's figure to the name's own precision
+                # and compare there: 71.754 to 0dp is 72, 128.571738 to 3dp is
+                # 128.572, and neither convention has to give way.
+                if isinstance(said, str) and re.fullmatch(r'[\d.]+', said):
+                    dp = len(said.split('.')[1]) if '.' in said else 0
+                    ok = got is not None and round(float(got), dp) == float(said)
+                else:
+                    ok = said == got
+                if not ok:
                     print(f'  FAIL  {stem}: name says {what} {said}, '
                           f'the generator says {got}')
                     bad += 1
