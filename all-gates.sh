@@ -92,6 +92,14 @@ for spec in "" "--radius=120 --port --port-at=0,6"; do
   say "ribbon torus ${spec:-plain}" "$( [ "$f" = 0 ] && [ "$n" = 12 ] && echo "ok  $n/12" || echo "FAIL $n pass $f fail")"
 done
 
+# The SAME HOLE, one shape later. scallop closes on itself like the torus, so
+# the loop above cannot carry it either -- a bare --port on a shape with no
+# ends puts both holes at the seam. An unported row is what the loop would have
+# given it, and it is the row that would have caught the torus seam bug.
+o=$(python3 ribbon_bore.py --shape=scallop --no-write 2>&1)
+n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
+say "ribbon scallop plain" "$( [ "$f" = 0 ] && [ "$n" = 12 ] && echo "ok  $n/12" || echo "FAIL $n pass $f fail")"
+
 # --port-at=0 REPRODUCES PLAIN --port on every open shape, 12/12 with no
 # failure on all six, so the new flag subsumes the old path rather than sitting
 # beside it. One row watches that, because the torus rows above exercise
@@ -277,6 +285,10 @@ VO=volute/ribbon-volute-bore10-45deg-R94-step60
 # a whole number of degrees, which is why name-check.py had to learn to hold a
 # name to the precision it states rather than to the nearest integer.
 TO=torus/ribbon-torus-bore10-27.6923deg-R128.572-800mm
+# A CLOSED SERPENTINE, and the second shape here that shuts on itself. Its
+# facet angle has to divide 360/LOBES as well as both turns, which is why it is
+# 36 and not the 30 every open shape defaults to.
+SC=scallop/ribbon-scallop-bore10-36deg-5lobes-R72.9618-in40-800mm
 rr $SE/cut-files ribbon-serpentine-bore10-30deg-3lobes-R72-1000mm -narrow --shape=serpentine
 rr $SE/cut-files ribbon-serpentine-bore10-30deg-3lobes-R72-1000mm -ported-narrow --shape=serpentine --port --cap
 rr $OP/cut-files ribbon-opposed-bore10-30deg-3lobes-R64-1000mm -narrow --shape=opposed
@@ -301,8 +313,10 @@ rr $DS-halftest/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-half-196mm -po
 rr $VO/cut-files ribbon-volute-bore10-45deg-R94-step60-1180mm -narrow --shape=volute
 rr $VO/cut-files ribbon-volute-bore10-45deg-R94-step60-1180mm -ported-square-narrow --shape=volute --port --port-square --cap
 rrc $TO/cut-files ribbon-torus-bore10-27.6923deg-R128.572-800mm -ported-at0-6-narrow --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek
+rrc $TO/cut-files ribbon-torus-bore10-27.6923deg-R128.572-800mm -ported-at0-6-square-narrow --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek --port-square
+rrc $SC/cut-files ribbon-scallop-bore10-36deg-5lobes-R72.9618-in40-800mm -ported-at0-9-square-narrow --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=36 --lobe-r=72.961813 --scallop-in-r=40 --port --port-at=0,9 --port-per-cheek --port-square
 rm -rf $T
-say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 51 ] && echo "ok  $same/51" || echo "FAIL $bad differ, $same of 51 compared")"
+say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 57 ] && echo "ok  $same/57" || echo "FAIL $bad differ, $same of 57 compared")"
 
 # Walks EVERY previews/ directory in the repository, not just this one. It
 # checked swept-curve/previews and nothing else, so parts/bell/previews,
@@ -487,9 +501,11 @@ vp $DSP-halftest/ribbon-dspiral-bore10-30deg-R62-pitch46-halftest.html --shape=d
 vp $DSP-1000mm/ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm.html --shape=dspiral --ds-facets=9 --lead=42 --port --port-square --port-both --port-per-cheek --cap
 vp $DSP-1000mm/ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm-ported-square.html --shape=dspiral --ds-facets=9 --lead=42 --port --port-square --cap
 vp $DSP-halftest-both/ribbon-dspiral-bore10-30deg-R62-pitch46-halftest-both.html --shape=dspiral --ds-half --ds-facets=2 --lead=42 --port --port-square --port-both --port-per-cheek --cap
+vp $SC/ribbon-scallop-bore10-36deg-5lobes-R72.9618-in40-800mm.html --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=36 --lobe-r=72.961813 --scallop-in-r=40 --port --port-at=0,9 --port-per-cheek --port-square
+vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm-ported-square.html --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek --port-square
 vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm.html --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek
 vp ribbon-traced-volute-bore10-45deg.html --trace=traces/volute.json
-say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 14 ] && echo "ok  $pg/14" || echo "FAIL $pgbad stale, $pg of 14 current")"
+say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 16 ] && echo "ok  $pg/16" || echo "FAIL $pgbad stale, $pg of 16 current")"
 
 # Every gate above checks an ARTEFACT. A tool that ships no artefact is checked
 # by nothing at all, and five of them were: coils.py, mcwalk.py, nest.py,

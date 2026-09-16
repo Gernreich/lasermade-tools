@@ -116,7 +116,12 @@ def main(path=None):
                 g = re.search(r'stepping ([\d.]+)mm a turn', desc)
                 claims.append(('step', int(m[1]), round(float(g[1])) if g else None))
             if (m := re.search(r'-(\d+)lobes', stem)):
-                g = re.search(r'(\d+) half-circles', desc)
+                # "half-circles" is the OPEN serpentine's word and only its
+                # word. A closed serpentine's lobes are a 108 degree bulge
+                # against a 36 degree scoop -- lobes, and not half of anything
+                # -- so its description says "5 lobes" and this read None and
+                # called a correct name wrong. Either spelling counts.
+                g = re.search(r'(\d+) (?:half-circles|lobes)', desc)
                 claims.append(('lobes', int(m[1]), int(g[1]) if g else None))
             claims.append(('shape', stem.split('-')[1], shape))
             wrong = 0
