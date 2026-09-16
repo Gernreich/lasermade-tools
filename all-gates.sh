@@ -297,7 +297,7 @@ TO=torus/ribbon-torus-bore10-27.6923deg-R128.572-800mm
 # A CLOSED SERPENTINE, and the second shape here that shuts on itself. Its
 # facet angle has to divide 360/LOBES as well as both turns, which is why it is
 # 36 and not the 30 every open shape defaults to.
-SC=scallop/ribbon-scallop-bore10-36deg-5lobes-R72.9618-in40-800mm
+SC=scallop/ribbon-scallop-bore10-36deg-5lobes-R44.2214-in41-800mm
 # UNPORTED, and the only design here that is. 1600mm of closed loop leaves the
 # coil passing close enough to itself that no port clears a neighbouring
 # mortice -- square or 7 x 14, measured across lobe radii 20.5 to 40 and eight
@@ -329,7 +329,7 @@ rr $VO/cut-files ribbon-volute-bore10-45deg-R94-step60-1180mm -ported-square-nar
 rrc $TO/cut-files ribbon-torus-bore10-27.6923deg-R128.572-800mm -ported-at0-6-narrow --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek
 rrc $TO/cut-files ribbon-torus-bore10-27.6923deg-R128.572-800mm -ported-at0-6-square-narrow --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek --port-square
 rr $RT/cut-files ribbon-racetrack-bore10-45deg-4lobes-R22-cap134.116-1600mm -narrow --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=134.115704 --race-straight=30
-rrc $SC/cut-files ribbon-scallop-bore10-36deg-5lobes-R72.9618-in40-800mm -ported-at0-9-square-narrow --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=36 --lobe-r=72.961813 --scallop-in-r=40 --port --port-at=0,9 --port-per-cheek --port-square
+rrc $SC/cut-files ribbon-scallop-bore10-36deg-5lobes-R44.2214-in41-800mm -ported-at1-14-square-narrow --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square
 rm -rf $T
 say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 59 ] && echo "ok  $same/59" || echo "FAIL $bad differ, $same of 59 compared")"
 
@@ -517,7 +517,7 @@ vp $DSP-1000mm/ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm.html --shape=dspir
 vp $DSP-1000mm/ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm-ported-square.html --shape=dspiral --ds-facets=9 --lead=42 --port --port-square --cap
 vp $DSP-halftest-both/ribbon-dspiral-bore10-30deg-R62-pitch46-halftest-both.html --shape=dspiral --ds-half --ds-facets=2 --lead=42 --port --port-square --port-both --port-per-cheek --cap
 vp $RT/ribbon-racetrack-bore10-45deg-4lobes-R22-cap134.116-1600mm.html --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=134.115704 --race-straight=30
-vp $SC/ribbon-scallop-bore10-36deg-5lobes-R72.9618-in40-800mm.html --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=36 --lobe-r=72.961813 --scallop-in-r=40 --port --port-at=0,9 --port-per-cheek --port-square
+vp $SC/ribbon-scallop-bore10-36deg-5lobes-R44.2214-in41-800mm.html --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square
 vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm-ported-square.html --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek --port-square
 vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm.html --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek
 vp ribbon-traced-volute-bore10-45deg.html --trace=traces/volute.json
@@ -549,7 +549,7 @@ refuses "ports none" python3 ribbon_view.py "${TOR[@]}" --port-at=0,6 --cap --ou
 refuses "same facet twice" python3 ribbon_view.py "${TOR[@]}" --port-at=0,0 --out=/tmp/_ag_rf.html
 refuses "no facet at all" python3 ribbon_view.py "${TOR[@]}" --port-at= --out=/tmp/_ag_rf.html
 rr=$(python3 ribbon_bore.py --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=134.115704 --race-straight=30 --narrow --no-write 2>&1 | grep -c 'inner wall runs at R17$')
-rs=$(python3 ribbon_bore.py --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=36 --lobe-r=72.961813 --scallop-in-r=40 --port --port-at=0,9 --port-per-cheek --port-square --narrow --no-write 2>&1 | grep -c 'inner wall runs at R35$')
+rs=$(python3 ribbon_bore.py --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square --narrow --no-write 2>&1 | grep -c 'inner wall runs at R36$')
 say "ribbon page and sheets refuse alike" "$( [ $rf = 0 ] && [ $rn = 6 ] && [ "$rr" = 1 ] && [ "$rs" = 1 ] && echo "ok  $rn refusals, 2 radii" || echo "FAIL $rf of $rn not refused, radius rows $rr $rs")"
 
 # Every gate above checks an ARTEFACT. A tool that ships no artefact is checked
