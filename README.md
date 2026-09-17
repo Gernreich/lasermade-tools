@@ -279,8 +279,9 @@ Runs every gate in every repository and prints one tally.
     ...
     GATES FAILING: 0
 
-Seventeen ribbon bore runs -- twelve over the six open shapes, two over the
-torus, one each over the scallop and the racetrack, and one on `--port-at` --
+Eighteen ribbon bore runs -- twelve over the six open shapes, two over the
+torus, one each over the scallop, the racetrack and the oval, and one on
+`--port-at` --
 `regress.py` over 26 block designs, `doc-audit` over
 every page in nine repositories, `svg-stroke-check` over every SVG, and
 `flat-part-check` over the flat parts -- then four questions about what is
