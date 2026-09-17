@@ -316,6 +316,7 @@ SC=scallop/ribbon-scallop-bore10-36deg-5lobes-R44.2214-in41-800mm
 # facet pairs. Its two mouths are cut by hand, outside these checks.
 RT=racetrack/ribbon-racetrack-bore10-45deg-4lobes-R22-cap134.116-1600mm
 OV=oval/ribbon-oval-bore10-30deg-end60-R28-side-R72-flat12.2-sideflat12.5-314mm
+OS=oval/ribbon-oval-bore10-45deg-R21.8-straight43.6-221mm
 rr $SE/cut-files ribbon-serpentine-bore10-30deg-3lobes-R72-1000mm -narrow --shape=serpentine
 rr $SE/cut-files ribbon-serpentine-bore10-30deg-3lobes-R72-1000mm -ported-narrow --shape=serpentine --port --cap
 rr $OP/cut-files ribbon-opposed-bore10-30deg-3lobes-R64-1000mm -narrow --shape=opposed
@@ -343,9 +344,10 @@ rrc $TO/cut-files ribbon-torus-bore10-27.6923deg-R128.572-800mm -ported-at0-6-na
 rrc $TO/cut-files ribbon-torus-bore10-27.6923deg-R128.572-800mm -ported-at0-6-square-narrow --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek --port-square
 rr $RT/cut-files ribbon-racetrack-bore10-45deg-4lobes-R22-cap134.116-1600mm -narrow --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=134.115704 --race-straight=30
 rr $OV/cut-files ribbon-oval-bore10-30deg-end60-R28-side-R72-flat12.2-sideflat12.5-314mm -narrow --shape=oval
+rr $OS/cut-files ribbon-oval-bore10-45deg-R21.8-straight43.6-221mm -narrow --shape=oval --facet=45 --oval-end-deg=90 --oval-end-r=21.8 --oval-flat=0 --oval-side-flat=43.6
 rrc $SC/cut-files ribbon-scallop-bore10-36deg-5lobes-R44.2214-in41-800mm -ported-at1-14-square-narrow --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square
 rm -rf $T
-say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 61 ] && echo "ok  $same/61" || echo "FAIL $bad differ, $same of 61 compared")"
+say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 63 ] && echo "ok  $same/63" || echo "FAIL $bad differ, $same of 63 compared")"
 
 # Walks EVERY previews/ directory in the repository, not just this one. It
 # checked swept-curve/previews and nothing else, so parts/bell/previews,
@@ -532,11 +534,12 @@ vp $DSP-1000mm/ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm-ported-square.html
 vp $DSP-halftest-both/ribbon-dspiral-bore10-30deg-R62-pitch46-halftest-both.html --shape=dspiral --ds-half --ds-facets=2 --lead=42 --port --port-square --port-both --port-per-cheek --cap
 vp $RT/ribbon-racetrack-bore10-45deg-4lobes-R22-cap134.116-1600mm.html --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=134.115704 --race-straight=30
 vp $OV/ribbon-oval-bore10-30deg-end60-R28-side-R72-flat12.2-sideflat12.5-314mm.html --shape=oval
+vp $OS/ribbon-oval-bore10-45deg-R21.8-straight43.6-221mm.html --shape=oval --facet=45 --oval-end-deg=90 --oval-end-r=21.8 --oval-flat=0 --oval-side-flat=43.6
 vp $SC/ribbon-scallop-bore10-36deg-5lobes-R44.2214-in41-800mm.html --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square
 vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm-ported-square.html --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek --port-square
 vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm.html --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek
 vp ribbon-traced-volute-bore10-45deg.html --trace=traces/volute.json
-say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 18 ] && echo "ok  $pg/18" || echo "FAIL $pgbad stale, $pg of 18 current")"
+say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 19 ] && echo "ok  $pg/19" || echo "FAIL $pgbad stale, $pg of 19 current")"
 
 # THE PAGE AND THE SHEETS READ ONE COMMAND LINE. ribbon_view.py kept its own copy
 # of the generator's flag handling and the two drifted four ways: the generator
