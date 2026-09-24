@@ -76,7 +76,12 @@ a code{white-space:nowrap}
 .tog{position:fixed;top:14px;right:14px;z-index:9;background:var(--card);color:var(--mut);
 border:1px solid var(--line);border-radius:7px;padding:6px 11px;font-size:12.5px;cursor:pointer}
 .tog:hover{color:var(--accent)}
-@media (max-width:900px){.wrap{grid-template-columns:1fr;gap:20px;padding:26px 18px 72px}
+/* Below 900px the contents list moves to the top of the page, and the fixed theme
+   button sat on top of its first lines. There it scrolls away with the page instead,
+   in a strip of padding kept free for it; fixed, it would ride over the text as the
+   page scrolls, since a narrow screen has no margin for it to sit in. */
+@media (max-width:900px){.wrap{grid-template-columns:1fr;gap:20px;padding:62px 18px 72px}
+.tog{position:absolute}
 nav{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--line);
 padding:0 0 16px;columns:2;column-gap:20px}}
 @media print{nav,.tog{display:none}.wrap{display:block;max-width:none;padding:0}
