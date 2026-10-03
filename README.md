@@ -129,7 +129,16 @@ the obvious alternative and would let any repository hide files from the check b
 dropping a README into a directory. Two of the seven have no README anyway, so inference
 would not even have worked.
 
-Most recently the displayed-image check read a thumbnail as a missing picture. A page
+Most recently, on 2026-10-02, its first run outside these repositories gave three wrong
+list counts in one project, Logic Research. "2,868 rules" was read as "868 rules", because
+a comma is a word boundary. "348 rules in 9 families" was counted against the three
+families listed after it: a numeral is a measured total, not a list being introduced, which
+the check already knew for "checks" and now applies to every noun. And a section of three
+bold-lead paragraphs counted two, because one lead held a code span with a `*` in it and
+the bold pattern stopped there. Across 43 documents the only verdicts that changed were
+those three, and seeded miscounts are still caught.
+
+Before that, the displayed-image check read a thumbnail as a missing picture. A page
 showed a 214KB copy of a 1.4MB photograph and linked the original from it — which is what a
 page should do, rather than making every reader pull the full file to see the picture — and
 the check, which counted only `<img src>` and `![]()`, reported the original as named but

@@ -323,7 +323,10 @@ ok("no two headings share a title", not dupes, str(sorted(dupes)) if dupes else 
 # ── 4. counts the prose claims about its own lists ───────────────────────────
 WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
          "seven": 7, "eight": 8, "nine": 9, "ten": 10}
-for m in re.finditer(r"\b(One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|\d+)\s+"
+# The lookbehind keeps a numeral whole: "2,868 rules" matched as "868 rules",
+# because a comma is a word boundary. Numerals are skipped below in any case,
+# but a claim should be read as the number the document wrote.
+for m in re.finditer(r"(?<![\d,.])\b(One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|\d+)\s+"
                      r"(things|pitfalls|rules|steps|reasons|ways|checks|traps)\b", prose_src):
     claimed = WORDS.get(m.group(1).lower(), None) or int(m.group(1))
     # A document that quotes the pattern as an example is not making the claim.
@@ -335,14 +338,16 @@ for m in re.finditer(r"\b(One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|\d+)\
     after = prose_src[m.end(): m.end() + 1]
     if before in '"“`' and after in '"”`':
         continue
-    # A NUMERAL before "checks" is a gate reporting how many assertions it ran,
-    # not prose introducing a list. Across the nine repositories every claim
-    # written as digits is one of those -- 195, 226, 393, 7700 checks -- and
-    # every genuine list claim spells the number out: "Two things", "Three
-    # ways". 17 instances, no exceptions. Read as claims, the digits produced
-    # six false positives in tools/CLAUDE.md alone and never once caught a real
-    # miscount. "Three checks" over two items is still checked.
-    if m.group(2) == "checks" and m.group(1).isdigit():
+    # A NUMERAL is a measured total, not prose introducing a list. Across the
+    # nine repositories every claim written as digits is a gate reporting how
+    # many assertions it ran -- 195, 226, 393, 7700 checks -- and every genuine
+    # list claim spells the number out: "Two things", "Three ways". 17
+    # instances, no exceptions. Read as claims, the digits produced six false
+    # positives in tools/CLAUDE.md alone and never once caught a real miscount.
+    # This applied only to "checks" until 2026-10-02, when Logic Research's
+    # "348 rules in 9 families" was counted against the three families listed
+    # after it. "Three checks" over two items is still checked.
+    if m.group(1).isdigit():
         continue
     # Count the list that FOLLOWS the claim, and count every item in it -- not
     # only the ones with a bold lead. "Two things had to be true" over two
@@ -361,7 +366,10 @@ for m in re.finditer(r"\b(One|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|\d+)\
         elif seen and not ln.startswith((" ", "\t")):
             break               # unindented prose ends the list
     if not items:  # some lists are bold-lead paragraphs rather than markdown list items
-        items = len(re.findall(r"(?m)^\*\*[^*]+\*\*", tail))
+        # A code span inside the bold may hold a '*': **The `R9NAND__*` files
+        # were written by a NOR search.** stopped [^*]+ at the glob, so a section
+        # of three bold leads counted two. Spans are read whole.
+        items = len(re.findall(r"(?m)^\*\*(?:`[^`]*`|[^*`])+\*\*", tail))
     if items:
         ok(f'"{m.group(0)}" matches the list under it', items == claimed,
            f"claimed {claimed}, found {items}")

@@ -97,10 +97,10 @@ Know its limits outside its home:
 - It only recognises file names ending `.svg .js .py .md .html .png .jpg .jpeg
   .css .zip`. A missing `build.sh`, `config.json` or `main.ts` goes unreported,
   so check those names by hand (lens 12).
-- A list-count claim is only read in one shape: a capitalised number word or a
-  numeral, then `things`, `pitfalls`, `rules`, `steps`, `reasons`, `ways`,
-  `checks` or `traps` — "Three steps". "the three stages" and "Four options"
-  are yours to count.
+- A list-count claim is only read in one shape: a capitalised number word up to
+  Ten, then `things`, `pitfalls`, `rules`, `steps`, `reasons`, `ways`, `checks`
+  or `traps` — "Three steps". Numerals are never read as list claims, so "the
+  three stages", "Four options" and "5 steps" are yours to count.
 - Leave out `--rebuild` and `--html` unless the page really is `md2html.py`
   output. Use the project's own build to regenerate the page, then compare the
   result with what is committed or deployed.
