@@ -643,6 +643,22 @@ both sibling tools. Whether `15,20,25,30` brackets 3mm Baltic birch on a 55W tub
 exactly the question the ladder exists to answer, and nothing here has answered it yet.
 Treat the default as a starting bracket, not a recommendation.
 
+## The review method these tools serve
+
+`skills/writeup-review/SKILL.md` is the Claude Code skill that runs these tools as
+the mechanical half of a document review, and then reads the document through
+thirteen lenses: eight on one document — follow it literally, at other numbers,
+misread it, recompute its figures, check its links, its accessibility, read it
+backwards, look at the deployed page — and five across a set of documents.
+`~/.claude/skills/writeup-review` is a symlink to that directory, so the skill is
+edited and committed here, beside the tools it names. It was moved in on
+2026-10-02, having been unversioned before that, for the same reason the tools
+were.
+
+The lenses apply to any project. Only the first section is specific to these
+repositories: `all-gates.sh` here, `doc-audit.py` alone elsewhere, with what it
+cannot see outside its home spelled out.
+
 ## Checking this page
 
 `index.html` is this README rendered by `md2html.py` and committed, not built on the

@@ -59,3 +59,11 @@ snakeboxvar.py
 # It names the SHAPE of a line, not a file. Documenting the format without
 # writing a filename-shaped token is worse writing than this exemption.
 path.svg
+
+# skills/writeup-review/SKILL.md: the screenshots and probe page its lens 8
+# writes to /tmp, and the truncated name its lens 12 quotes as the mistake
+# ("...-bridge1.svg documents nothing"). Outputs and an example, never files.
+page.png
+narrow.png
+probe.html
+bridge1.svg
