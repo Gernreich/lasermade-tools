@@ -2,6 +2,7 @@
 
 Ten scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
 build repositories — [trumpet-elbows-not-allowed](https://github.com/Gernreich/trumpet-elbows-not-allowed),
+[trumpet-elbows-allowed](https://github.com/Gernreich/trumpet-elbows-allowed),
 [knotwork-soundholes](https://github.com/Gernreich/knotwork-soundholes),
 [living-hinge](https://github.com/Gernreich/living-hinge),
 [slapstick](https://github.com/Gernreich/slapstick),
