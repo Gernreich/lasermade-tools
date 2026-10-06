@@ -45,6 +45,20 @@ say () {
   if [[ "$2" == *FAIL* ]]; then fail=$((fail+1)); failed+=("$1  --  $2"); fi
 }
 
+# The repositories the per-repository loops walk, named ONCE. Until 2026-10-06
+# three loops each carried their own list, and all three still said `trumpet`
+# after it became trumpet-elbows-not-allowed: the paired loop's `cd || continue`
+# skipped it in silence, and find printed an error and listed the rest, so the
+# link gate passed over 20 documents and neither trumpet repository was in them.
+# Gernreich publishes no page, so the paired-page loop leaves it out.
+REPOS="bullroarer buzz-disc kalimba knotwork-soundholes living-hinge slapstick
+       lasermade-tools Gernreich.github.io Gernreich
+       trumpet-elbows-not-allowed trumpet-elbows-allowed"
+PAGED=$(echo $REPOS | tr ' ' '\n' | grep -vx Gernreich)
+m=""
+for r in $REPOS; do [ -d "$R/$r/.git" ] || m="$m $r"; done
+say "every named repository exists" "$( [ -z "$m" ] && echo "ok  $(echo $REPOS | wc -w | tr -d ' ') repos" || echo "FAIL missing:$m")"
+
 cd $R/trumpet-elbows-not-allowed/parts/bore/concept/swept-curve
 # 13, not 12, since 2026-09-16: "no cut line crosses the airway". Every ring
 # cheek -- torus, scallop, racetrack -- was written as ONE path that stepped
@@ -133,6 +147,12 @@ cd $R/trumpet-elbows-not-allowed/tools
 o=$(~/Software/boxes/venv/bin/python regress.py 2>&1 | tail -1)
 say "regress.py, 26 block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
 
+# The copy that cuts elbows rather than refusing them: its own library, 31
+# designs, and its own bore_split.py. Nothing ran it until 2026-10-06.
+cd $R/trumpet-elbows-allowed/tools
+o=$(~/Software/boxes/venv/bin/python regress.py 2>&1 | tail -1)
+say "regress.py, elbows allowed, 31 designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
+
 # regress.py MEASURES the committed sheets; it never redraws them. Every
 # invariant can hold while the SVG on disk is one the current code would no
 # longer produce -- the hole this file closed for the 40 ribbon sheets and left
@@ -149,7 +169,14 @@ ro=$(~/Software/boxes/venv/bin/python repro.py 2>&1); rc=$?
 o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
 say "block sheets reproduce, as-built pinned" "$( [[ "$o" == *reproduce* && "$o" != *failing* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 
-for repo in bullroarer buzz-disc kalimba knotwork-soundholes living-hinge slapstick lasermade-tools Gernreich.github.io trumpet; do
+# The same for the elbows-allowed copy, whose sheets include meander/first's
+# eight, elbows and all: 70 reproduce there against 62 here.
+cd $R/trumpet-elbows-allowed/tools
+ro=$(~/Software/boxes/venv/bin/python repro.py 2>&1); rc=$?
+o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
+say "block sheets reproduce, elbows allowed" "$( [[ "$o" == *reproduce* && "$o" != *failing* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
+
+for repo in $PAGED; do
   cd $R/$repo 2>/dev/null || continue
   bad=0; n=0
   for md in *.md; do
@@ -188,9 +215,7 @@ say "svg-stroke-check, every repo" "$( [[ "$o" == *"0 conflicting"* ]] && echo "
 # matches, and doc-audit snapshots and restores the tree around that.
 cd $R
 u=0; n=0
-for f in $(find bullroarer buzz-disc kalimba knotwork-soundholes living-hinge \
-                slapstick lasermade-tools Gernreich.github.io Gernreich trumpet \
-                -name '*.md' -not -path '*/.git/*' | sort); do
+for f in $(find $REPOS -name '*.md' -not -path '*/.git/*' | sort); do
   n=$((n+1))
   (cd "$(dirname "$f")" && python3 $G/doc-audit.py "$(basename "$f")" --run-blocks 2>&1 \
      | grep -q '0 failed') || u=$((u+1))
@@ -208,9 +233,7 @@ say "doc-audit, every markdown in every repo" "$( [ $u = 0 ] && [ $n -gt 20 ] &&
 # because this file's whole argument is that absence of bad news is not good
 # news. A run with no link checked has not checked the links.
 u=0; n=0; seen=0
-for f in $(find bullroarer buzz-disc kalimba knotwork-soundholes living-hinge \
-                slapstick lasermade-tools Gernreich.github.io Gernreich trumpet \
-                -name '*.md' -not -path '*/.git/*' | sort); do
+for f in $(find $REPOS -name '*.md' -not -path '*/.git/*' | sort); do
   n=$((n+1))
   o=$(cd "$(dirname "$f")" && python3 $G/doc-audit.py "$(basename "$f")" --links 2>&1)
   seen=$((seen + $(echo "$o" | grep -cE '^\s+[✓✗] https?://')))
@@ -758,7 +781,12 @@ if [[ " $* " != *" --pre-push "* ]]; then
   u=0; nr=0
   for r in */; do
     [ -d "$r/.git" ] || continue
-    nr=$((nr+1)); u=$((u + $(git -C $r rev-list --count @{u}..HEAD 2>/dev/null || echo 0)))
+    nr=$((nr+1))
+    # A repository with no upstream has nothing to count against, and counted 0:
+    # trumpet-elbows-allowed passed this gate on 2026-10-06 never having been
+    # pushed anywhere. No upstream is unpushed.
+    c=$(git -C $r rev-list --count @{u}..HEAD 2>/dev/null) || { c=1; echo "    no upstream: $r"; }
+    u=$((u + c))
   done
   say "every repo pushed" "$( [ $u = 0 ] && [ $nr -ge 9 ] && echo "ok  $nr repos" || echo "FAIL $u unpushed across $nr repos")"
 fi
