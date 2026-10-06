@@ -36,6 +36,9 @@ h3{font-size:1.02rem;font-weight:650;margin:1.7em 0 .45em}
 p{margin:.85em 0}
 ul,ol{margin:.85em 0;padding-left:1.35em}
 li{margin:.3em 0}
+/* A list with blank lines between its items is "loose", and pandoc wraps each item
+   in a <p> as GitHub does. These pages were set tight before pandoc, so they stay so. */
+li>p{margin:0}
 hr{border:0;border-top:1px solid var(--line);margin:2.6em 0}
 figure{margin:1.6em 0}
 /* A paragraph holding two or more images is a gallery. Left to inline layout they
@@ -99,20 +102,76 @@ pre,.tw{break-inside:avoid}h1{break-after:avoid}}
 <p><code>trumpet</code> was five repositories until 2026-09-05 — <code>torus-octagonal</code>, <code>trumpet-octagonal</code>, <code>trumpet-coiled</code>, <code>trumpet-parts</code> and <code>bore-generator</code>. Notes below that name one of those are describing where a lesson came from, not a repository you can clone.</p>
 <p><strong><a href="https://gernreich.github.io/">The rest of the build files</a></strong> — every instrument, generator and tool, indexed.</p>
 <p>They exist because a writeup that tells someone how to cut wood can be wrong in ways that cost them a sheet, and because a checker that reports the wrong thing is worse than no checker at all. Every one of these has produced a wrong answer at some point. Each section below says which, because that is the part worth remembering.</p>
-<p>Python 3, no dependencies. Nothing here reads or writes outside the paths you give it.</p>
-<div class='tw'><table><thead><tr><th></th><th></th></tr></thead><tbody><tr><td><code>doc-audit.py</code></td><td>claims a writeup makes about itself and about files on disk</td></tr><tr><td><code>md2html.py</code></td><td>markdown → one self-contained HTML page</td></tr><tr><td><code>svg-stroke-check.py</code></td><td>SVG elements whose stroke colour is declared twice and disagrees</td></tr><tr><td><code>make-preview.py</code></td><td>a cut file rendered so it can be read on a page</td></tr><tr><td><code>test-ladder.py</code></td><td>a strip of squares that finds the cut speed for the sheet in front of you</td></tr><tr><td><code>flat-part-check.py</code></td><td>the pre-cut gate for a flat single-sheet part: size, closure, cut order, holes</td></tr><tr><td><code>all-gates.sh</code></td><td>every gate in every repository, one output, one tally</td></tr><tr><td><code>repro-svg.py</code></td><td>does a repository's shipped SVG still come out of its generator?</td></tr><tr><td><code>name-check.py</code></td><td>does a cut file's name agree with the geometry inside it?</td></tr><tr><td><code>ignore-audit.py</code></td><td>does every <code>.doc-audit-ignore</code> line still suppress something?</td></tr></tbody></table></div>
+<p>Python 3 and no Python packages; <code>md2html.py</code> also needs <a href="https://pandoc.org">pandoc</a> (<code>brew install pandoc</code>). Nothing here reads or writes outside the paths you give it.</p>
+<div class="tw">
+<table>
+<tbody>
+<tr>
+<td><code>doc-audit.py</code></td>
+<td>claims a writeup makes about itself and about files on disk</td>
+</tr>
+<tr>
+<td><code>md2html.py</code></td>
+<td>markdown → one self-contained HTML page</td>
+</tr>
+<tr>
+<td><code>svg-stroke-check.py</code></td>
+<td>SVG elements whose stroke colour is declared twice and disagrees</td>
+</tr>
+<tr>
+<td><code>make-preview.py</code></td>
+<td>a cut file rendered so it can be read on a page</td>
+</tr>
+<tr>
+<td><code>test-ladder.py</code></td>
+<td>a strip of squares that finds the cut speed for the sheet in front of you</td>
+</tr>
+<tr>
+<td><code>flat-part-check.py</code></td>
+<td>the pre-cut gate for a flat single-sheet part: size, closure, cut order, holes</td>
+</tr>
+<tr>
+<td><code>all-gates.sh</code></td>
+<td>every gate in every repository, one output, one tally</td>
+</tr>
+<tr>
+<td><code>repro-svg.py</code></td>
+<td>does a repository's shipped SVG still come out of its generator?</td>
+</tr>
+<tr>
+<td><code>name-check.py</code></td>
+<td>does a cut file's name agree with the geometry inside it?</td>
+</tr>
+<tr>
+<td><code>ignore-audit.py</code></td>
+<td>does every <code>.doc-audit-ignore</code> line still suppress something?</td>
+</tr>
+</tbody>
+</table>
+</div>
 <h2 id="why-these-live-in-their-own-repository">Why these live in their own repository</h2>
 <p>They are used by every repository above, so none of them can own the tools without all the others depending on it. Tools that know one build — <code>torus-octagonal/verify_torus.js</code> knows that build's apothems and panel sizes — stay inside the repository they describe. These ten know nothing about any particular object, so they sit here.</p>
 <p>Until 2026-08-08 they lived in <code>~/Claude</code>, which is not version controlled. Their bugs are the reason that mattered: the failures below were found by accident, and without history there was no way to see when a check started lying.</p>
-<hr>
+<hr />
 <h2 id="doc-auditpy"><code>doc-audit.py</code></h2>
 <pre><code>python3 doc-audit.py WRITEUP.md [--html PAGE.html]
-        [--rebuild "python3 md2html.py {md} {out}"]
-        [--links] [--run-blocks] [--ignore 'named,in,prose.py'] [--strict-h1]</code></pre>
+        [--rebuild &quot;python3 md2html.py {md} {out}&quot;]
+        [--links] [--run-blocks] [--ignore &#39;named,in,prose.py&#39;] [--strict-h1]</code></pre>
 <p>A repository that legitimately names files it does not ship can say so once, in <strong><code>.doc-audit-ignore</code></strong> at its root — one name per line, <code>#</code> for comments — instead of remembering <code>--ignore</code> on every run. <code>torus-octagonal</code> needs it: its parts come from <strong><a href="https://www.festi.info/boxes.py/">boxes.py</a></strong> by Florian Festi, an external web generator, which serves every download as <code>RegularBox.svg</code>. Both names belong in the prose and neither will ever be a file there.</p>
 <p><strong>A wrong answer it gave: <code>.json</code> read as <code>.js</code>.</strong> The filename pattern accepted an extension wherever it appeared rather than only at the end, so a document mentioning <code>reduced.json</code> was reported as naming a missing <code>reduced.js</code>. It was unfixable from the document's side — the file it named was right there — and it cost a false finding in <code>spirals</code>, which mentions two <code>.json</code> artifacts. The extension must now end the name. Real misses still fail: a document naming <code>ghost.js</code> with no such file still reports it.</p>
 <p>Everything it checks is a claim the document makes about itself or about files on disk, so a failure is always a real inconsistency — never a matter of taste. It reports:</p>
-<ul><li>files the document names that do not exist, and shipped files nothing mentions</li><li>files deleted from the index but left in the working tree — a retirement leftover, invisible to every check above because they all read <code>git ls-files</code>. Genuinely new untracked files are not reported: a cut file open in Inkscape is normal.</li><li>link and image paths that do not resolve <strong>from the document's own directory</strong> — a separate question from the one above, and the one a browser actually asks</li><li>dead in-page anchors, heading levels that skip, duplicate headings</li><li>list counts that contradict the prose — "Three things" over two items</li><li>doubled words, unbalanced code spans</li><li>figures with no text alternative, print stylesheet, dark theme, language attribute</li><li>whether the HTML is older than the markdown or than any SVG figure inlined into it</li><li><code>--run-blocks</code>: fenced blocks that look like terminal sessions, re-run and diffed against what the document claims they print. Any file a block writes is restored. <strong>Two shapes, since 2026-09-15.</strong> A bare fence opening <code>$ command</code>, and a fence tagged <code>bash</code>/<code>sh</code>/<code>console</code> holding one command line with its output commented out beneath it — the form a guide uses when it does not want a prompt in the paste. The second is deliberately narrow: one command, every other line a <code>#</code>, or it does not match. Recipe blocks annotated with <code>#</code> commentary are the common case in these repositories, running them would redraw cut files, and comparing commentary to stdout would report nonsense. Across 34 documents the rule matches one block. Runs of spaces are collapsed before comparing, because the tools column-pad and the guides retype; a quoted line ending <code>...</code> is a prefix</li><li><code>--links</code>: external URLs actually resolve</li></ul>
+<ul>
+<li>files the document names that do not exist, and shipped files nothing mentions</li>
+<li>files deleted from the index but left in the working tree — a retirement leftover, invisible to every check above because they all read <code>git ls-files</code>. Genuinely new untracked files are not reported: a cut file open in Inkscape is normal.</li>
+<li>link and image paths that do not resolve <strong>from the document's own directory</strong> — a separate question from the one above, and the one a browser actually asks</li>
+<li>dead in-page anchors, heading levels that skip, duplicate headings</li>
+<li>list counts that contradict the prose — "Three things" over two items</li>
+<li>doubled words, unbalanced code spans</li>
+<li>figures with no text alternative, print stylesheet, dark theme, language attribute</li>
+<li>whether the HTML is older than the markdown or than any SVG figure inlined into it</li>
+<li><code>--run-blocks</code>: fenced blocks that look like terminal sessions, re-run and diffed against what the document claims they print. Any file a block writes is restored. <strong>Two shapes, since 2026-09-15.</strong> A bare fence opening <code>$ command</code>, and a fence tagged <code>bash</code>/<code>sh</code>/<code>console</code> holding one command line with its output commented out beneath it — the form a guide uses when it does not want a prompt in the paste. The second is deliberately narrow: one command, every other line a <code>#</code>, or it does not match. Recipe blocks annotated with <code>#</code> commentary are the common case in these repositories, running them would redraw cut files, and comparing commentary to stdout would report nonsense. Across 34 documents the rule matches one block. Runs of spaces are collapsed before comparing, because the tools column-pad and the guides retype; a quoted line ending <code>...</code> is a prefix</li>
+<li><code>--links</code>: external URLs actually resolve</li>
+</ul>
 <p>File references in prose resolve against the <strong>repository root</strong>, not the document's directory, so a document in a subdirectory can name files above it.</p>
 <p><strong>Link and image targets are checked differently</strong>, against the document's own directory, because that is what a browser does with them. <code>see bell.py</code> in prose stays true wherever bell.py lives; <code>&lt;img src="bell.py"&gt;</code> does not. The two checks disagreeing is the point.</p>
 <p><strong>Where it has been wrong.</strong> Its first run produced four failures, all of which were its own bugs rather than the document's. It also reported <code>boxes.py</code> and <code>RegularBox.svg</code> as missing from <code>torus-octagonal</code> for as long as that repository existed — they are an external tool and the filename it serves, correctly named in prose, and the fix was the ignore file above rather than any change to a document that was right. Later, a document in a subdirectory was told its neighbours did not exist, because the checker rooted everything at the document's own directory; and the orphan check compared bare filenames, so <code>coupons/README.md</code> excluded the <em>root</em> <code>README.md</code> from the pool and then reported files only that README mentions.</p>
@@ -125,24 +184,37 @@ pre,.tw{break-inside:avoid}h1{break-after:avoid}}
 <p><strong>Verify anything it flags against the source before acting on it.</strong></p>
 <h2 id="md2htmlpy"><code>md2html.py</code></h2>
 <pre><code>python3 md2html.py WRITEUP.md PAGE.html</code></pre>
+<p><strong>Pandoc does the parsing</strong>, as GitHub-flavoured markdown, so the page reads the way GitHub renders the same file. Until 2026-10-06 this script was its own parser, about 250 lines of regular expressions, and every construct it had not met yet published wrong — the history below is that list. What stays in the script is what is ours: the two markers, a small Lua filter, and the page shell. The filter rewrites <code>.md</code> links to <code>.html</code>, boxes each table, and turns an image alone in its paragraph into a figure, inlining a local SVG.</p>
 <p>One self-contained page: no external CSS, no fonts, no scripts. SVG figures are <strong>inlined into the HTML</strong>, which is why <code>doc-audit.py</code> treats a page older than any of its figures as stale — regenerating an SVG does not change the page that already swallowed a copy of it. Tab title comes from the document's own first <code># </code> heading.</p>
 <p>Raw HTML blocks pass through unescaped, which is what makes the thumbnail-gallery tables in these writeups render as tables rather than as visible source.</p>
-<p>It had no branch for an <strong>indented code block</strong> — four leading spaces, CommonMark's older fence-free form — so those lines fell through to the paragraph joiner and were run together into prose. A design library with fifteen of them published its column-aligned walk tables as <code>N N3 U1 N3 U1 N3 N y and z only 1 section, 0 stranded N N3 U2 …</code>, while reading correctly on GitHub, which renders them.</p>
+<p><strong>What changed on the published pages with the switch.</strong> On all twenty-one pages the visible text came out the same, bar one cell. Six differences in all:</p>
+<ul>
+<li>a table cell holding <code>`--units mm\|in`</code> in <code>living-hinge-guide.md</code>, which the old parser split at the escaped pipe and printed as raw backticks across two columns, now reads <code>--units mm|in</code> in one;</li>
+<li>a heading with an underscore keeps it in its anchor, as GitHub's does — so <code>#variants-at-r_hole30-60mm-hole</code>, and the link to it from the knotwork writeup, which had been written to the old anchor and so was broken on GitHub, now works in both;</li>
+<li>an empty table header row is left out rather than drawn as a blank bar;</li>
+<li>a photograph followed on the very next line by text is part of that paragraph, as on GitHub, so two in <code>ribbon-spiral/README.md</code> were given the blank line they needed;</li>
+<li>a list with blank lines between its items wraps them in paragraphs, which the stylesheet holds to the old tight spacing;</li>
+<li>a fenced code block keeps its language as a class, and <code>&lt;hr&gt;</code> is written <code>&lt;hr /&gt;</code>.</li>
+</ul>
+<p>Before pandoc it had no branch for an <strong>indented code block</strong> — four leading spaces, CommonMark's older fence-free form — so those lines fell through to the paragraph joiner and were run together into prose. A design library with fifteen of them published its column-aligned walk tables as <code>N N3 U1 N3 U1 N3 N y and z only 1 section, 0 stranded N N3 U2 …</code>, while reading correctly on GitHub, which renders them.</p>
 <p><code>&lt;!-- readme-only --&gt;</code> on a line of its own drops the paragraph after it from the page while leaving it in the README. It exists because a repository whose page is generated from its own README published that README's "Read the writeup" line on the writeup — a link to the page you were already reading, on seven pages. Marked rather than detected: this converter knows only its input and output paths, and guessing the site URL from the directory name breaks the moment a directory and its repository differ, as <code>test/</code> and <code>bore-designs</code> do. GitHub renders the comment as nothing, so the README is unaffected.</p>
 <p><code>&lt;!-- page-only TEXT --&gt;</code> on a line of its own is the reverse: GitHub hides it, and the page renders TEXT as an ordinary paragraph. It carries the "Read the README" link at the top of a page generated from its README, which on the README would point at itself.</p>
-<p><strong>Where it has been wrong.</strong> It escaped raw HTML blocks, so galleries appeared as their own markup; and it had no blockquote branch, so <code>&gt; </code> lines rendered as literal text with the marker showing.</p>
+<p><strong>Where it has been wrong</strong>, all before pandoc. It escaped raw HTML blocks, so galleries appeared as their own markup; and it had no blockquote branch, so <code>&gt; </code> lines rendered as literal text with the marker showing.</p>
 <h2 id="the-checkers-audited-against-documents-they-should-reject">The checkers, audited against documents they should reject</h2>
 <p>Done 2026-09-08. Each check was given something it ought to fail.</p>
 <p><strong><code>flat-part-check.py</code> — all eight hold.</strong> A file whose user unit is not a millimetre, a part too big for the bed, a genuinely open cut path, an ink outside the palette, a hole under the floor, a hole outside the outline, a hole too near an edge, and a hole moved into the last cut stage — every one fails, and the open path correctly drags <code>black frees the part</code> down with it.</p>
 <p>Four probes came back clean and were wrong before the tool was: growing the canvas is not growing the part; a path whose ends still meet is closed whether or not it has a <code>z</code>; the near edge of a long thin blade is across it, not along it; and the cut order is the ink, not the document order. <strong>A check that does not fire has not been tested until you know your input reached it.</strong></p>
 <p><strong><code>doc-audit.py</code> — effective, with two narrow blind spots.</strong> A named file that is not there, a heading level skipped, a stale page, a doubled word, a count that contradicts its list, and a figure with no text alternative all fail.</p>
-<ul><li><em>no doubled words</em> is case-sensitive: <code>names names</code> is caught, <code>The the</code> is not — and a doubling across a sentence boundary is the common one.</li><li><em>"N things" matches the list under it</em> only counts <strong>bold-lead</strong> items. A claim over a plain list is not checked at all. It also reads any number followed by <code>checks</code> as a claim, which in these repositories is nearly always a measurement -- and its quoted-example guard fires only when a backtick abuts the matched words on BOTH sides, so backticking a longer phrase does nothing. Write <code>115 checks</code> exactly, or reword.</li></ul>
+<ul>
+<li><em>no doubled words</em> is case-sensitive: <code>names names</code> is caught, <code>The the</code> is not — and a doubling across a sentence boundary is the common one.</li>
+<li><em>"N things" matches the list under it</em> only counts <strong>bold-lead</strong> items. A claim over a plain list is not checked at all. It also reads any number followed by <code>checks</code> as a claim, which in these repositories is nearly always a measurement -- and its quoted-example guard fires only when a backtick abuts the matched words on BOTH sides, so backticking a longer phrase does nothing. Write <code>115 checks</code> exactly, or reword.</li>
+</ul>
 <p><strong>What the figure check found.</strong> An inlined SVG carries no <code>alt</code>, and <code>md2html.py</code> was dropping it: the description written in the markdown reached nothing, and a page was accessible only where the drawing happened to carry its own <code>aria-label</code>. The two had already drifted — <code>living-hinge-guide.md</code> says "x across the width" and <code>panel-convention.svg</code> says "x runs across the width". <code>md2html.py</code> now uses the alt as the label when the SVG has none, and leaves the drawing's own label alone where it has one. Every published page regenerates byte-identical.</p>
 <p><strong>What the unrendered-markdown check found, on its first sweep.</strong> <code>md2html.py</code> converts an image only when it is <strong>alone on its line</strong>. Anything else — two on one line, or one whose alt text is hard-wrapped, which at 80 columns is easy to write without noticing — falls through to the inline pass, which does not handle images, and reaches the page as visible image markdown — a literal exclamation mark, the alt text in brackets, the path in parentheses — instead of a picture.</p>
 <p>Nothing caught it. <em>every link and image path resolves</em> reads that same unconverted syntax out of the <strong>markdown</strong>, so the path resolves, the file exists, and the check passes: the picture is simply not on the page. Two images on one line published that way on 2026-09-13 from a document reporting 17 passed, 0 failed, and the sweep that added this check then found a second, older one — the two cheek plates on <code>trumpet/README.md</code>, the repository's front page, where a four-line alt text had been printing as literal markdown for as long as the photograph had been there.</p>
 <p>The check reads the page's <strong>text</strong>: <code>&lt;pre&gt;</code> and <code>&lt;code&gt;</code> come out first, since a writeup may quote markdown on purpose and this README does, then the remaining tags, so no attribute value can trip it. Nine repositories, twenty-four documents, one real failure and no false ones.</p>
 <p><strong>The cause is fixed too, for the case that bites.</strong> <code>md2html.py</code> now joins a wrapped image back onto one line before matching it, so an alt text may run to as many lines as it needs. A run that never closes is left exactly as it was, so prose that merely opens with those two characters is untouched. Re-rendering all twenty published pages with the change produces twenty byte-identical files: the only document it would have changed had already been fixed by hand, and no source in any of the nine repositories still wraps an image.</p>
-<p><strong>Two images on one line are still not a gallery.</strong> That is a different thing to want, and it gets raw HTML — a <code>&lt;p&gt;</code> holding two <code>&lt;img&gt;</code>, which is what the stylesheet's gallery rule selects for. The gate is what tells you which of the two you have written.</p>
+<p><strong>Two images on one line</strong> were not a gallery before pandoc and needed raw HTML — a <code>&lt;p&gt;</code> holding two <code>&lt;img&gt;</code>, which is what the stylesheet's gallery rule selects for. Pandoc now writes exactly that paragraph from the markdown, so they are one. The gate is what tells you which of the two you have written.</p>
 <p><strong>A link inside backticks is quoted syntax, not a link.</strong> <em>every link and image path resolves</em> read the raw source, so this README reporting on the check above was itself reported as linking to a file called "path". It reads the prose now, with fences and inline code spans blanked. <em>every file the document names exists</em> still reads the raw source deliberately: "generated by <code>bell.py</code>" is a real reference to a real file, and that looser claim is what it is there to catch.</p>
 <h2 id="all-gatessh"><code>all-gates.sh</code></h2>
 <p>Runs every gate in every repository and prints one tally.</p>
@@ -184,11 +256,20 @@ Boxes install matches tools/</code></pre>
 <p>The manifest is <code>.repro</code> in the repository root, one line per shipped SVG:</p>
 <pre><code>shipped/path.svg :: shell command writing the file to $OUT</code></pre>
 <p>A command of <code>!</code> means the file ships without a generator, deliberately, with the reason in the comment above it. It still has to be listed — an SVG no line claims is a failure, not a silence, which is how the 13 knotwork previews and the hand-nested coupon sheet were found in the first place. Three things ship under that marker and each was checked as far as it can be:</p>
-<ul><li><strong>knotwork's previews</strong> are filled even-odd in gold; no script in any repository draws that. Whatever made them is gone.</li><li><strong>living-hinge's previews</strong> have geometry identical to what <code>make-preview.py</code> draws today — 279 paths, same data — but a 0.6mm stroke where the tool now writes 0.4mm, so they predate a change to it.</li><li><strong>the bridge-sweep coupon sheet</strong> is a <em>cut</em> file with no generator, which is the case this marker should almost never cover. It holds 756 paths, exactly 6 × 126, and every path of all six coupons is present in it by shape. So it is the six coupons and nothing else, and each of those six reproduces.</li></ul>
+<ul>
+<li><strong>knotwork's previews</strong> are filled even-odd in gold; no script in any repository draws that. Whatever made them is gone.</li>
+<li><strong>living-hinge's previews</strong> have geometry identical to what <code>make-preview.py</code> draws today — 279 paths, same data — but a 0.6mm stroke where the tool now writes 0.4mm, so they predate a change to it.</li>
+<li><strong>the bridge-sweep coupon sheet</strong> is a <em>cut</em> file with no generator, which is the case this marker should almost never cover. It holds 756 paths, exactly 6 × 126, and every path of all six coupons is present in it by shape. So it is the six coupons and nothing else, and each of those six reproduces.</li>
+</ul>
 <p>None of the three is a defect to fix silently: regenerating any of them chooses a new look for pictures on a repository's front page, or re-nests a sheet by hand. That is the author's call, so the gate records them and says so.</p>
 <h3 id="what-doc-auditpy-got-wrong-on-27-documents">What <code>doc-audit.py</code> got wrong on 27 documents</h3>
 <p>It had only ever been pointed at the nine documents that have a published page. Aimed at the eighteen design notes as well, it produced 20 failures, of which <strong>one</strong> was real. The four defects behind the other nineteen, all fixed 2026-09-10:</p>
-<ul><li><strong>Indented code blocks were not stripped.</strong> <code>strip_fences</code> knew about backtick fences only, so a gate's own quoted output four spaces in was read as prose. <code>393 checks, 0 failed</code> became a claim to be introducing a list that long -- six false positives in one file.</li><li><strong>Line numbers were reported against the stripped copy.</strong> The balance check named lines 165 and 166 of a document whose wrapped span is on 178 and 179. Anything with a fenced block above the defect pointed at the wrong place. Stripped lines are now blanked, not deleted, which also stops a removed block making neighbours of two words that were never adjacent.</li><li><strong>Code spans were balanced per line.</strong> A span may wrap across a line break and close on the next; CommonMark renders it. Both of the only two things this check reported across 27 documents were that.</li><li><strong>List items were counted only when bold-led.</strong> "Two things had to be true" over two bullets reported <em>claimed 2, found 1</em>, because both opened with a code span -- and the 1 it found was a bold paragraph past the end of the list. Counting the wrong list is worse than counting none: the number looks measured.</li></ul>
+<ul>
+<li><strong>Indented code blocks were not stripped.</strong> <code>strip_fences</code> knew about backtick fences only, so a gate's own quoted output four spaces in was read as prose. <code>393 checks, 0 failed</code> became a claim to be introducing a list that long -- six false positives in one file.</li>
+<li><strong>Line numbers were reported against the stripped copy.</strong> The balance check named lines 165 and 166 of a document whose wrapped span is on 178 and 179. Anything with a fenced block above the defect pointed at the wrong place. Stripped lines are now blanked, not deleted, which also stops a removed block making neighbours of two words that were never adjacent.</li>
+<li><strong>Code spans were balanced per line.</strong> A span may wrap across a line break and close on the next; CommonMark renders it. Both of the only two things this check reported across 27 documents were that.</li>
+<li><strong>List items were counted only when bold-led.</strong> "Two things had to be true" over two bullets reported <em>claimed 2, found 1</em>, because both opened with a code span -- and the 1 it found was a bold paragraph past the end of the list. Counting the wrong list is worse than counting none: the number looks measured.</li>
+</ul>
 <p>A numeral before "checks" is now taken as a gate's assertion count rather than a list claim. Across nine repositories every claim written in digits is one of those and every genuine one spells the number out -- 17 instances, no exceptions. <code>Three checks</code> over two items is still caught.</p>
 <p>The real finding, for the record: <strong>"Two things to know:" over three bullets</strong>, in the notes for the coil whose parts are cut.</p>
 <p><strong>Every gate in it has been watched fail.</strong> That is this repository's own rule applied to the thing that enforces it, and it was not done when the script was written. Appending one byte to a shipped cut file fires three of them at once and nothing else:</p>
@@ -212,7 +293,54 @@ python3 flat-part-check.py --dir DIR [--dir DIR] [--quiet]
 python3 flat-part-check.py ... --bed 600x308 --min-edge 3 --min-hole 2 --weld 0.05</code></pre>
 <p>The bore repositories have a gate: <code>bore_split.py --write</code> checks every net it writes, and nothing is cut from a file that has not passed. The flat parts — bullroarer blades, buzz discs, anything cut from one sheet with holes in it — had no equivalent. This is it.</p>
 <p>It reads geometry, not drawing. Paths, rects, circles, ellipses, polygons and lines are flattened to polylines with every enclosing transform applied, and then measured:</p>
-<div class='tw'><table><thead><tr><th>check</th><th>the mistake it is looking for</th></tr></thead><tbody><tr><td>millimetre-true</td><td>a user unit that is not a millimetre cuts at 96/25.4 and looks right on screen the whole time</td></tr><tr><td>fits the bed</td><td>refused at the machine, or silently cropped</td></tr><tr><td>cut paths are closed</td><td>an outline that does not meet does not free the part</td></tr><tr><td>ink is in the palette</td><td>colour is the cut order here; an unknown colour is a stage nothing runs</td></tr><tr><td>black frees the part</td><td>the outline must be last, or the part moves while its holes are still being cut</td></tr><tr><td>holes cut before the outline</td><td>the same mistake, one stage at a time</td></tr><tr><td>holes are inside the outline</td><td>a hole on the waste, and usually a transform that was missed</td></tr><tr><td>hole is big enough</td><td>the cord holes are the point of these parts</td></tr><tr><td>edge distance</td><td>the cord hole is where a bullroarer fails — too little material and it tears out</td></tr></tbody></table></div>
+<div class="tw">
+<table>
+<thead>
+<tr>
+<th>check</th>
+<th>the mistake it is looking for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>millimetre-true</td>
+<td>a user unit that is not a millimetre cuts at 96/25.4 and looks right on screen the whole time</td>
+</tr>
+<tr>
+<td>fits the bed</td>
+<td>refused at the machine, or silently cropped</td>
+</tr>
+<tr>
+<td>cut paths are closed</td>
+<td>an outline that does not meet does not free the part</td>
+</tr>
+<tr>
+<td>ink is in the palette</td>
+<td>colour is the cut order here; an unknown colour is a stage nothing runs</td>
+</tr>
+<tr>
+<td>black frees the part</td>
+<td>the outline must be last, or the part moves while its holes are still being cut</td>
+</tr>
+<tr>
+<td>holes cut before the outline</td>
+<td>the same mistake, one stage at a time</td>
+</tr>
+<tr>
+<td>holes are inside the outline</td>
+<td>a hole on the waste, and usually a transform that was missed</td>
+</tr>
+<tr>
+<td>hole is big enough</td>
+<td>the cord holes are the point of these parts</td>
+</tr>
+<tr>
+<td>edge distance</td>
+<td>the cord hole is where a bullroarer fails — too little material and it tears out</td>
+</tr>
+</tbody>
+</table>
+</div>
 <p>Exit status is 1 if any file fails, so it can gate a commit. <code>previews/</code> is skipped under <code>--dir</code>: those are display renderings and are not cut.</p>
 <p><strong>Kerf is not modelled.</strong> Every measurement is of the path as drawn, and the beam takes its width from both sides of that line — a 3.0mm hole cuts about 3.1mm, a 3.0mm wall comes out about 2.9mm. Set <code>--min-edge</code> with that in hand rather than at the limit.</p>
 <p><strong>Why it exists, and the two wrong answers it gave first.</strong> Both were found by running it on files known to be good, which is the only way this kind of bug surfaces.</p>
@@ -241,7 +369,7 @@ python3 flat-part-check.py ... --bed 600x308 --min-edge 3 --min-hole 2 --weld 0.
 python3 doc-audit.py README.md --html index.html</code></pre>
 <p>The names that check would otherwise trip on now live in <code>.doc-audit-ignore</code> rather than in an <code>--ignore</code> flag on the command line, so the documented self-check needs no arguments. They are the usage-synopsis placeholders, and the files named in prose that live in the repository they describe — <code>verify_torus.js</code> and <code>BuildA1_90_25.svg</code> in <code>torus-octagonal</code>, <code>bell.py</code> nowhere at all, since it is the invented example in the <code>doc-audit.py</code> section showing prose and image paths resolving differently. <code>bell.py</code> was missing from the flag for as long as the flag existed, so the documented self-check reported two failures against a README that was right.</p>
 <p>Auditing this README is also what turned up the quoted-example bug fixed above: the line describing the list-count check quotes <code>"Three things"</code>, and the checker read its own example as a claim.</p>
-<hr>
+<hr />
 <p>Released under <a href="LICENSE">CC0 1.0</a>.</p>
 </main>
 </div>

@@ -28,7 +28,8 @@ that cost them a sheet, and because a checker that reports the wrong thing is wo
 no checker at all. Every one of these has produced a wrong answer at some point. Each
 section below says which, because that is the part worth remembering.
 
-Python 3, no dependencies. Nothing here reads or writes outside the paths you give it.
+Python 3 and no Python packages; `md2html.py` also needs [pandoc](https://pandoc.org)
+(`brew install pandoc`). Nothing here reads or writes outside the paths you give it.
 
 | | |
 |---|---|
@@ -176,6 +177,14 @@ the commit that would have shipped them.
 python3 md2html.py WRITEUP.md PAGE.html
 ```
 
+**Pandoc does the parsing**, as GitHub-flavoured markdown, so the page reads the way
+GitHub renders the same file. Until 2026-10-06 this script was its own parser, about 250
+lines of regular expressions, and every construct it had not met yet published wrong —
+the history below is that list. What stays in the script is what is ours: the two
+markers, a small Lua filter, and the page shell. The filter rewrites `.md` links to
+`.html`, boxes each table, and turns an image alone in its paragraph into a figure,
+inlining a local SVG.
+
 One self-contained page: no external CSS, no fonts, no scripts. SVG figures are **inlined
 into the HTML**, which is why `doc-audit.py` treats a page older than any of its figures
 as stale — regenerating an SVG does not change the page that already swallowed a copy of
@@ -184,7 +193,23 @@ it. Tab title comes from the document's own first `# ` heading.
 Raw HTML blocks pass through unescaped, which is what makes the thumbnail-gallery tables
 in these writeups render as tables rather than as visible source.
 
-It had no branch for an **indented code block** — four leading spaces, CommonMark's
+**What changed on the published pages with the switch.** On all twenty-one pages the
+visible text came out the same, bar one cell. Six differences in all:
+
+- a table cell holding `` `--units mm\|in` `` in `living-hinge-guide.md`, which the old
+  parser split at the escaped pipe and printed as raw backticks across two columns, now
+  reads `--units mm|in` in one;
+- a heading with an underscore keeps it in its anchor, as GitHub's does — so
+  `#variants-at-r_hole30-60mm-hole`, and the link to it from the knotwork writeup, which
+  had been written to the old anchor and so was broken on GitHub, now works in both;
+- an empty table header row is left out rather than drawn as a blank bar;
+- a photograph followed on the very next line by text is part of that paragraph, as on
+  GitHub, so two in `ribbon-spiral/README.md` were given the blank line they needed;
+- a list with blank lines between its items wraps them in paragraphs, which the
+  stylesheet holds to the old tight spacing;
+- a fenced code block keeps its language as a class, and `<hr>` is written `<hr />`.
+
+Before pandoc it had no branch for an **indented code block** — four leading spaces, CommonMark's
 older fence-free form — so those lines fell through to the paragraph joiner and were run
 together into prose. A design library with fifteen of them published its column-aligned
 walk tables as `N N3 U1 N3 U1 N3 N y and z only 1 section, 0 stranded N N3 U2 …`, while
@@ -202,7 +227,7 @@ directory name breaks the moment a directory and its repository differ, as `test
 page renders TEXT as an ordinary paragraph. It carries the "Read the README" link at the
 top of a page generated from its README, which on the README would point at itself.
 
-**Where it has been wrong.** It escaped raw HTML blocks, so galleries appeared as their
+**Where it has been wrong**, all before pandoc. It escaped raw HTML blocks, so galleries appeared as their
 own markup; and it had no blockquote branch, so `> ` lines rendered as literal text with
 the marker showing.
 
@@ -274,9 +299,9 @@ twenty published pages with the change produces twenty byte-identical files: the
 only document it would have changed had already been fixed by hand, and no source
 in any of the nine repositories still wraps an image.
 
-**Two images on one line are still not a gallery.** That is a different thing to
-want, and it gets raw HTML — a `<p>` holding two `<img>`, which is what the
-stylesheet's gallery rule selects for. The gate is what tells you which of the
+**Two images on one line** were not a gallery before pandoc and needed raw HTML — a
+`<p>` holding two `<img>`, which is what the stylesheet's gallery rule selects for.
+Pandoc now writes exactly that paragraph from the markdown, so they are one. The gate is what tells you which of the
 two you have written.
 
 **A link inside backticks is quoted syntax, not a link.** *every link and image

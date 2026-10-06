@@ -4,6 +4,9 @@ import html
 import re
 import sys
 import pathlib
+import shutil
+import subprocess
+import tempfile
 
 # A MISSING ARGUMENT CAME BACK AS AN IndexError. This is the most-used tool in
 # the repository -- every published page in nine repositories goes through it --
@@ -24,251 +27,124 @@ title = next((re.sub(r"[`*]", "", ln[2:]).strip() for ln in lines if ln.startswi
              src.stem)
 
 
-def inline(t):
-    t = html.escape(t, quote=False)
-    stash = []
+# PANDOC DOES THE PARSING. Until 2026-10-06 this file was its own markdown parser,
+# about 250 lines of regular expressions, and every construct it had not met yet
+# came out wrong on the published page: raw HTML escaped into visible source, a
+# blockquote kept its "> " markers, indented code was joined into prose, an image
+# wrapped onto a second line published as literal ![...](...). Each was found
+# after it went out. Pandoc implements the whole of GitHub-flavoured markdown, so
+# the page now reads the way GitHub renders the README. What stays here is only
+# what is ours: the two markers below, the filter, and the page shell.
+if not shutil.which("pandoc"):
+    sys.exit("md2html: needs pandoc (brew install pandoc)")
 
-    def keep(m):
-        stash.append(m.group(1))
-        return f"\x00{len(stash)-1}\x00"
-
-    t = re.sub(r"`([^`]+)`", keep, t)
-    t = re.sub(r"&lt;(https?://[^&\s]+)&gt;", r'<a href="\1">\1</a>', t)
-    # any link target, not just http(s) — relative paths point at files beside this page.
-    # (?<!!) so image syntax ![alt](src) is left for the block-level handler.
-    def link(m):
-        text, href = m.group(1), m.group(2)
-        # A sibling writeup ships as HTML beside this page. The markdown keeps its .md
-        # link, which is what GitHub's own file view needs; the generated page points
-        # at the generated page, or Pages would serve raw markdown instead.
-        # Split the fragment off first: "guide.md#section" must rewrite to
-        # "guide.html#section", not stay pointing at raw markdown because the
-        # string does not end in .md.
-        path, sep, frag = href.partition("#")
-        if path.endswith(".md") and not re.match(r"[a-zA-Z][a-zA-Z0-9+.-]*:", href):
-            href = path[:-3] + ".html" + sep + frag
-        return f'<a href="{href}">{text}</a>'
-
-    t = re.sub(r"(?<!!)\[([^\]]+)\]\(([^)\s]+)\)", link, t)
-    t = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", t)
-    t = re.sub(r"(?<!\*)\*([^*\n]+?)\*(?!\*)", r"<em>\1</em>", t)
-    t = re.sub(r"\x00(\d+)\x00", lambda m: f"<code>{stash[int(m.group(1))]}</code>", t)
-    return t
-
-
-out, toc = [], []
-HTML_BLOCK = (r"(?:p|div|figure|figcaption|details|summary|section|article|aside"
-              r"|blockquote|table|thead|tbody|tr|td|th|ul|ol|li|dl|dt|dd|h[1-6]"
-              r"|pre|hr|iframe|video|picture|center)")
-
-i, n = 0, len(lines)
-while i < n:
+# The markers are applied to the text before pandoc sees it, and never inside a
+# fenced code block, where they are being quoted rather than used.
+#
+# <!-- readme-only --> drops the paragraph that follows it. A repository whose
+# page is generated from its own README ends up publishing that README's
+# "Read the writeup" line on the writeup itself, linking to the page you are
+# already reading. Marked rather than detected: the converter knows only its
+# input and output paths, and guessing the site URL from the directory name is
+# wrong the moment a directory and its repository differ - as test/ and
+# bore-designs do. GitHub renders the comment as nothing, so the README is
+# unaffected.
+#
+# <!-- page-only TEXT --> is the reverse: GitHub hides the whole comment, and
+# here TEXT replaces the line and is read as ordinary markdown. It carries the
+# page's link back to its README, which on the README would point at itself.
+kept, i, fenced = [], 0, False
+while i < len(lines):
     ln = lines[i]
-
     if ln.startswith("```"):
-        block = []
+        fenced = not fenced
+    elif not fenced and ln.strip() == "<!-- readme-only -->":
         i += 1
-        while i < n and not lines[i].startswith("```"):
-            block.append(html.escape(lines[i], quote=False))
+        while i < len(lines) and not lines[i].strip():   # any blank lines after it
             i += 1
-        i += 1
-        out.append("<pre><code>" + "\n".join(block) + "</code></pre>")
-        continue
-
-    # An indented code block: four spaces at the start of a line, CommonMark's older
-    # fence-free form. Without this branch the lines fall through to the paragraph
-    # joiner and are run together into prose, which turned a column-aligned table of
-    # walks into "N N3 U1 N3 U1 N3 N y and z only 1 section, 0 stranded N N3 U2..." on
-    # the published page while reading correctly on GitHub. Blank lines inside the
-    # block are kept; a run of them at the end is not.
-    if ln.startswith("    ") and ln.strip():
-        blk = []
-        while i < n and (lines[i].startswith("    ") or not lines[i].strip()):
-            blk.append(lines[i][4:] if lines[i].startswith("    ") else "")
-            i += 1
-        while blk and not blk[-1].strip():
-            blk.pop()
-        out.append("<pre><code>" + "\n".join(html.escape(x, quote=False) for x in blk)
-                   + "</code></pre>")
-        continue
-
-    # <!-- readme-only --> drops the paragraph that follows it. A repository whose
-    # page is generated from its own README ends up publishing that README's
-    # "Read the writeup" line on the writeup itself, linking to the page you are
-    # already reading. Marked rather than detected: the converter knows only its
-    # input and output paths, and guessing the site URL from the directory name is
-    # wrong the moment a directory and its repository differ - as test/ and
-    # bore-designs do. GitHub renders the comment as nothing, so the README is
-    # unaffected.
-    # <!-- page-only TEXT --> is the reverse: GitHub hides the whole comment, and
-    # here TEXT replaces the line and is read again as ordinary markdown. It carries
-    # the page's link back to its README, which on the README would point at itself.
-    m = re.match(r"^<!-- page-only (.+) -->$", ln.strip())
-    if m:
-        lines[i] = m.group(1)
-        continue
-
-    if ln.strip() == "<!-- readme-only -->":
-        while i < n and not lines[i].strip():          # any blank lines after it
-            i += 1
-        while i < n and lines[i].strip():              # then the paragraph itself
+        while i < len(lines) and lines[i].strip():       # then the paragraph itself
             i += 1
         continue
-
-    # Raw HTML block, passed through verbatim (CommonMark type 7: a block-level
-    # tag at column 0, running to the next blank line). Without this the whole
-    # block falls through to the paragraph branch and gets html.escape()d, so a
-    # gallery of <img> tags renders on the page as its own source code. GitHub's
-    # markdown passes raw HTML through, which is why that reads fine on the repo
-    # front page and only breaks on the generated site.
-    if re.match(rf"^</?{HTML_BLOCK}[\s/>]", ln, re.I):
-        blk = []
-        while i < n and lines[i].strip():
-            blk.append(lines[i])
-            i += 1
-        out.append("\n".join(blk))
-        continue
-
-    # Blockquote. Without this the "> " lines fall through to the paragraph
-    # branch, which joins them and keeps every marker, so a callout renders as
-    # "> text > more text" -- and a link split across two quoted lines swallows
-    # the marker into its own link text.
-    if ln.startswith(">"):
-        quoted = []
-        while i < n and lines[i].startswith(">"):
-            quoted.append(re.sub(r"^>\s?", "", lines[i]))
-            i += 1
-        out.append("<blockquote><p>" + inline(" ".join(x.strip() for x in quoted)) + "</p></blockquote>")
-        continue
-
-    if re.match(r"^---+\s*$", ln):
-        out.append("<hr>")
-        i += 1
-        continue
-
-    m = re.match(r"^(#{1,4})\s+(.*)$", ln)
-    if m:
-        lvl, txt = len(m.group(1)), m.group(2)
-        # GitHub's slug rule, so one anchor works both here and in the .md on GitHub:
-        # downcase, drop anything that is not a letter/number/space/hyphen, spaces -> hyphens
-        plain_txt = re.sub(r"[`*_]", "", txt)
-        slug = re.sub(r"\s", "-", re.sub(r"[^a-z0-9 \-]", "", plain_txt.lower()))
-        if lvl <= 2:
-            plain = txt.replace("`", "").replace("**", "").replace("*", "")
-            toc.append((lvl, plain, slug))
-        out.append(f'<h{lvl} id="{slug}">{inline(txt)}</h{lvl}>')
-        i += 1
-        continue
-
-    # table
-    if ln.lstrip().startswith("|") and i + 1 < n and re.match(r"^\s*\|[\s:|-]+\|\s*$", lines[i + 1]):
-        def cells(row):
-            return [c.strip() for c in row.strip().strip("|").split("|")]
-        head = cells(ln)
-        i += 2
-        body = []
-        while i < n and lines[i].lstrip().startswith("|"):
-            body.append(cells(lines[i]))
-            i += 1
-        t = ["<div class='tw'><table><thead><tr>"]
-        t += [f"<th>{inline(c)}</th>" for c in head]
-        t.append("</tr></thead><tbody>")
-        for r in body:
-            t.append("<tr>" + "".join(f"<td>{inline(c)}</td>" for c in r) + "</tr>")
-        t.append("</tbody></table></div>")
-        out.append("".join(t))
-        continue
-
-    # AN IMAGE WHOSE MARKDOWN WRAPS ONTO A SECOND LINE. The match below anchors to
-    # the whole line, so an image was converted only when it fitted on one. These
-    # documents are written to 80 columns and an alt text is a whole sentence, so
-    # wrapping one is the natural thing to do and nothing said not to -- it fell
-    # through to the paragraph branch, whose inline() does not handle images, and
-    # published as literal ![...](...) text. It had been doing that to the two
-    # cheek plates on trumpet's own front page for as long as the photograph had
-    # been there, and no gate could see it until doc-audit learned to read the
-    # rendered page rather than the markdown.
-    #
-    # Join it back onto one line first. A run that never closes is left exactly as
-    # it was, so prose that merely opens with "![" is untouched -- and so are TWO
-    # images on one line, which is a different thing to want and gets raw HTML.
-    if ln.lstrip().startswith("![") and not re.match(r"^!\[[^\]]*\]\([^)\s]+\)\s*$", ln):
-        j, buf, whole = i, [], re.compile(r"^!\[[^\]]*\]\([^)\s]+\)$")
-        while j < n and lines[j].strip():
-            buf.append(lines[j].strip())
-            if whole.match(" ".join(buf)):
-                ln, i = " ".join(buf), j
-                break
-            j += 1
-
-    mi = re.match(r"^!\[([^\]]*)\]\(([^)\s]+)\)\s*$", ln)
-    if mi:
-        alt, srcpath = mi.group(1), mi.group(2)
-        cand = src.parent / srcpath
-        if srcpath.lower().endswith(".svg") and cand.exists():
-            svg = cand.read_text()
-            svg = re.sub(r"<\?xml[^>]*\?>\s*", "", svg)
-            svg = re.sub(r"<!DOCTYPE[^>]*>\s*", "", svg)
-            # The alt text was thrown away here. An inlined SVG is not an <img>
-            # and carries no alt, so the description the author wrote in the
-            # document reached nothing: the page was accessible only where the
-            # SVG file happened to carry its own aria-label, and the two had
-            # already drifted apart in living-hinge, where the markdown says
-            # "x across the width" and the drawing says "x runs across the
-            # width". doc-audit's "every figure has a text alternative" is what
-            # found it -- an inlined SVG without aria-label fails it.
-            #
-            # The file's own label wins if it has one: it ships with the
-            # drawing and other pages may rely on it. Otherwise the alt becomes
-            # the label, so writing alt text in the markdown is never silently
-            # pointless.
-            if alt and 'aria-label' not in svg.split('>', 1)[0]:
-                svg = re.sub(r"<svg\b", f'<svg aria-label="{html.escape(alt)}"',
-                             svg, count=1)
-            out.append("<figure>" + svg.strip() + "</figure>")
-        else:
-            out.append(f'<figure><img src="{html.escape(srcpath)}" alt="{html.escape(alt)}"></figure>')
-        i += 1
-        continue
-
-    if re.match(r"^\s*[-*]\s+", ln):
-        items = []
-        while i < n and re.match(r"^\s*[-*]\s+", lines[i]):
-            item = re.sub(r"^\s*[-*]\s+", "", lines[i])
-            i += 1
-            while i < n and re.match(r"^\s{2,}\S", lines[i]) and not re.match(r"^\s*[-*]\s+", lines[i]):
-                item += " " + lines[i].strip()
-                i += 1
-            items.append(item)
-        out.append("<ul>" + "".join(f"<li>{inline(x)}</li>" for x in items) + "</ul>")
-        continue
-
-    if re.match(r"^\s*\d+\.\s+", ln):
-        items = []
-        while i < n and re.match(r"^\s*\d+\.\s+", lines[i]):
-            item = re.sub(r"^\s*\d+\.\s+", "", lines[i])
-            i += 1
-            while i < n and re.match(r"^\s{3,}\S", lines[i]) and not re.match(r"^\s*\d+\.\s+", lines[i]):
-                item += " " + lines[i].strip()
-                i += 1
-            items.append(item)
-        out.append("<ol>" + "".join(f"<li>{inline(x)}</li>" for x in items) + "</ol>")
-        continue
-
-    if ln.strip() == "":
-        i += 1
-        continue
-
-    para = [ln]
+    elif not fenced and (m := re.match(r"^<!-- page-only (.+) -->$", ln.strip())):
+        ln = m.group(1)
+    kept.append(ln)
     i += 1
-    while i < n and lines[i].strip() and not re.match(r"^(#{1,4}\s|```|---+\s*$|\s*[-*]\s|\s*\d+\.\s)", lines[i]) \
-            and not lines[i].lstrip().startswith("|"):
-        para.append(lines[i])
-        i += 1
-    out.append("<p>" + inline(" ".join(x.strip() for x in para)) + "</p>")
 
+# The filter holds the three things pandoc would otherwise do differently.
+FILTER = r'''
+-- Runs with the source's own directory as its working directory, so the image
+-- paths the markdown gives resolve exactly as they do beside it.
+
+-- A sibling writeup ships as HTML beside this page. The markdown keeps its .md
+-- link, which is what GitHub's own file view needs; the generated page points at
+-- the generated page, or Pages would serve raw markdown instead. The fragment is
+-- split off first, so "guide.md#section" becomes "guide.html#section".
+function Link(el)
+  local path, frag = el.target:match("^([^#]*)(.*)$")
+  if path:match("%.md$") and not el.target:match("^%a[%w+.-]*:") then
+    el.target = path:sub(1, -4) .. ".html" .. frag
+  end
+  return el
+end
+
+-- The table's box: a border, a card background, and on a narrow screen a
+-- sideways scroll instead of a page wider than the phone.
+function Table(t)
+  return pandoc.Div({t}, pandoc.Attr("", {"tw"}))
+end
+
+local function esc(s)
+  return (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;")
+           :gsub('"', "&quot;"):gsub("'", "&#x27;"))
+end
+
+-- An image alone in its paragraph is a figure, and a local SVG is inlined so the
+-- drawing is part of the page. An inlined SVG is not an <img> and carries no alt,
+-- so the alt text written in the markdown becomes its aria-label -- unless the
+-- file has a label of its own, which ships with the drawing and wins. Without
+-- that the description reached nothing, and in living-hinge the markdown and the
+-- drawing had already drifted apart ("x across the width" against "x runs across
+-- the width"). doc-audit's "every figure has a text alternative" found it.
+function Para(p)
+  if #p.content ~= 1 or p.content[1].t ~= "Image" then return nil end
+  local img = p.content[1]
+  local alt = pandoc.utils.stringify(img.caption)
+  local f = img.src:lower():match("%.svg$") and io.open(img.src)
+  if f then
+    local svg = f:read("a"); f:close()
+    svg = svg:gsub("<%?xml[^>]*%?>%s*", ""):gsub("<!DOCTYPE[^>]*>%s*", "")
+    if alt ~= "" and not svg:match("^[^>]*>"):find("aria-label", 1, true) then
+      svg = svg:gsub("<svg%f[%A]", '<svg aria-label="' .. esc(alt):gsub("%%", "%%%%") .. '"', 1)
+    end
+    svg = svg:gsub("^%s+", ""):gsub("%s+$", "")
+    return pandoc.RawBlock("html", "<figure>" .. svg .. "</figure>")
+  end
+  return pandoc.RawBlock("html", '<figure><img src="' .. esc(img.src) ..
+                         '" alt="' .. esc(alt) .. '"></figure>')
+end
+'''
+
+with tempfile.TemporaryDirectory() as tmp:
+    flt = pathlib.Path(tmp, "md2html.lua")
+    flt.write_text(FILTER)
+    srcfile = pathlib.Path(tmp, src.name)
+    srcfile.write_text("\n".join(kept))
+    run = subprocess.run(
+        ["pandoc", "-f", "gfm", "-t", "html5", "--wrap=none",
+         "--syntax-highlighting=none", "--lua-filter", str(flt), str(srcfile)],
+        capture_output=True, text=True, cwd=src.parent.resolve())
+    if run.returncode:
+        sys.exit(f"md2html: pandoc failed:\n{run.stderr}")
+body = run.stdout
+
+# The contents list, from the headings pandoc wrote. Built here rather than with
+# pandoc's --toc because its list nests each level under the one above, and a page
+# with no h1 would then show every h2 at the top level, bold, as if it were one.
+# Level 1 and 2 only, each marked with its own level, as before.
+toc = [(int(m.group(1)), html.unescape(re.sub(r"<[^>]+>", "", m.group(3))), m.group(2))
+       for m in re.finditer(r'<h([12]) id="([^"]+)"[^>]*>(.*?)</h\1>', body, re.S)]
 nav = "".join(
-    f'<a class="l{l}" href="#{s}">{html.escape(t)}</a>' for l, t, s in toc if l <= 2
+    f'<a class="l{l}" href="#{s}">{html.escape(t)}</a>' for l, t, s in toc
 )
 
 CSS = """
@@ -303,6 +179,9 @@ h3{font-size:1.02rem;font-weight:650;margin:1.7em 0 .45em}
 p{margin:.85em 0}
 ul,ol{margin:.85em 0;padding-left:1.35em}
 li{margin:.3em 0}
+/* A list with blank lines between its items is "loose", and pandoc wraps each item
+   in a <p> as GitHub does. These pages were set tight before pandoc, so they stay so. */
+li>p{margin:0}
 hr{border:0;border-top:1px solid var(--line);margin:2.6em 0}
 figure{margin:1.6em 0}
 /* A paragraph holding two or more images is a gallery. Left to inline layout they
@@ -377,7 +256,7 @@ doc = f"""<!doctype html>
 <div class="wrap">
 <nav><b>Contents</b>{nav}</nav>
 <main>
-{chr(10).join(out)}
+{body.rstrip()}
 </main>
 </div>
 <script>{JS}</script>
