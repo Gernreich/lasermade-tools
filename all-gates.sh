@@ -146,10 +146,11 @@ say "ribbon --port-at=0 is plain --port" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && ec
 
 # trumpet-elbows-not-allowed was archived on 2026-10-06 and every trumpet gate
 # here moved to trumpet-elbows-allowed, which cuts elbows rather than refusing
-# them and carries five more designs: 31 in regress.py, 70 sheets in repro.py.
+# them and carries five more designs: 31 in regress.py, 70 sheets in repro.py
+# then. The tight coil made it 32 and 103 the same day.
 cd $R/trumpet-elbows-allowed/tools
 o=$(~/Software/boxes/venv/bin/python regress.py 2>&1 | tail -1)
-say "regress.py, 31 block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
+say "regress.py, 32 block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
 
 # regress.py MEASURES the committed sheets; it never redraws them. Every
 # invariant can hold while the SVG on disk is one the current code would no
