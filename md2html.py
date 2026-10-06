@@ -100,6 +100,14 @@ while i < n:
     # wrong the moment a directory and its repository differ - as test/ and
     # bore-designs do. GitHub renders the comment as nothing, so the README is
     # unaffected.
+    # <!-- page-only TEXT --> is the reverse: GitHub hides the whole comment, and
+    # here TEXT replaces the line and is read again as ordinary markdown. It carries
+    # the page's link back to its README, which on the README would point at itself.
+    m = re.match(r"^<!-- page-only (.+) -->$", ln.strip())
+    if m:
+        lines[i] = m.group(1)
+        continue
+
     if ln.strip() == "<!-- readme-only -->":
         while i < n and not lines[i].strip():          # any blank lines after it
             i += 1

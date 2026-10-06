@@ -1,5 +1,11 @@
 # lasermade-tools
 
+<!-- readme-only -->
+**[Read the writeup](https://gernreich.github.io/lasermade-tools/)** — the same text as
+this page, set for reading, with a table of contents.
+
+<!-- page-only **[Read the README](https://github.com/Gernreich/lasermade-tools)** -->
+
 Ten scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
 build repositories — [trumpet-elbows-allowed](https://github.com/Gernreich/trumpet-elbows-allowed),
 [knotwork-soundholes](https://github.com/Gernreich/knotwork-soundholes),
@@ -21,10 +27,6 @@ They exist because a writeup that tells someone how to cut wood can be wrong in 
 that cost them a sheet, and because a checker that reports the wrong thing is worse than
 no checker at all. Every one of these has produced a wrong answer at some point. Each
 section below says which, because that is the part worth remembering.
-
-<!-- readme-only -->
-**[Read the writeup](https://gernreich.github.io/lasermade-tools/)** — the same text as
-this page, set for reading, with a table of contents.
 
 Python 3, no dependencies. Nothing here reads or writes outside the paths you give it.
 
@@ -195,6 +197,10 @@ a link to the page you were already reading, on seven pages. Marked rather than 
 this converter knows only its input and output paths, and guessing the site URL from the
 directory name breaks the moment a directory and its repository differ, as `test/` and
 `bore-designs` do. GitHub renders the comment as nothing, so the README is unaffected.
+
+`<!-- page-only TEXT -->` on a line of its own is the reverse: GitHub hides it, and the
+page renders TEXT as an ordinary paragraph. It carries the "Read the README" link at the
+top of a page generated from its README, which on the README would point at itself.
 
 **Where it has been wrong.** It escaped raw HTML blocks, so galleries appeared as their
 own markup; and it had no blockquote branch, so `> ` lines rendered as literal text with
