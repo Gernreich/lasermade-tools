@@ -51,15 +51,16 @@ say () {
 # skipped it in silence, and find printed an error and listed the rest, so the
 # link gate passed over 20 documents and neither trumpet repository was in them.
 # Gernreich publishes no page, so the paired-page loop leaves it out.
+# trumpet-elbows-not-allowed left the list when it was archived on 2026-10-06.
 REPOS="bullroarer buzz-disc kalimba knotwork-soundholes living-hinge slapstick
        lasermade-tools Gernreich.github.io Gernreich
-       trumpet-elbows-not-allowed trumpet-elbows-allowed"
+       trumpet-elbows-allowed"
 PAGED=$(echo $REPOS | tr ' ' '\n' | grep -vx Gernreich)
 m=""
 for r in $REPOS; do [ -d "$R/$r/.git" ] || m="$m $r"; done
 say "every named repository exists" "$( [ -z "$m" ] && echo "ok  $(echo $REPOS | wc -w | tr -d ' ') repos" || echo "FAIL missing:$m")"
 
-cd $R/trumpet-elbows-not-allowed/parts/bore/concept/swept-curve
+cd $R/trumpet-elbows-allowed/parts/bore/concept/swept-curve
 # 13, not 12, since 2026-09-16: "no cut line crosses the airway". Every ring
 # cheek -- torus, scallop, racetrack -- was written as ONE path that stepped
 # across its band at the seam, a slit through the airway on the cut part, and
@@ -143,15 +144,12 @@ o=$(python3 ribbon_bore.py --shape=serpentine --port --port-at=0 --no-write 2>&1
 n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
 say "ribbon --port-at=0 is plain --port" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13" || echo "FAIL $n pass $f fail")"
 
-cd $R/trumpet-elbows-not-allowed/tools
-o=$(~/Software/boxes/venv/bin/python regress.py 2>&1 | tail -1)
-say "regress.py, 26 block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
-
-# The copy that cuts elbows rather than refusing them: its own library, 31
-# designs, and its own bore_split.py. Nothing ran it until 2026-10-06.
+# trumpet-elbows-not-allowed was archived on 2026-10-06 and every trumpet gate
+# here moved to trumpet-elbows-allowed, which cuts elbows rather than refusing
+# them and carries five more designs: 31 in regress.py, 70 sheets in repro.py.
 cd $R/trumpet-elbows-allowed/tools
 o=$(~/Software/boxes/venv/bin/python regress.py 2>&1 | tail -1)
-say "regress.py, elbows allowed, 31 designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
+say "regress.py, 31 block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
 
 # regress.py MEASURES the committed sheets; it never redraws them. Every
 # invariant can hold while the SVG on disk is one the current code would no
@@ -168,13 +166,6 @@ say "regress.py, elbows allowed, 31 designs" "$( [[ "$o" == *"all designs pass"*
 ro=$(~/Software/boxes/venv/bin/python repro.py 2>&1); rc=$?
 o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
 say "block sheets reproduce, as-built pinned" "$( [[ "$o" == *reproduce* && "$o" != *failing* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
-
-# The same for the elbows-allowed copy, whose sheets include meander/first's
-# eight, elbows and all: 70 reproduce there against 62 here.
-cd $R/trumpet-elbows-allowed/tools
-ro=$(~/Software/boxes/venv/bin/python repro.py 2>&1); rc=$?
-o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
-say "block sheets reproduce, elbows allowed" "$( [[ "$o" == *reproduce* && "$o" != *failing* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 
 for repo in $PAGED; do
   cd $R/$repo 2>/dev/null || continue
@@ -268,7 +259,7 @@ say "flat-part-check, flat parts" "$( [[ "$o" == *"0 failed"* ]] && echo "ok  $o
 # cannot tell you the sheets on disk are the sheets the code draws, which is
 # this project's whole claim.
 
-cd $R/trumpet-elbows-not-allowed/parts/bore/concept/swept-curve
+cd $R/trumpet-elbows-allowed/parts/bore/concept/swept-curve
 # REWRITTEN 2026-09-13. Every shipped ribbon sheet became --narrow on that day,
 # and the ported ones grew --cap and, where the lead allows it, --port-square.
 # This gate still redrew the OLD full-width names, so all forty comparisons
@@ -377,7 +368,7 @@ say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 61 ] 
 # they were is luck rather than a result, since nothing would have said
 # otherwise. Counted rather than hardcoded at 40, because a number written into
 # a gate stops being a measurement the moment a file is added.
-cd $R/trumpet-elbows-not-allowed
+cd $R/trumpet-elbows-allowed
 stale=0; seen=0
 for pv in $(find . -type d -name previews -not -path './.git/*'); do
   d=$(dirname "$pv")
@@ -405,7 +396,7 @@ for pv in $(find . -type d -name previews -not -path './.git/*'); do
 done; rm -f /tmp/_ag.svg
 say "previews current with their cut files" "$( [ $stale = 0 ] && [ $seen -gt 0 ] && echo "ok  $seen/$seen" || echo "FAIL $stale of $seen stale")"
 
-cd $R/trumpet-elbows-not-allowed/parts/bore/concept/walk/coil/search
+cd $R/trumpet-elbows-allowed/parts/bore/concept/walk/coil/search
 # The generators' EXIT STATUS is checked, not just the files afterwards. Until
 # 2026-09-11 this ran them with output discarded and then compared each file
 # with its own backup -- so a script that crashed left the file untouched and
@@ -465,7 +456,7 @@ done
 # hundreds of sheets that the two byte gates above already account for.
 for d in parts/bell parts/mouthpiece tools/examples \
          parts/bore/concept/walk/coil/search; do
-  cd $R/trumpet-elbows-not-allowed
+  cd $R/trumpet-elbows-allowed
   ro=$(python3 $G/repro-svg.py $d 2>&1); rc=$?
   o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
   say "${d##*/} drawings and pages reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
@@ -504,14 +495,14 @@ say "previews current in the hand-drawn repos" "$( [ $stale = 0 ] && [ $n -gt 0 
 # the field naming which curve each shape's vertices sit on, so the file on the
 # site was not the file the generator draws. Inert, as it happens: the embed is
 # canvas-only and never reads that field. The next one need not be.
-cd $R/trumpet-elbows-not-allowed/parts/bore/concept/swept-curve
+cd $R/trumpet-elbows-allowed/parts/bore/concept/swept-curve
 # Leftover and exit status both matter here, for the two reasons the gates above
 # give: a run interrupted before the rm leaves the file behind, and the
 # generator's status was thrown away, so a crash that wrote nothing was compared
 # against that leftover and read as ok.
 rm -f /tmp/_ag_bv.html
 python3 ribbon_view.py --shape=serpentine --embed --out=/tmp/_ag_bv.html \
-    --home=https://gernreich.github.io/trumpet-elbows-not-allowed/ >/dev/null 2>&1; rv=$?
+    --home=https://gernreich.github.io/trumpet-elbows-allowed/ >/dev/null 2>&1; rv=$?
 if [ $rv != 0 ] || [ ! -f /tmp/_ag_bv.html ]; then o="FAIL generator exited $rv"
 elif cmp -s /tmp/_ag_bv.html $R/Gernreich.github.io/bore-viewer.html; then o=ok
 else o="FAIL stale"; fi
@@ -529,7 +520,7 @@ say "published embed matches its generator" "$o"
 # does. The flags are the design's own; a page whose flags are typed wrong here
 # fails loudly rather than being quietly skipped, because the file it would
 # write to is named by the generator and not by this list.
-cd $R/trumpet-elbows-not-allowed/parts/bore/concept/swept-curve
+cd $R/trumpet-elbows-allowed/parts/bore/concept/swept-curve
 pg=0; pgbad=0
 vp () {
   rm -rf /tmp/_ag_vp && mkdir -p /tmp/_ag_vp
@@ -570,7 +561,7 @@ say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 18 ] && e
 # design's page. The viewer now calls ribbon_bore.read_flags(), bend_radius()
 # and port_holes(). The rows above only ever passed --out and legal lines, which
 # is how every one of these stayed green; this row runs the lines they never did.
-cd $R/trumpet-elbows-not-allowed/parts/bore/concept/swept-curve
+cd $R/trumpet-elbows-allowed/parts/bore/concept/swept-curve
 rf=0; rn=0
 refuses () {  # refuses WHAT CMD...: exits non-zero, writes no page, says WHAT
   local want=$1; shift; rn=$((rn+1)); rm -f /tmp/_ag_rf.html
@@ -611,7 +602,7 @@ say "ribbon page and sheets refuse alike" "$( [ $rf = 0 ] && [ $rn = 6 ] && [ "$
 # gated with. This pins the REFUSAL: three named failures and no fourth. A
 # fourth means the ports path has broken in some new way; two means one of the
 # objections has quietly stopped being raised.
-cd $R/trumpet-elbows-not-allowed/tools
+cd $R/trumpet-elbows-allowed/tools
 o=$(~/Software/boxes/venv/bin/python check.py "U2 E2 S2 U2" --ports 2>&1)
 tot=$(echo "$o" | tail -1); hit=0
 for w in "the section closes round its bore" \
@@ -621,7 +612,7 @@ for w in "the section closes round its bore" \
 done
 say "the ports path refuses for its three reasons" "$( [[ "$tot" == *"3 failed"* ]] && [ $hit = 3 ] && echo "ok  ${tot# }" || echo "FAIL ${tot:-no output}, $hit of 3 expected")"
 
-cd $R/trumpet-elbows-not-allowed/tools
+cd $R/trumpet-elbows-allowed/tools
 PYB=~/Software/boxes/venv/bin/python
 T=$(mktemp -d); bad=0; n=0
 run() { n=$((n+1)); "$@" >/dev/null 2>&1 || { bad=$((bad+1)); echo "  FAILS: $2"; }; }
@@ -658,7 +649,7 @@ say "every entry-point tool still runs" "$( [ $bad = 0 ] && [ $n -ge 7 ] && echo
 # been deleted instead: it rewrote a stroke: style property and these sheets
 # carry a stroke attribute on the group, so it matched nothing on every sheet in
 # the repository and had no valid input left. See parts/CLAUDE.md.
-cd $R/trumpet-elbows-not-allowed/parts
+cd $R/trumpet-elbows-allowed/parts
 T=$(mktemp -d); bad=0; n=0
 BS=bell/cut-files/bell-round10-153mm-17rings-x3-rim86-cut-files.svg
 MS=mouthpiece/cut-files/mouthpiece-bore10-trumpet-parts-cut-files.svg
@@ -699,7 +690,7 @@ ro=$(python3 ignore-audit.py 2>&1); rc=$?
 o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
 say "every exemption still suppresses something" "$( [[ "$o" == *", 0 suppressing"* ]] && echo "ok  ${o# }" || echo "FAIL ${o# }")"
 
-cd $R/trumpet-elbows-not-allowed/tools
+cd $R/trumpet-elbows-allowed/tools
 # Asks BORE_SPLIT rather than re-implementing the comparison, and so looks at
 # the checkout that actually draws. This had ~/Software/boxes written into it
 # while bore_split.py resolves SNAKEBOX_BOXES first and falls back to a search,
@@ -727,7 +718,7 @@ say "Boxes install matches tools/" "$( [ "$o" = ok ] && echo ok || echo "FAIL $o
 # A walk that had drifted out of standard form would not be wrong, exactly: it
 # would still cut. It would just no longer be comparable with the nine beside it,
 # which is the one thing the whole search directory is for.
-cd $R/trumpet-elbows-not-allowed/parts/bore/concept/walk/coil/search
+cd $R/trumpet-elbows-allowed/parts/bore/concept/walk/coil/search
 o=$(node tools/standardise.js --write 2>&1); rc=$?
 n=$(echo "$o" | grep -oE '^[0-9]+ standardised' | grep -oE '^[0-9]+')
 say "the coil corpus is in standard form" "$( [ $rc = 0 ] && [ "${n:-0}" -ge 10 ] \
@@ -748,7 +739,7 @@ say "the coil corpus is in standard form" "$( [ $rc = 0 ] && [ "${n:-0}" -ge 10 
 #
 # It costs about two and a half minutes, which is why the header above now says
 # eight and not five.
-cd $R/trumpet-elbows-not-allowed/parts/bore/concept/walk/coil/search
+cd $R/trumpet-elbows-allowed/parts/bore/concept/walk/coil/search
 o=$(bash tools/run_checks.sh 2>&1); rc=$?
 n=$(echo "$o" | grep -cE "[0-9]+ checks, [0-9]+ failed")
 say "the search transcripts regenerate" "$( [ $rc = 0 ] && [ "$n" -ge 10 ] \

@@ -29,7 +29,7 @@ import os, re, subprocess, sys, tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 GATES = os.path.join(HERE, 'all-gates.sh')
 SWEPT = os.path.expanduser(
-    '~/LaserMadeMusic/GIT/trumpet-elbows-not-allowed/parts/bore/concept/swept-curve')
+    '~/LaserMadeMusic/GIT/trumpet-elbows-allowed/parts/bore/concept/swept-curve')
 
 
 def designs(path=None):
