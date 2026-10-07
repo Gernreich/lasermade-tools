@@ -14,12 +14,10 @@ PAGE.html
 WRITEUP.md
 prose.py
 
-# Named in prose as examples of tools that know one build, and so live in the
-# repository they describe rather than in this one.
+# The invented example in doc-audit.py's write-up, showing prose and image paths
+# resolving differently. It exists nowhere.
 
 bell.py
-verify_torus.js
-BuildA1_90_25.svg
 
 # In the build repositories these check, not here.
 bore_split.py

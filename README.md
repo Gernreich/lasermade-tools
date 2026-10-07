@@ -15,8 +15,8 @@ build repositories — [trumpet-elbows-allowed](https://github.com/Gernreich/tru
 [bullroarer](https://github.com/Gernreich/bullroarer) and
 [buzz-disc](https://github.com/Gernreich/buzz-disc).
 
-`trumpet` was five repositories until 2026-09-05 — `torus-octagonal`,
-`trumpet-octagonal`, `trumpet-coiled`, `trumpet-parts` and `bore-generator`.
+`trumpet` was several repositories until 2026-09-05, among them `trumpet-coiled`,
+`trumpet-parts` and `bore-generator`.
 Notes below that name one of those are describing where a lesson came from, not
 a repository you can clone.
 
@@ -47,8 +47,7 @@ Python 3 and no Python packages; `md2html.py` also needs [pandoc](https://pandoc
 ## Why these live in their own repository
 
 They are used by every repository above, so none of them can own the tools without all the
-others depending on it. Tools that know one build — `torus-octagonal/verify_torus.js`
-knows that build's apothems and panel sizes — stay inside the repository they describe.
+others depending on it. Tools that know one build stay inside the repository they describe.
 These ten know nothing about any particular object, so they sit here.
 
 Until 2026-08-08 they lived in `~/Claude`, which is not version controlled. Their bugs
@@ -67,9 +66,9 @@ python3 doc-audit.py WRITEUP.md [--html PAGE.html]
 
 A repository that legitimately names files it does not ship can say so once, in
 **`.doc-audit-ignore`** at its root — one name per line, `#` for comments — instead of
-remembering `--ignore` on every run. `torus-octagonal` needs it: its parts come from
-**[boxes.py](https://www.festi.info/boxes.py/)** by Florian Festi, an external web generator, which serves
-every download as `RegularBox.svg`.
+remembering `--ignore` on every run. A writeup whose parts come from
+**[boxes.py](https://www.festi.info/boxes.py/)** by Florian Festi, an external web generator, needs it:
+that generator serves every download as `RegularBox.svg`.
 Both names belong in the prose and neither will ever be a file there.
 
 **A wrong answer it gave: `.json` read as `.js`.** The filename pattern accepted an
@@ -115,7 +114,7 @@ bell.py lives; `<img src="bell.py">` does not. The two checks disagreeing is the
 
 **Where it has been wrong.** Its first run produced four failures, all of which were its
 own bugs rather than the document's. It also reported `boxes.py` and `RegularBox.svg` as
-missing from `torus-octagonal` for as long as that repository existed — they are an
+missing from a writeup that named them correctly — they are an
 external tool and the filename it serves, correctly named in prose, and the fix was the
 ignore file above rather than any change to a document that was right. Later, a document in a subdirectory was told its
 neighbours did not exist, because the checker rooted everything at the document's own
@@ -560,7 +559,7 @@ was winning anyway, so what the file cuts does not change. It compares path data
 and after and refuses to write if anything but the attribute moved. Exit status is 1 when
 conflicts exist, so it can gate a commit.
 
-**Why it exists.** `torus-octagonal/BuildA1_90_25.svg` carried sixteen such paths: style
+**Why it exists.** A cut file carried sixteen such paths: style
 saying green or cyan, attribute saying black. Read the attribute way, all sixteen panels
 — including the eight nested inside the plate holes — moved to the final stage, after the
 cut that frees the plates. Nothing in the file looked wrong, and no other check could see
@@ -711,9 +710,7 @@ python3 doc-audit.py README.md --html index.html
 
 The names that check would otherwise trip on now live in `.doc-audit-ignore` rather than
 in an `--ignore` flag on the command line, so the documented self-check needs no arguments.
-They are the usage-synopsis placeholders, and the files named in prose that live in the
-repository they describe — `verify_torus.js` and `BuildA1_90_25.svg` in `torus-octagonal`,
-`bell.py` nowhere at all, since it is the invented example in the `doc-audit.py` section
+They are the usage-synopsis placeholders, and `bell.py`, which lives nowhere at all, since it is the invented example in the `doc-audit.py` section
 showing prose and image paths resolving differently. `bell.py` was missing from the flag
 for as long as the flag existed, so the documented self-check reported two failures against
 a README that was right.

@@ -58,7 +58,7 @@ fails, notes = [], []
 
 def strip_fences(text):
     """Everything inside a ``` block is quoted content, not markdown. A shell comment
-    there is not a heading — the octagonal torus and celtic knot writeups both quote
+    there is not a heading — writeups quote
     sessions containing '# ...' lines, which the renderer ignores and a naive regex
     reads as an <h1>. Same toggle rule md2html.py uses, so the two agree on what is
     code. Filename mentions are deliberately NOT stripped: `node foo.js` inside a
@@ -119,8 +119,8 @@ def ok(label, good, detail=""):
 
 # ── 1. files the document names, and files nobody names ──────────────────────
 prose_only = {x.strip() for x in a.ignore.split(",") if x.strip()}
-# A repository may legitimately name files it does not ship. torus-octagonal is built
-# with boxes.py, an external web generator, and explains that it serves every download
+# A repository may legitimately name files it does not ship. A writeup built
+# with boxes.py, an external web generator, explains that it serves every download
 # as RegularBox.svg -- so both names belong in the prose and neither will ever exist on
 # disk. Passing --ignore each time works until someone forgets, and then the same two
 # false failures come back looking like a regression. A repository states its own
@@ -510,9 +510,9 @@ BLOCKS = re.findall(r"```\n\$ ([^\n]+)\n((?:.*\n)*?)```", src)
 # tail is the reason the form exists.
 CBLOCKS = re.findall(r"```(?:bash|sh|console)\n([^\n#][^\n]*)\n((?:#[^\n]*\n)+)```", src)
 if a.run_blocks and (BLOCKS or CBLOCKS):
-    # A quoted command is often a generator, not a read-only query: the octagonal
-    # torus writeup quotes torus-geometry-diagram.js, which rewrites the very figure
-    # the document displays. Auditing must not mutate the tree it audits, and the
+    # A quoted command is often a generator, not a read-only query: a writeup
+    # may quote a figure generator, which rewrites the very figure the document
+    # displays. Auditing must not mutate the tree it audits, and the
     # damage is silent — the next run's "page is current" check would fail against an
     # HTML rebuilt from a figure this tool had replaced. So snapshot ROOT, run the
     # blocks against the real tree for fidelity, then put back anything they touched.

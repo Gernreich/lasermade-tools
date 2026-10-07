@@ -22,7 +22,7 @@ lines = src.read_text().split("\n")
 
 # The tab title is the document's own first h1, so one converter serves several
 # writeups. Falls back to the filename for a document that has none. Strips ` and *
-# but NOT _, which is a literal in names like Octagonal_Torus rather than emphasis.
+# but NOT _, which is a literal in names like knot_soundhole rather than emphasis.
 title = next((re.sub(r"[`*]", "", ln[2:]).strip() for ln in lines if ln.startswith("# ")),
              src.stem)
 
