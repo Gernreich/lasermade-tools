@@ -148,9 +148,12 @@ say "ribbon --port-at=0 is plain --port" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && ec
 # here moved to trumpet-elbows-allowed, which cuts elbows rather than refusing
 # them and carries five more designs: 31 in regress.py, 70 sheets in repro.py
 # then. The tight coil made it 32 and 103 the same day, the ziggurat 33 and 116.
+# The label below said "33 block designs" by hand until 2026-10-09, a count that
+# goes stale with the next design and that nothing checked. It counts DESIGNS now.
 cd $R/trumpet-elbows-allowed/tools
 o=$(~/Software/boxes/venv/bin/python regress.py 2>&1 | tail -1)
-say "regress.py, 33 block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
+nd=$(python3 -c 'import regress; print(len(regress.DESIGNS))' 2>/dev/null)
+say "regress.py, ${nd:-?} block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
 
 # regress.py MEASURES the committed sheets; it never redraws them. Every
 # invariant can hold while the SVG on disk is one the current code would no
