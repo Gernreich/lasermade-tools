@@ -6,7 +6,7 @@ this page, set for reading, with a table of contents.
 
 <!-- page-only **[Read the README](https://github.com/Gernreich/lasermade-tools)** -->
 
-Ten scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
+Eleven scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
 build repositories — [trumpet-elbows-allowed](https://github.com/Gernreich/trumpet-elbows-allowed),
 [knotwork-soundholes](https://github.com/Gernreich/knotwork-soundholes),
 [living-hinge](https://github.com/Gernreich/living-hinge),
@@ -43,6 +43,7 @@ Python 3 and no Python packages; `md2html.py` also needs [pandoc](https://pandoc
 | `repro-svg.py` | does a repository's shipped SVG still come out of its generator? |
 | `name-check.py` | does a cut file's name agree with the geometry inside it? |
 | `ignore-audit.py` | does every `.doc-audit-ignore` line still suppress something? |
+| `rebuild-page.sh` | regenerate a writeup's page and audit the pair, from any directory |
 
 ## Why these live in their own repository
 
@@ -682,6 +683,22 @@ both sibling tools. Whether `15,20,25,30` brackets 3mm Baltic birch on a 55W tub
 exactly the question the ladder exists to answer, and nothing here has answered it yet.
 Treat the default as a starting bracket, not a recommendation.
 
+## `rebuild-page.sh`
+
+```
+rebuild-page.sh [DIR] [--md=WRITEUP.md] [--html=PAGE.html] [--links]
+```
+
+`md2html.py` and then `doc-audit.py --rebuild`, run from DIR, which defaults to
+README.md and index.html in the current directory. It prints the audit's failed
+lines and its tally and nothing else, so a clean run is one line, and like
+`all-gates.sh` it is fail-closed: it exits 0 only when it sees `0 failed`.
+
+It exists because the same two commands were written out by hand in eight
+CLAUDE.md files, each with its own relative path to this repository, and one of
+them, in the swept-curve folder, regenerated a README that was not there. The path
+to this repository now lives in one place.
+
 ## The review method these tools serve
 
 `skills/writeup-review/SKILL.md` is the Claude Code skill that runs these tools as
@@ -697,6 +714,20 @@ were.
 The lenses apply to any project. Only the first section is specific to these
 repositories: `all-gates.sh` here, `doc-audit.py` alone elsewhere, with what it
 cannot see outside its home spelled out.
+
+Two more skills live beside it, symlinked into `~/.claude/skills` the same way,
+added 2026-10-09:
+
+- `skills/ship/SKILL.md` is the commit-and-push routine: stage by name, commit
+  to `main`, run `all-gates.sh` in the background filtered to its failures, and
+  push only when the one failure is the commits waiting to go up.
+- `skills/bore-walk/SKILL.md` is the intake for a trumpet bore walk: split it
+  with `bore_split.py`, lead with the elbow count, build the turnable viewer and
+  publish the link.
+
+A skill costs one line of description in a session until it is used, where the
+same text in a CLAUDE.md is read in full every time. That is the reason these two
+procedures are skills: each is needed in some sessions and not most.
 
 ## Checking this page
 

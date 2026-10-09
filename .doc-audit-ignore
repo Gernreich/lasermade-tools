@@ -65,3 +65,10 @@ page.png
 narrow.png
 probe.html
 bridge1.svg
+
+# Named by skills/ship and skills/bore-walk, and kept in the repositories those
+# skills work on (each trumpet folder's CLAUDE.md; trumpet-elbows-allowed/tools/
+# viewer.py), not here. doc-audit matches on the bare name, so a full path in the
+# skill does not help.
+CLAUDE.md
+viewer.py
