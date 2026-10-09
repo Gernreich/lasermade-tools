@@ -632,8 +632,19 @@ run $PYB mcwalk.py "N3 U3 W5 N10 E5 S8 W3 S3 N12" --out $T/w.html
 # the tree -- a fixed output name in the current directory, no --out -- which is
 # exactly why it had no line here. It has one now, so it does.
 run $PYB bore_render.py "D3 E4" --out=$T/r.svg
+# rebuild-page.sh joins them on 2026-10-09, on pages made here in $T and never a
+# real one: it rewrites the index.html beside whatever README it is given. It is
+# fail-closed, so it is checked from both sides -- a clean page passes and a page
+# naming a file that is not there does not. A tool that only ever exits 0 would
+# pass the first line alone.
+mkdir $T/page $T/bad
+printf '# Probe\n\nA page with nothing to check.\n' > $T/page/README.md
+printf '# Probe\n\nSee `missing.py`.\n' > $T/bad/README.md
+run bash $G/rebuild-page.sh $T/page
+n=$((n+1)); bash $G/rebuild-page.sh $T/bad >/dev/null 2>&1 \
+  && { bad=$((bad+1)); echo "  FAILS: rebuild-page.sh passed a broken page"; }
 rm -rf $T
-say "every entry-point tool still runs" "$( [ $bad = 0 ] && [ $n -ge 7 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
+say "every entry-point tool still runs" "$( [ $bad = 0 ] && [ $n -ge 9 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
 
 # THE BELL AND THE MOUTHPIECE. The comment above names six tools that were run
 # by nothing and stops there; twelve more, every one under parts/, were in the

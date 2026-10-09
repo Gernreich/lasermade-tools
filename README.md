@@ -699,6 +699,10 @@ CLAUDE.md files, each with its own relative path to this repository, and one of
 them, in the swept-curve folder, regenerated a README that was not there. The path
 to this repository now lives in one place.
 
+`all-gates.sh` runs it on two throwaway pages it makes for the purpose, never a
+real one: a clean page must pass and a page naming a missing file must fail. A
+copy of the script that always exits 0 fails that gate.
+
 ## The review method these tools serve
 
 `skills/writeup-review/SKILL.md` is the Claude Code skill that runs these tools as
