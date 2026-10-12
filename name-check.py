@@ -123,7 +123,13 @@ def main(path=None):
                 # called a correct name wrong. Either spelling counts.
                 g = re.search(r'(\d+) (?:half-circles|lobes)', desc)
                 claims.append(('lobes', int(m[1]), int(g[1]) if g else None))
-            claims.append(('shape', stem.split('-')[1], shape))
+            # The shape is everything between an optional 'ribbon-' and
+            # '-bore', not the second word: double-spiral, double-volute and
+            # three-lobe-serpentine-with-collinear-ends have hyphens of their
+            # own, and the last of them carries no 'ribbon-' at all.
+            claims.append(('shape',
+                           re.match(r'(?:ribbon-)?(.+?)-bore\d', stem)[1],
+                           shape))
             wrong = 0
             for what, said, got in claims:
                 # A NAME IS HELD TO THE PRECISION IT STATES, and no further.

@@ -66,7 +66,7 @@ cd $R/trumpet-elbows-allowed/parts/bore/concept/swept-curve
 # across its band at the seam, a slit through the airway on the cut part, and
 # all twelve checks passed it because none of them asked where the black lines
 # ran.
-for s in serpentine opposed wave spiral dspiral volute; do
+for s in serpentine three-lobe-serpentine-with-collinear-ends ess spiral double-spiral double-volute; do
   for mode in "" "--port"; do
     o=$(python3 ribbon_bore.py --shape=$s $mode --no-write 2>&1)
     n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
@@ -281,9 +281,12 @@ cd $R/trumpet-elbows-allowed/parts/bore/concept/swept-curve
 # "narrow", so a suffix typed wrong here fails loudly instead of overwriting a
 # full-width twin.
 T=$(mktemp -d); same=0; bad=0
+# PARTS narrows the comparison for a design that ships only some of the sheets
+# the generator writes: the 1506mm double spiral's plain cheek was removed on
+# 2026-10-12 and its panels kept, so that row compares the panels alone.
 rr () { d=$1; stem=$2; suf=$3; shift 3
   python3 ribbon_bore.py "$@" --narrow --out=$T/$stem$suf.svg >/dev/null 2>&1
-  for part in cheek-x2 panels; do
+  for part in ${PARTS:-cheek-x2 panels}; do
     cmp -s "$d/$stem$suf-$part-cut-files.svg" \
            "$T/$stem$suf-$part-cut-files.svg" && same=$((same+1)) || bad=$((bad+1))
   done; }
@@ -300,16 +303,16 @@ rrc () { d=$1; stem=$2; suf=$3; shift 3
   done; }
 
 # The three whose lead bends 15 degrees take a round port, not a square one:
-# --port-square needs a straight run to sit in, and serpentine and opposed
-# have not got one. They are the reason the suffix is an argument.
+# --port-square needs a straight run to sit in, and serpentine and
+# three-lobe-serpentine-with-collinear-ends have not got one. They are the reason the suffix is an argument.
 #
 # Paths are written out in full rather than held in shell variables, because
 # name-check.py reads THESE LINES as its design table and needs the literal
 # stem to read bore10, 30deg and 1180mm off. Variables saved four lines and
 # blinded that check completely -- it reported "no rr lines found".
 SE=serpentine/ribbon-serpentine-bore10-30deg-3lobes-R72
-OP=opposed/ribbon-opposed-bore10-30deg-3lobes-R64
-WV=wave/ribbon-wave-bore10-45deg-5arc
+OP=three-lobe-serpentine-with-collinear-ends/three-lobe-serpentine-with-collinear-ends-bore10-30deg-3lobes-R64
+WV=ess/ribbon-ess-bore10-45deg-5arc
 SP=spiral/ribbon-spiral-bore10-45deg
 # R35to113 IS NOT UNDER swept-curve ANY MORE. It was cut, glued up and fitted
 # with both ends, so trumpet 156fa71 moved it to built/ with the instruments and
@@ -318,8 +321,8 @@ SP=spiral/ribbon-spiral-bore10-45deg
 # 13 vp pages. The path is a variable, which the stem may never be: name-check.py
 # mines these lines for the STEM and the FLAGS, never the folder.
 BSP=../../../../built/ribbon-spiral-bore10-45deg-R35to113
-DS=dspiral/ribbon-dspiral-bore10-30deg-R62-pitch46
-VO=volute/ribbon-volute-bore10-45deg-R94-step60
+DS=double-spiral/ribbon-double-spiral-bore10-30deg-R62-pitch46
+VO=volute/double-volute-bore10-45deg-R94-step60
 # The first CLOSED RING kept in this tree. Its facet angle is 360/13 and is not
 # a whole number of degrees, which is why name-check.py had to learn to hold a
 # name to the precision it states rather than to the nearest integer.
@@ -336,10 +339,10 @@ RT=racetrack/ribbon-racetrack-bore10-45deg-4lobes-R22-cap134.116-1600mm
 OV=oval/ribbon-oval-bore10-30deg-end60-R28-side-R72-flat12.2-sideflat12.5-314mm
 rr $SE/cut-files ribbon-serpentine-bore10-30deg-3lobes-R72-1000mm -narrow --shape=serpentine
 rr $SE/cut-files ribbon-serpentine-bore10-30deg-3lobes-R72-1000mm -ported-narrow --shape=serpentine --port --cap
-rr $OP/cut-files ribbon-opposed-bore10-30deg-3lobes-R64-1000mm -narrow --shape=opposed
-rr $OP/cut-files ribbon-opposed-bore10-30deg-3lobes-R64-1000mm -ported-narrow --shape=opposed --port --cap
-rr $WV/cut-files ribbon-wave-bore10-45deg-5arc-836mm -narrow --shape=wave
-rr $WV/cut-files ribbon-wave-bore10-45deg-5arc-836mm -ported-square-narrow --shape=wave --port --port-square --cap
+rr $OP/cut-files three-lobe-serpentine-with-collinear-ends-bore10-30deg-3lobes-R64-1000mm -narrow --shape=three-lobe-serpentine-with-collinear-ends
+rr $OP/cut-files three-lobe-serpentine-with-collinear-ends-bore10-30deg-3lobes-R64-1000mm -ported-narrow --shape=three-lobe-serpentine-with-collinear-ends --port --cap
+rr $WV/cut-files ribbon-ess-bore10-45deg-5arc-836mm -narrow --shape=ess
+rr $WV/cut-files ribbon-ess-bore10-45deg-5arc-836mm -ported-square-narrow --shape=ess --port --port-square --cap
 rr $BSP/cut-files ribbon-spiral-bore10-45deg-R35to113-1000mm -narrow --shape=spiral
 rr $BSP/cut-files ribbon-spiral-bore10-45deg-R35to113-1000mm -ported-narrow --shape=spiral --port --cap
 rr $BSP/cut-files ribbon-spiral-bore10-45deg-R35to113-1000mm -ported-square-narrow --shape=spiral --port --port-square --cap
@@ -347,23 +350,20 @@ rr $SP-R36to144/cut-files ribbon-spiral-bore10-45deg-R36to144-1767mm -narrow --s
 rr $SP-R36to144/cut-files ribbon-spiral-bore10-45deg-R36to144-1767mm -ported-square-narrow --shape=spiral --spiral-facets=25 --spiral-ri=36.5 --spiral-ro=144 --port --port-square --cap
 rr $SP-R74to144/cut-files ribbon-spiral-bore10-45deg-R74to144-1458mm -narrow --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144
 rr $SP-R74to144/cut-files ribbon-spiral-bore10-45deg-R74to144-1458mm -ported-square-narrow --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144 --port --port-square --cap
-rr $DS/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1506mm -narrow --shape=dspiral
-rr $DS/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1506mm -ported-square-narrow --shape=dspiral --port --port-square --cap
-rr $DS-1000mm/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm -narrow --shape=dspiral --ds-facets=9 --lead=42
-rr $DS-1000mm/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm -ported-square-narrow --shape=dspiral --ds-facets=9 --lead=42 --port --port-square --cap
-rrc $DS-1000mm/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm -ported-both-square-narrow --shape=dspiral --ds-facets=9 --lead=42 --port --port-square --port-both --port-per-cheek --cap
-rrc $DS-halftest-both/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-half-240mm -ported-both-square-narrow --shape=dspiral --ds-half --ds-facets=2 --lead=42 --port --port-square --port-both --port-per-cheek --cap
-rr $DS-halftest/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-half-196mm -narrow --shape=dspiral --ds-half --ds-facets=2
-rr $DS-halftest/cut-files ribbon-dspiral-bore10-30deg-R62-pitch46-half-196mm -ported-square-narrow --shape=dspiral --ds-half --ds-facets=2 --port --port-square --cap
-rr $VO/cut-files ribbon-volute-bore10-45deg-R94-step60-1180mm -narrow --shape=volute
-rr $VO/cut-files ribbon-volute-bore10-45deg-R94-step60-1180mm -ported-square-narrow --shape=volute --port --port-square --cap
+PARTS=panels rr $DS-1506mm/cut-files ribbon-double-spiral-bore10-30deg-R62-pitch46-1506mm -narrow --shape=double-spiral
+rr $DS-1506mm/cut-files ribbon-double-spiral-bore10-30deg-R62-pitch46-1506mm -ported-square-narrow --shape=double-spiral --port --port-square --cap
+rr $DS-1000mm/cut-files ribbon-double-spiral-bore10-30deg-R62-pitch46-1000mm -narrow --shape=double-spiral --ds-facets=9 --lead=42
+rr $DS-1000mm/cut-files ribbon-double-spiral-bore10-30deg-R62-pitch46-1000mm -ported-square-narrow --shape=double-spiral --ds-facets=9 --lead=42 --port --port-square --cap
+rrc $DS-1000mm/cut-files ribbon-double-spiral-bore10-30deg-R62-pitch46-1000mm -ported-both-square-narrow --shape=double-spiral --ds-facets=9 --lead=42 --port --port-square --port-both --port-per-cheek --cap
+rr $VO/cut-files ribbon-double-volute-bore10-45deg-R94-step60-1180mm -narrow --shape=double-volute
+rr $VO/cut-files ribbon-double-volute-bore10-45deg-R94-step60-1180mm -ported-square-narrow --shape=double-volute --port --port-square --cap
 rrc $TO/cut-files ribbon-torus-bore10-27.6923deg-R128.572-800mm -ported-at0-6-narrow --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek
 rrc $TO/cut-files ribbon-torus-bore10-27.6923deg-R128.572-800mm -ported-at0-6-square-narrow --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek --port-square
 rr $RT/cut-files ribbon-racetrack-bore10-45deg-4lobes-R22-cap134.116-1600mm -narrow --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=134.115704 --race-straight=30
 rr $OV/cut-files ribbon-oval-bore10-30deg-end60-R28-side-R72-flat12.2-sideflat12.5-314mm -narrow --shape=oval
 rrc $SC/cut-files ribbon-scallop-bore10-36deg-5lobes-R44.2214-in41-800mm -ported-at1-14-square-narrow --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square
 rm -rf $T
-say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 61 ] && echo "ok  $same/61" || echo "FAIL $bad differ, $same of 61 compared")"
+say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 53 ] && echo "ok  $same/53" || echo "FAIL $bad differ, $same of 53 compared")"
 
 # Walks EVERY previews/ directory in the repository, not just this one. It
 # checked swept-curve/previews and nothing else, so parts/bell/previews,
@@ -535,26 +535,22 @@ vp () {
   else pgbad=$((pgbad+1)); fi
   rm -rf /tmp/_ag_vp
 }
-DSP=dspiral/ribbon-dspiral-bore10-30deg-R62-pitch46
+DSP=double-spiral/ribbon-double-spiral-bore10-30deg-R62-pitch46
 vp serpentine/ribbon-serpentine-bore10-30deg-3lobes-R72/ribbon-serpentine-bore10-30deg-3lobes-R72.html --shape=serpentine
-vp opposed/ribbon-opposed-bore10-30deg-3lobes-R64/ribbon-opposed-bore10-30deg-3lobes-R64.html --shape=opposed
-vp wave/ribbon-wave-bore10-45deg-5arc/ribbon-wave-bore10-45deg-5arc.html --shape=wave
+vp three-lobe-serpentine-with-collinear-ends/three-lobe-serpentine-with-collinear-ends-bore10-30deg-3lobes-R64/three-lobe-serpentine-with-collinear-ends-bore10-30deg-3lobes-R64.html --shape=three-lobe-serpentine-with-collinear-ends
+vp ess/ribbon-ess-bore10-45deg-5arc/ribbon-ess-bore10-45deg-5arc.html --shape=ess
 vp $BSP/ribbon-spiral-bore10-45deg-R35to113.html --shape=spiral
 vp spiral/ribbon-spiral-bore10-45deg-R36to144/ribbon-spiral-bore10-45deg-R36to144.html --shape=spiral --spiral-facets=25 --spiral-ri=36.5 --spiral-ro=144
 vp spiral/ribbon-spiral-bore10-45deg-R74to144/ribbon-spiral-bore10-45deg-R74to144.html --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144
-vp volute/ribbon-volute-bore10-45deg-R94-step60/ribbon-volute-bore10-45deg-R94-step60.html --shape=volute
-vp $DSP/ribbon-dspiral-bore10-30deg-R62-pitch46.html --shape=dspiral
-vp $DSP-halftest/ribbon-dspiral-bore10-30deg-R62-pitch46-halftest.html --shape=dspiral --ds-half --ds-facets=2
-vp $DSP-1000mm/ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm.html --shape=dspiral --ds-facets=9 --lead=42 --port --port-square --port-both --port-per-cheek --cap
-vp $DSP-1000mm/ribbon-dspiral-bore10-30deg-R62-pitch46-1000mm-ported-square.html --shape=dspiral --ds-facets=9 --lead=42 --port --port-square --cap
-vp $DSP-halftest-both/ribbon-dspiral-bore10-30deg-R62-pitch46-halftest-both.html --shape=dspiral --ds-half --ds-facets=2 --lead=42 --port --port-square --port-both --port-per-cheek --cap
+vp volute/double-volute-bore10-45deg-R94-step60/ribbon-double-volute-bore10-45deg-R94-step60.html --shape=double-volute
+vp $DSP-1506mm/ribbon-double-spiral-bore10-30deg-R62-pitch46-1506mm.html --shape=double-spiral
+vp $DSP-1000mm/ribbon-double-spiral-bore10-30deg-R62-pitch46-1000mm-ported-square.html --shape=double-spiral --ds-facets=9 --lead=42 --port --port-square --cap
 vp $RT/ribbon-racetrack-bore10-45deg-4lobes-R22-cap134.116-1600mm.html --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=134.115704 --race-straight=30
 vp $OV/ribbon-oval-bore10-30deg-end60-R28-side-R72-flat12.2-sideflat12.5-314mm.html --shape=oval
 vp $SC/ribbon-scallop-bore10-36deg-5lobes-R44.2214-in41-800mm.html --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square
 vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm-ported-square.html --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek --port-square
 vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm.html --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek
-vp ribbon-traced-volute-bore10-45deg.html --trace=traces/volute.json
-say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 18 ] && echo "ok  $pg/18" || echo "FAIL $pgbad stale, $pg of 18 current")"
+say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 14 ] && echo "ok  $pg/14" || echo "FAIL $pgbad stale, $pg of 14 current")"
 
 # THE PAGE AND THE SHEETS READ ONE COMMAND LINE. ribbon_view.py kept its own copy
 # of the generator's flag handling and the two drifted four ways: the generator

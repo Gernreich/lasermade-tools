@@ -415,7 +415,7 @@ show clean-and-pushed without also showing what failed.
 
 ### `name-check.py` — does a cut file's name agree with the geometry inside it?
 
-`ribbon-volute-bore10-45deg-R94-step60-1180mm` asserts a section, a facet angle,
+`ribbon-double-volute-bore10-45deg-R94-step60-1180mm` asserts a section, a facet angle,
 a radius, a step and a centreline. Every other gate here compares an artefact
 with the code that draws it; none of them reads the name. The reproduction gate
 is handed the stem on the command line, so a design called `-1180mm` reproduces
