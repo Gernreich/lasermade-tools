@@ -493,25 +493,9 @@ done
 rm -f /tmp/_ag2.svg
 say "previews current in the hand-drawn repos" "$( [ $stale = 0 ] && [ $n -gt 0 ] && echo "ok  $n/$n" || echo "FAIL $stale stale of $n")"
 
-# The one artefact that CROSSES repositories: gernreich.github.io publishes an
-# embed drawn by a generator that lives in trumpet, and its own notes said in
-# so many words "Nothing gates it." It had drifted -- the published copy predated
-# the field naming which curve each shape's vertices sit on, so the file on the
-# site was not the file the generator draws. Inert, as it happens: the embed is
-# canvas-only and never reads that field. The next one need not be.
-cd $R/trumpet-elbows-allowed/parts/bore/concept/swept-curve
-# Leftover and exit status both matter here, for the two reasons the gates above
-# give: a run interrupted before the rm leaves the file behind, and the
-# generator's status was thrown away, so a crash that wrote nothing was compared
-# against that leftover and read as ok.
-rm -f /tmp/_ag_bv.html
-python3 ribbon_view.py --shape=serpentine --embed --out=/tmp/_ag_bv.html \
-    --home=https://gernreich.github.io/trumpet-elbows-allowed/ >/dev/null 2>&1; rv=$?
-if [ $rv != 0 ] || [ ! -f /tmp/_ag_bv.html ]; then o="FAIL generator exited $rv"
-elif cmp -s /tmp/_ag_bv.html $R/Gernreich.github.io/bore-viewer.html; then o=ok
-else o="FAIL stale"; fi
-rm -f /tmp/_ag_bv.html
-say "published embed matches its generator" "$o"
+# The published embed gate stood here until 2026-10-12, when the serpentine
+# left gernreich.github.io for the greek spiral's lattice viewer: that page now
+# embeds nothing drawn by ribbon_view.py, so there is no cross-repo artefact.
 
 # THE DESIGN PAGES WERE GATED BY NOTHING, and went stale the first time the
 # viewer changed under them. Ten of twelve were a viewer revision behind, and
