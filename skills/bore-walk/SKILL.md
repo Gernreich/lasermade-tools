@@ -22,7 +22,7 @@ enter facing the first term and leave facing the last; there are no bare-letter 
 "Bend" and "elbow" are **piece kinds with a price**, not descriptions:
 
 - **bend**: a turn with a straight block either side, folded into an L. Free.
-- **elbow**: a turn stranded as its own one-block piece. It costs flat-to-flat gluing,
+- **elbow**: a turn stranded as its own one-block piece. It costs flat-to-flat joints,
   flattened plates and an unfilled corner void, the hardest part of the build.
 
 If a word in the request could change what counts as a cost ("only bends", "tighter",

@@ -16,7 +16,7 @@ build repositories — [trumpet-elbows-allowed](https://github.com/Gernreich/tru
 [buzz-disc](https://github.com/Gernreich/buzz-disc).
 
 `trumpet` was several repositories until 2026-09-05, among them `trumpet-coiled`,
-`trumpet-parts` and `bore-generator`.
+`trumpet-parts` and `bore-generator`; its live successor is `trumpet-elbows-allowed`.
 Notes below that name one of those are describing where a lesson came from, not
 a repository you can clone.
 
@@ -49,7 +49,7 @@ Python 3 and no Python packages; `md2html.py` also needs [pandoc](https://pandoc
 
 They are used by every repository above, so none of them can own the tools without all the
 others depending on it. Tools that know one build stay inside the repository they describe.
-These ten know nothing about any particular object, so they sit here.
+These eleven know nothing about any particular object, so they sit here.
 
 Until 2026-08-08 they lived in `~/Claude`, which is not version controlled. Their bugs
 are the reason that mattered: the failures below were found by accident, and without
@@ -322,7 +322,7 @@ Runs every gate in every repository and prints one tally.
 Eighteen ribbon bore runs -- twelve over the six open shapes, two over the
 torus, one each over the scallop, the racetrack and the oval, and one on
 `--port-at` --
-`regress.py` over 26 block designs, `doc-audit` over
+`regress.py` over 33 block designs, `doc-audit` over
 every page in nine repositories, `svg-stroke-check` over every SVG, and
 `flat-part-check` over the flat parts -- then four questions about what is
 committed, and finally whether every repository is clean and pushed.
@@ -358,8 +358,8 @@ written, which is luck.
 **The four are the ones a gate usually forgets**, because they compare the code
 with what shipped rather than running the code at all:
 
-    ribbon sheets reproduce byte-identical    40/40
-    previews current with their cut files     40/40
+    ribbon sheets reproduce byte-identical    53/53
+    previews current with their cut files     44/44
     search tools reproduce their output
     Boxes install matches tools/
 
@@ -394,9 +394,9 @@ so the README's own mention of `LICENSE` had always covered every copy.
 
 It audits **both** suppression files. `.doc-audit-ignore` exempts a name;
 `.doc-audit-generated` exempts a whole directory, and is much the blunter
-instrument — six lines in trumpet exempt 378 tracked files. That second one went
+instrument — six lines in trumpet exempt 439 tracked files. That second one went
 unaudited when the first was, which is the fault this repository keeps
-rediscovering: fixing an instance without asking where else it lives. 57
+rediscovering: fixing an instance without asking where else it lives. 67
 exemptions across seven repositories, and every directory-level one does still
 suppress something.
 
@@ -428,7 +428,7 @@ are holding.
 
 It runs each design and compares nine kinds of claim — bore, facet angle,
 centreline, single radius, radius span, pitch, step, lobes, shape — against what
-the generator prints. All ten designs agree: `R72` against R71.754, `R35to113`
+the generator prints. All thirteen designs agree: `R72` against R71.754, `R35to113`
 against R34.662 and R112.903, `1180mm` against 1179.9.
 
 Designs are read from `all-gates.sh`'s own `rr` lines rather than listed twice,
@@ -460,22 +460,25 @@ The manifest is `.repro` in the repository root, one line per shipped SVG:
 A command of `!` means the file ships without a generator, deliberately, with
 the reason in the comment above it. It still has to be listed — an SVG no line
 claims is a failure, not a silence, which is how the 13 knotwork previews and
-the hand-nested coupon sheet were found in the first place. Three things ship
-under that marker and each was checked as far as it can be:
+the hand-nested coupon sheet were found in the first place. Three things shipped
+under that marker when it was written, and each was checked as far as it
+can be:
 
 - **knotwork's previews** are filled even-odd in gold; no script in any
-  repository draws that. Whatever made them is gone.
+  repository draws that. Whatever made them was gone.
 - **living-hinge's previews** have geometry identical to what `make-preview.py`
   draws today — 279 paths, same data — but a 0.6mm stroke where the tool now
-  writes 0.4mm, so they predate a change to it.
+  writes 0.4mm, so they predated a change to it.
 - **the bridge-sweep coupon sheet** is a *cut* file with no generator, which is
   the case this marker should almost never cover. It holds 756 paths, exactly
   6 × 126, and every path of all six coupons is present in it by shape. So it is
   the six coupons and nothing else, and each of those six reproduces.
 
-None of the three is a defect to fix silently: regenerating any of them chooses
-a new look for pictures on a repository's front page, or re-nests a sheet by
-hand. That is the author's call, so the gate records them and says so.
+Since 2026-09-10 only the coupon sheet still ships as `!`. Both sets of
+previews now have a preview script in their own repository that redraws them
+byte-identical, keeping the look each repository chose, so nothing on a front
+page changed. Re-nesting the coupon sheet is the author's call, so the gate
+records it and says so.
 
 ### What `doc-audit.py` got wrong on 27 documents
 
