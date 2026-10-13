@@ -398,7 +398,7 @@ It audits **both** suppression files. `.doc-audit-ignore` exempts a name;
 `.doc-audit-generated` exempts a whole directory, and is much the blunter
 instrument — six lines in trumpet exempt 439 tracked files. That second one went
 unaudited when the first was, which is the fault this repository keeps
-rediscovering: fixing an instance without asking where else it lives. 69
+rediscovering: fixing an instance without asking where else it lives. 70
 exemptions across nine repositories, and every directory-level one does still
 suppress something.
 
