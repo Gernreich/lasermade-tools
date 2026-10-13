@@ -2,6 +2,7 @@
 """Build a display rendering of a cut file: readable on a page, never cuttable.
 
     python3 make-preview.py CUTFILE.svg [OUT.svg]        # default previews/<name>
+    python3 make-preview.py CUTFILE.svg --ground=#ffffff  # a white ground instead
 
 A cut file draws hairlines on no background. In a browser that is a nearly invisible
 line on a transparency checkerboard, and on a dark page a black one disappears
@@ -47,7 +48,7 @@ VIEWBOX = re.compile(r'viewBox="([^"]+)"')
 SVG_OPEN = re.compile(r"<svg\b[^>]*?>", re.S)
 
 
-def build(src, stroke_fraction=0.002, min_stroke=0.05):
+def build(src, stroke_fraction=0.002, min_stroke=0.05, ground=GROUND):
     vb = VIEWBOX.search(src)
     if not vb:
         raise SystemExit("  no viewBox — cannot size the ground or the stroke")
@@ -56,7 +57,7 @@ def build(src, stroke_fraction=0.002, min_stroke=0.05):
 
     out = SVG_OPEN.sub(
         lambda m: m.group(0) + "\n" + NOTE
-        + f'\n  <rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{GROUND}"/>',
+        + f'\n  <rect x="{x}" y="{y}" width="{w}" height="{h}" fill="{ground}"/>',
         src, count=1)
 
     # a hairline hint overrides the width we just set, so it has to go
@@ -78,15 +79,26 @@ def build(src, stroke_fraction=0.002, min_stroke=0.05):
 
 def main():
     # Same fault as md2html.py beside it: run bare this died on sys.argv[1].
-    if len(sys.argv) < 2:
-        sys.exit("usage: make-preview.py CUTFILE.svg [OUTPUT.svg]")
-    src_path = pathlib.Path(sys.argv[1])
+    # --ground exists for a repository that wants its previews on plain white:
+    # bullroarer's are, since 2026-10-13. White is lighter than the cream
+    # default, so every darkened ink clears the same 4.8:1 with room to spare.
+    ground, args = GROUND, []
+    for a in sys.argv[1:]:
+        if a.startswith("--ground="):
+            ground = a.split("=", 1)[1]
+            if not re.fullmatch(r"#[0-9a-fA-F]{6}", ground):
+                sys.exit(f"make-preview: --ground wants #rrggbb, not {ground}")
+        else:
+            args.append(a)
+    if not args:
+        sys.exit("usage: make-preview.py CUTFILE.svg [OUTPUT.svg] [--ground=#rrggbb]")
+    src_path = pathlib.Path(args[0])
     if not src_path.exists():
         sys.exit(f"make-preview: no such file: {src_path}")
-    dst_path = (pathlib.Path(sys.argv[2]) if len(sys.argv) > 2
+    dst_path = (pathlib.Path(args[1]) if len(args) > 1
                 else src_path.parent / "previews" / src_path.name)
     src = src_path.read_text()
-    out, stroke = build(src)
+    out, stroke = build(src, ground=ground)
 
     if DATA.findall(out) != DATA.findall(src):
         raise SystemExit(f"  {src_path}: path data changed — refusing to write")

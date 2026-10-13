@@ -626,6 +626,7 @@ anything else.
 
 ```
 python3 make-preview.py CUTFILE.svg [OUT.svg]      # default previews/<name>
+python3 make-preview.py CUTFILE.svg --ground=#ffffff  # white instead of cream
 ```
 
 A cut file draws hairlines on no background: nearly invisible in a browser, and a black
@@ -642,6 +643,12 @@ file is written.
 The cut order it renders is shared by every build repository here: **blue engraves, then
 green → orange → cyan → black**, black always the cut that frees the part, violet always
 skip. A file uses only the stages it needs.
+
+**The ground is cream by default, white where a repository asks.**
+`--ground=#rrggbb` replaces the cream; bullroarer's previews use `#ffffff` since
+2026-10-13, and `all-gates.sh` passes the same flag when it redraws them. White is
+lighter than the cream, so every darkened ink above clears its contrast with room
+to spare.
 
 ## `test-ladder.py`
 
