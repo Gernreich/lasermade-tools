@@ -2,7 +2,7 @@
 """Build a display rendering of a cut file: readable on a page, never cuttable.
 
     python3 make-preview.py CUTFILE.svg [OUT.svg]        # default previews/<name>
-    python3 make-preview.py CUTFILE.svg --ground=#ffffff  # a white ground instead
+    python3 make-preview.py CUTFILE.svg --ground=#faf7f0  # another ground colour
 
 A cut file draws hairlines on no background. In a browser that is a nearly invisible
 line on a transparency checkerboard, and on a dark page a black one disappears
@@ -10,9 +10,9 @@ entirely. The preview thickens the stroke, paints a light ground, and darkens th
 inks that cannot be seen against it.
 
 **The colours change, and that is the point.** Three of the six cut-order inks fail
-the WCAG 3:1 graphics minimum on the cream ground — green at 1.28:1, cyan at 1.17:1,
-orange at 2.35:1 — so a faithful rendering of the palette is an unreadable picture.
-The darkened equivalents keep the same hue and the same order and clear 4.8:1. The
+the WCAG 3:1 graphics minimum on a white ground — green at 1.37:1, cyan at 1.25:1,
+orange at 2.52:1 — so a faithful rendering of the palette is an unreadable picture.
+The darkened equivalents keep the same hue and the same order and clear 5:1. The
 cut file keeps the exact values the laser keys on; this one is for looking at.
 
 Geometry, sheet position and stroke *order* are untouched, and the result is checked
@@ -23,16 +23,17 @@ import sys
 import pathlib
 import xml.dom.minidom
 
-GROUND = "#faf7f0"
+GROUND = "#ffffff"
 
-# hue preserved, luminance dropped until each clears 4.8:1 on the ground above
+# hue preserved, luminance dropped until each clears 5:1 on the white ground above
+# (chosen against the old cream, where the lowest was orange at 4.83:1)
 DARKEN = {
-    "#00ff00": "#0a7a12",   # green   1.28:1 -> 5.16:1
-    "#00ffff": "#00706e",   # cyan    1.17:1 -> 5.54:1
-    "#ff8000": "#a85800",   # orange  2.35:1 -> 4.83:1
-    "#8000ff": "#6a00cc",   # violet  5.84:1 -> 7.90:1, for consistency of weight
-    "#0000ff": "#0000ff",   # blue    8.03:1, already fine
-    "#000000": "#000000",   # black  19.63:1
+    "#00ff00": "#0a7a12",   # green   1.37:1 -> 5.52:1
+    "#00ffff": "#00706e",   # cyan    1.25:1 -> 5.93:1
+    "#ff8000": "#a85800",   # orange  2.52:1 -> 5.17:1
+    "#8000ff": "#6a00cc",   # violet  6.25:1 -> 8.45:1, for consistency of weight
+    "#0000ff": "#0000ff",   # blue    8.59:1, already fine
+    "#000000": "#000000",   # black  21.00:1
 }
 
 NOTE = """<!-- DISPLAY ONLY - not a cut file.
@@ -79,9 +80,9 @@ def build(src, stroke_fraction=0.002, min_stroke=0.05, ground=GROUND):
 
 def main():
     # Same fault as md2html.py beside it: run bare this died on sys.argv[1].
-    # --ground exists for a repository that wants its previews on plain white:
-    # bullroarer's are, since 2026-10-13. White is lighter than the cream
-    # default, so every darkened ink clears the same 4.8:1 with room to spare.
+    # The ground was cream (#faf7f0) until 2026-10-13 and is white now, for
+    # every repository. --ground sets another; a darker one can push the
+    # darkened inks below the contrast DARKEN was chosen for.
     ground, args = GROUND, []
     for a in sys.argv[1:]:
         if a.startswith("--ground="):

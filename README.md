@@ -626,7 +626,7 @@ anything else.
 
 ```
 python3 make-preview.py CUTFILE.svg [OUT.svg]      # default previews/<name>
-python3 make-preview.py CUTFILE.svg --ground=#ffffff  # white instead of cream
+python3 make-preview.py CUTFILE.svg --ground=#faf7f0  # another ground colour
 ```
 
 A cut file draws hairlines on no background: nearly invisible in a browser, and a black
@@ -634,9 +634,9 @@ one disappears on a dark page. This thickens the stroke, paints a light ground, 
 darkens the inks that cannot be seen against it.
 
 **It changes the colours, and that is the point.** Three of the six cut-order inks fail
-the WCAG 3:1 graphics minimum on the cream ground — green at 1.28:1, cyan at 1.17:1,
-orange at 2.35:1 — so a faithful rendering of the palette is an unreadable picture. The
-darkened equivalents keep the hue and the sequence and clear 4.8:1. Geometry, sheet
+the WCAG 3:1 graphics minimum on the white ground — green at 1.37:1, cyan at 1.25:1,
+orange at 2.52:1 — so a faithful rendering of the palette is an unreadable picture. The
+darkened equivalents keep the hue and the sequence and clear 5:1. Geometry, sheet
 position and cut order are untouched, and both are checked against the source before the
 file is written.
 
@@ -644,11 +644,11 @@ The cut order it renders is shared by every build repository here: **blue engrav
 green → orange → cyan → black**, black always the cut that frees the part, violet always
 skip. A file uses only the stages it needs.
 
-**The ground is cream by default, white where a repository asks.**
-`--ground=#rrggbb` replaces the cream; bullroarer's previews use `#ffffff` since
-2026-10-13, and `all-gates.sh` passes the same flag when it redraws them. White is
-lighter than the cream, so every darkened ink above clears its contrast with room
-to spare.
+**The ground is white**, `#ffffff`, in every repository since 2026-10-13; it was
+cream (`#faf7f0`) before. The darkened inks were chosen against the cream, and white
+being lighter only raises their contrast: orange, the lowest, goes from 4.83:1 to
+5.17:1. `--ground=#rrggbb` sets another colour, at the cost of rechecking those
+figures.
 
 ## `test-ladder.py`
 

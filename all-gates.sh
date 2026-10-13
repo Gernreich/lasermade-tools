@@ -482,9 +482,7 @@ for repo in bullroarer buzz-disc kalimba slapstick; do
     # one source left the PREVIOUS source's preview lying there to be compared,
     # and the gate counted it ok.
     rm -f /tmp/_ag2.svg
-    # bullroarer's previews sit on plain white since 2026-10-13, the rest on cream
-    gr=; [ $repo = bullroarer ] && gr=--ground=#ffffff
-    python3 $G/make-preview.py "$src" /tmp/_ag2.svg $gr >/dev/null 2>&1
+    python3 $G/make-preview.py "$src" /tmp/_ag2.svg >/dev/null 2>&1
     if [ ! -f /tmp/_ag2.svg ]; then
       stale=$((stale+1)); echo "  preview would not draw: $(basename "$f")"
     else
