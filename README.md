@@ -12,8 +12,9 @@ build repositories — [trumpet-elbows-allowed](https://github.com/Gernreich/tru
 [living-hinge](https://github.com/Gernreich/living-hinge),
 [slapstick](https://github.com/Gernreich/slapstick),
 [kalimba](https://github.com/Gernreich/kalimba),
-[bullroarer](https://github.com/Gernreich/bullroarer) and
-[buzz-disc](https://github.com/Gernreich/buzz-disc).
+[bullroarer](https://github.com/Gernreich/bullroarer),
+[buzz-disc](https://github.com/Gernreich/buzz-disc) and
+[lyre-harp](https://github.com/Gernreich/lyre-harp).
 
 `trumpet` was several repositories until 2026-09-05, among them `trumpet-coiled`,
 `trumpet-parts` and `bore-generator`; its live successor is `trumpet-elbows-allowed`.
@@ -323,7 +324,7 @@ Eighteen ribbon bore runs -- twelve over the six open shapes, two over the
 torus, one each over the scallop, the racetrack and the oval, and one on
 `--port-at` --
 `regress.py` over 33 block designs, `doc-audit` over
-every page in nine repositories, `svg-stroke-check` over every SVG, and
+every page in ten repositories, `svg-stroke-check` over every SVG, and
 `flat-part-check` over the flat parts -- then four questions about what is
 committed, and finally whether every repository is clean and pushed.
 
@@ -396,8 +397,8 @@ It audits **both** suppression files. `.doc-audit-ignore` exempts a name;
 `.doc-audit-generated` exempts a whole directory, and is much the blunter
 instrument — six lines in trumpet exempt 439 tracked files. That second one went
 unaudited when the first was, which is the fault this repository keeps
-rediscovering: fixing an instance without asking where else it lives. 66
-exemptions across seven repositories, and every directory-level one does still
+rediscovering: fixing an instance without asking where else it lives. 68
+exemptions across eight repositories, and every directory-level one does still
 suppress something.
 
 `doc-audit.py` grew `--ignore-file` for this, so the audit never edits the file
@@ -452,6 +453,11 @@ non-default radius was unreproducible from anything in the repository. They were
 recovered on 2026-09-10 by reading the parameters back out of each SVG's own
 description — the ribbon width is `2*HW`, the cosine amplitude is `AMP`, the rim
 overrun is `BITE` — and each then matched byte for byte.
+
+lyre-harp joined them on 2026-10-13 with 17 files, and the first `.repro` whose
+generator lives in another repository: it runs the lyre-harp generator out of the
+trumpet-elbows-allowed checkout beside it, so a change there that moves the frame
+fails here.
 
 The manifest is `.repro` in the repository root, one line per shipped SVG:
 

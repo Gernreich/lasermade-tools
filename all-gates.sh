@@ -52,8 +52,9 @@ say () {
 # link gate passed over 20 documents and neither trumpet repository was in them.
 # Gernreich publishes no page, so the paired-page loop leaves it out.
 # trumpet-elbows-not-allowed left the list when it was archived on 2026-10-06.
+# lyre-harp joined it on 2026-10-13, when it got its README and page.
 REPOS="bullroarer buzz-disc kalimba knotwork-soundholes living-hinge slapstick
-       lasermade-tools Gernreich.github.io Gernreich
+       lyre-harp lasermade-tools Gernreich.github.io Gernreich
        trumpet-elbows-allowed"
 PAGED=$(echo $REPOS | tr ' ' '\n' | grep -vx Gernreich)
 m=""
@@ -444,7 +445,9 @@ say "search tools reproduce their output" "$( [ "$ok1$ok2$ok3$ok4$ok5" = yyyyy ]
 # reproduce -- but for four of the knots the command was recorded NOWHERE, and
 # had to be recovered on 2026-09-10 by reading the parameters back out of each
 # SVG's own description. .repro in each repository records them now.
-for repo in knotwork-soundholes living-hinge; do
+# lyre-harp's .repro runs a generator that lives in trumpet-elbows-allowed, and
+# claims its previews and page too, so its previews need no loop of their own.
+for repo in knotwork-soundholes living-hinge lyre-harp; do
   cd $R/$repo 2>/dev/null || continue
   ro=$(python3 $G/repro-svg.py . 2>&1); rc=$?
   o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
