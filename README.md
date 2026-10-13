@@ -458,8 +458,9 @@ overrun is `BITE` — and each then matched byte for byte.
 lyre-harp joined them on 2026-10-13 with 17 files, and the first `.repro` whose
 generator lives in another repository: it runs the lyre-harp generator out of the
 trumpet-elbows-allowed checkout beside it, so a change there that moves the frame
-fails here. square-flute followed the same day with 18, its generator its own and
-only the stroke font borrowed from trumpet.
+fails here. square-flute followed the same day with 24, its generators its own and
+only the stroke font borrowed from trumpet, and ten hand-drawn originals from 2017
+listed under `!`.
 
 The manifest is `.repro` in the repository root, one line per shipped SVG:
 
