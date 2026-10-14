@@ -33,7 +33,6 @@ DARKEN = {
     "#ff8000": "#a85800",   # orange  2.52:1 -> 5.17:1
     "#8000ff": "#6a00cc",   # violet  6.25:1 -> 8.45:1, for consistency of weight
     "#0000ff": "#0000ff",   # blue    8.59:1, already fine
-    "#ff0000": "#cc0000",   # red     4.00:1 -> 5.89:1, a second engrave, where a file keeps its labels apart
     "#000000": "#000000",   # black  21.00:1
 }
 

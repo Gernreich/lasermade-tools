@@ -459,7 +459,7 @@ lyre-harp joined them on 2026-10-13 with 17 files, and the first `.repro` whose
 generator lives in another repository: it runs the lyre-harp generator out of the
 trumpet-elbows-allowed checkout beside it, so a change there that moves the frame
 fails here. square-flute followed the same day with 42, its generators its own and
-only the stroke font borrowed from trumpet, and ten hand-drawn originals from 2017
+only the path writer borrowed from trumpet, and ten hand-drawn originals from 2017
 listed under `!`.
 
 The manifest is `.repro` in the repository root, one line per shipped SVG:
@@ -651,9 +651,7 @@ file is written.
 
 The cut order it renders is shared by every build repository here: **blue engraves, then
 green → orange → cyan → black**, black always the cut that frees the part, violet always
-skip. A file uses only the stages it needs. Red is a second engrave, run with blue, for
-a file that needs its labels on their own setting: square-flute scores its part numbers
-red so the flue's deeper fill engrave can stay blue.
+skip. A file uses only the stages it needs.
 
 **The ground is white**, `#ffffff`, in every repository since 2026-10-13; it was
 cream (`#faf7f0`) before. The darkened inks were chosen against the cream, and white
