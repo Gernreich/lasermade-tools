@@ -8,6 +8,7 @@ this page, set for reading, with a table of contents.
 
 Eleven scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
 build repositories — [trumpet-elbows-allowed](https://github.com/Gernreich/trumpet-elbows-allowed),
+[swept-curve](https://github.com/Gernreich/swept-curve),
 [knotwork-soundholes](https://github.com/Gernreich/knotwork-soundholes),
 [living-hinge](https://github.com/Gernreich/living-hinge),
 [slapstick](https://github.com/Gernreich/slapstick),
@@ -457,12 +458,12 @@ recovered on 2026-09-10 by reading the parameters back out of each SVG's own
 description — the ribbon width is `2*HW`, the cosine amplitude is `AMP`, the rim
 overrun is `BITE` — and each then matched byte for byte.
 
-lyre-harp joined them on 2026-10-13 with 17 files, and the first `.repro` whose
-generator lives in another repository: it runs the lyre-harp generator out of the
-trumpet-elbows-allowed checkout beside it, so a change there that moves the frame
-fails here. square-flute followed the same day with 42, its generators its own and
-only the path writer borrowed from trumpet, and ten hand-drawn originals from 2017
-listed under `!`.
+lyre-harp joined them on 2026-10-13 with 17 files. Its generator lived in
+trumpet-elbows-allowed until 2026-10-14 and is now its own, but it imports the
+swept-curve generator from the checkout beside it, so a change there that moves
+the frame fails here. square-flute followed on 2026-10-13 with 42, its
+generators its own and only that same path writer borrowed, and ten hand-drawn
+originals from 2017 listed under `!`.
 
 The manifest is `.repro` in the repository root, one line per shipped SVG:
 

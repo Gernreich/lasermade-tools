@@ -53,16 +53,17 @@ say () {
 # Gernreich publishes no page, so the paired-page loop leaves it out.
 # trumpet-elbows-not-allowed left the list when it was archived on 2026-10-06.
 # lyre-harp joined it on 2026-10-13, when it got its README and page, and
-# square-flute the same day.
+# square-flute the same day. swept-curve joined on 2026-10-14, when the swept-
+# curve trumpet bores left trumpet-elbows-allowed for a repository of their own.
 REPOS="bullroarer buzz-disc kalimba knotwork-soundholes living-hinge slapstick
        lyre-harp square-flute lasermade-tools Gernreich.github.io Gernreich
-       trumpet-elbows-allowed"
+       trumpet-elbows-allowed swept-curve"
 PAGED=$(echo $REPOS | tr ' ' '\n' | grep -vx Gernreich)
 m=""
 for r in $REPOS; do [ -d "$R/$r/.git" ] || m="$m $r"; done
 say "every named repository exists" "$( [ -z "$m" ] && echo "ok  $(echo $REPOS | wc -w | tr -d ' ') repos" || echo "FAIL missing:$m")"
 
-cd $R/trumpet-elbows-allowed/parts/bore/concept/swept-curve
+cd $R/swept-curve
 # 13, not 12, since 2026-09-16: "no cut line crosses the airway". Every ring
 # cheek -- torus, scallop, racetrack -- was written as ONE path that stepped
 # across its band at the seam, a slit through the airway on the cut part, and
@@ -271,7 +272,7 @@ say "flat-part-check, flat parts" "$( [[ "$o" == *"0 failed"* ]] && echo "ok  $o
 # cannot tell you the sheets on disk are the sheets the code draws, which is
 # this project's whole claim.
 
-cd $R/trumpet-elbows-allowed/parts/bore/concept/swept-curve
+cd $R/swept-curve
 # REWRITTEN 2026-09-13. Every shipped ribbon sheet became --narrow on that day,
 # and the ported ones grew --cap and, where the lead allows it, --port-square.
 # This gate still redrew the OLD full-width names, so all forty comparisons
@@ -327,8 +328,9 @@ SP=spiral/ribbon-spiral-bore10-45deg
 # left its siblings here as candidates. Both gates below reached it by the old
 # path and both failed silently-ish -- three of the 48 rr sheets and one of the
 # 13 vp pages. The path is a variable, which the stem may never be: name-check.py
-# mines these lines for the STEM and the FLAGS, never the folder.
-BSP=../../../../built/ribbon-spiral-bore10-45deg-R35to113
+# mines these lines for the STEM and the FLAGS, never the folder. Since
+# 2026-10-14 both live in the swept-curve repository, built/ beside the designs.
+BSP=built/ribbon-spiral-bore10-45deg-R35to113
 DS=double-spiral/ribbon-double-spiral-bore10-30deg-R62-pitch46
 VO=volute/double-volute-bore10-45deg-R94-step60
 # The first CLOSED RING kept in this tree. Its facet angle is 360/13 and is not
@@ -379,10 +381,11 @@ say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 53 ] 
 # coil -- three files -- were watched by nothing. All three were current; that
 # they were is luck rather than a result, since nothing would have said
 # otherwise. Counted rather than hardcoded at 40, because a number written into
-# a gate stops being a measurement the moment a file is added.
-cd $R/trumpet-elbows-allowed
+# a gate stops being a measurement the moment a file is added. swept-curve's
+# previews were in trumpet until 2026-10-14 and are walked the same way.
+cd $R
 stale=0; seen=0
-for pv in $(find . -type d -name previews -not -path './.git/*'); do
+for pv in $(find trumpet-elbows-allowed swept-curve -type d -name previews -not -path '*/.git/*'); do
   d=$(dirname "$pv")
   for f in "$pv"/*.svg; do
     [ -e "$f" ] || continue
@@ -452,9 +455,10 @@ say "search tools reproduce their output" "$( [ "$ok1$ok2$ok3$ok4$ok5" = yyyyy ]
 # reproduce -- but for four of the knots the command was recorded NOWHERE, and
 # had to be recovered on 2026-09-10 by reading the parameters back out of each
 # SVG's own description. .repro in each repository records them now.
-# lyre-harp's .repro runs a generator that lives in trumpet-elbows-allowed, and
-# claims its previews and page too, so its previews need no loop of their own.
-# square-flute's is the same shape, and borrows only a stroke font from trumpet.
+# lyre-harp's .repro runs its own lyre_harp.py, which imports ribbon_bore.py
+# from the swept-curve checkout beside it, and claims its previews and page too,
+# so its previews need no loop of their own. square-flute's is the same shape,
+# and borrows ribbon_bore.py's path writer from swept-curve.
 # kalimba, slapstick, bullroarer and buzz-disc joined on 2026-10-14, when each
 # got a 3D viewer built from its hand-drawn cut files by turn3d.py: the cut
 # files are acknowledged with "!", and the previews, page and viewer reproduce.
@@ -523,7 +527,7 @@ say "previews current in the hand-drawn repos" "$( [ $stale = 0 ] && [ $n -gt 0 
 # does. The flags are the design's own; a page whose flags are typed wrong here
 # fails loudly rather than being quietly skipped, because the file it would
 # write to is named by the generator and not by this list.
-cd $R/trumpet-elbows-allowed/parts/bore/concept/swept-curve
+cd $R/swept-curve
 pg=0; pgbad=0
 vp () {
   rm -rf /tmp/_ag_vp && mkdir -p /tmp/_ag_vp
@@ -560,7 +564,7 @@ say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 14 ] && e
 # design's page. The viewer now calls ribbon_bore.read_flags(), bend_radius()
 # and port_holes(). The rows above only ever passed --out and legal lines, which
 # is how every one of these stayed green; this row runs the lines they never did.
-cd $R/trumpet-elbows-allowed/parts/bore/concept/swept-curve
+cd $R/swept-curve
 rf=0; rn=0
 refuses () {  # refuses WHAT CMD...: exits non-zero, writes no page, says WHAT
   local want=$1; shift; rn=$((rn+1)); rm -f /tmp/_ag_rf.html
