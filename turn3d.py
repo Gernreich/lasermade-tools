@@ -203,7 +203,19 @@ canvas{display:block;width:100%;height:100%;cursor:grab}
 .info{position:absolute;left:14px;bottom:10px;margin:0;font:12px ui-monospace,Menlo,monospace;
 color:var(--mut);pointer-events:none}
 .note{margin:0;padding:0 14px 12px;color:var(--mut);font-size:13px}
+.note summary{cursor:pointer;width:max-content;max-width:100%}
+.note summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.note p{margin:6px 0 0}
 </style>
+<script>
+/* Follow the theme the site's pages store, so a framed viewer matches the page around it. */
+(function () {
+  var r = document.documentElement;
+  function apply() { var t = null; try { t = localStorage.getItem('ctg-theme'); } catch (e) {}
+    if (t === 'light' || t === 'dark') r.setAttribute('data-theme', t); else r.removeAttribute('data-theme'); }
+  apply(); addEventListener('storage', function (e) { if (e.key === 'ctg-theme') apply(); });
+})();
+</script>
 </head>
 <body>
 <div class="bar"><b>__TITLE__</b><span id="designs" role="group" aria-label="Design"></span>
@@ -211,7 +223,7 @@ color:var(--mut);pointer-events:none}
 __SPIN__<button type="button" id="reset">Reset view</button></div>
 <div class="stage" id="stage"><canvas id="cv" aria-label="__TITLE__ in 3D. Drag to turn, scroll or pinch to zoom."></canvas>
 <p class="info" id="info"></p></div>
-<p class="note">__NOTE__</p>
+<details class="note"><summary>How to use this view</summary><p>__NOTE__</p></details>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function () {
@@ -318,6 +330,7 @@ __SPIN__<button type="button" id="reset">Reset view</button></div>
     b.addEventListener('click', () => build(n)); bar.appendChild(b);
   });
   window.addEventListener('resize', size);
+  if (window.ResizeObserver) new ResizeObserver(size).observe(stage);   // opening the note resizes the stage
   build(names[0]); size();
 })();
 </script>

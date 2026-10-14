@@ -657,6 +657,11 @@ It reads a sheet of separate parts. A rosette sheet is a cut-out with no single
 outline, so its openings come back as dozens of small parts — the same limit
 `flat-part-check.py` has.
 
+The page's explanation sits folded under "How to use this view", so on a phone, where
+the hub frames it about 370px wide, the model keeps the frame until someone asks. The
+page also follows the theme the site's pages store (`ctg-theme`, set by the hub's
+button), so a framed viewer turns light or dark with the page around it.
+
 Where each part goes is the one thing a cut file does not say, so each repository
 has a `viewer.py` that places them and calls `write()`. Its `.repro` line rebuilds
 the page, so the viewer is gated like any other page.
