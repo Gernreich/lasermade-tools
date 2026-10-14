@@ -653,6 +653,10 @@ on. Containment is decided by most of a ring's vertices, not its first: the
 slapstick's three paddles share their cut lines, and a first vertex on a shared line
 read as inside the neighbour, which made one paddle a hole in another.
 
+It reads a sheet of separate parts. A rosette sheet is a cut-out with no single
+outline, so its openings come back as dozens of small parts — the same limit
+`flat-part-check.py` has.
+
 Where each part goes is the one thing a cut file does not say, so each repository
 has a `viewer.py` that places them and calls `write()`. Its `.repro` line rebuilds
 the page, so the viewer is gated like any other page.
