@@ -188,6 +188,12 @@ for repo in $PAGED; do
   say "doc-audit $repo ($n pages)" "$( [ $bad = 0 ] && [ $n -gt 0 ] && echo ok || echo "FAIL ${bad} page(s), $n found")"
 done
 
+# No image carries metadata. The published build photos were found on
+# 2026-10-14 carrying the camera, the time, a P3 colour profile and a GPS block
+# (a compass bearing, not a position), and the author's rule since is none at all. Fail-closed: it has to SEE the zero.
+o=$(cd $R && python3 $G/image-meta-check.py $REPOS 2>&1 | tail -1)
+say "images carry no metadata" "$( [[ "$o" == *" 0 with metadata"* ]] && echo "ok ${o%%,*}" || echo "FAIL $o")"
+
 o=$(python3 $G/svg-stroke-check.py --dir $R --quiet 2>&1 | tail -1)
 say "svg-stroke-check, every repo" "$( [[ "$o" == *"0 conflicting"* ]] && echo "ok  ${o% file*} files" || echo "FAIL $o")"
 

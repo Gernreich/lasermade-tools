@@ -41,6 +41,7 @@ Python 3 and no Python packages; `md2html.py` also needs [pandoc](https://pandoc
 | `make-preview.py` | a cut file rendered so it can be read on a page |
 | `test-ladder.py` | a strip of squares that finds the cut speed for the sheet in front of you |
 | `flat-part-check.py` | the pre-cut gate for a flat single-sheet part: size, closure, cut order, holes |
+| `image-meta-check.py` | does any tracked image carry metadata — EXIF, GPS, a colour profile, a comment? |
 | `turn3d.py` | a hand-drawn cut file turned into 3mm parts and a page that turns them in 3D |
 | `all-gates.sh` | every gate in every repository, one output, one tally |
 | `repro-svg.py` | does a repository's shipped SVG still come out of its generator? |
