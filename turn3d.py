@@ -257,9 +257,10 @@ __SPIN__<button type="button" id="reset">Reset view</button></div>
       h.matrixAutoUpdate = false; h.userData = { M, x: p.x };
       group.add(h); holders.push(h);
     });
-    (d.cords || []).forEach(c => {   // a cord, as a tube through its points
-      const curve = new THREE.CatmullRomCurve3(c.map(q => new THREE.Vector3(q[0], q[1], q[2])));
-      group.add(new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(24, c.length * 12), 1.2, 8, false), cordMat));
+    (d.cords || []).forEach(c => {   // a cord, as a tube through its points; a loop if it ends where it began
+      const loop = c.length > 3 && c[0].every((v, i) => v === c[c.length - 1][i]);
+      const curve = new THREE.CatmullRomCurve3((loop ? c.slice(0, -1) : c).map(q => new THREE.Vector3(q[0], q[1], q[2])), loop);
+      group.add(new THREE.Mesh(new THREE.TubeGeometry(curve, Math.max(24, c.length * 16), 1.2, 8, loop), cordMat));
     });
     scene.add(group);
     target.set(d.c[0], d.c[1], d.c[2]);
@@ -347,7 +348,7 @@ def bounds(design):
 
 
 def write(path, title, designs, note, by, spin=False):
-    """designs: {name: {'parts': [placed(...)], 'cords': [[xyz...]], 'axis': [ox,oy,oz,dx,dy,dz],
+    """designs: {name: {'parts': [placed(...)], 'cords': [[xyz...], a loop if last == first], 'axis': [ox,oy,oz,dx,dy,dz],
     'ex': mm the explode slider moves a part per unit of its 'x', 'view': [yaw, pitch, radii]}}"""
     for d in designs.values():
         d['c'], d['r'], d['size'] = bounds(d)
