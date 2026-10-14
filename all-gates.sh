@@ -542,7 +542,10 @@ DSP=double-spiral/ribbon-double-spiral-bore10-30deg-R62-pitch46
 vp serpentine/ribbon-serpentine-bore10-30deg-3lobes-R72/ribbon-serpentine-bore10-30deg-3lobes-R72.html --shape=serpentine
 vp three-lobe-serpentine-with-collinear-ends/three-lobe-serpentine-with-collinear-ends-bore10-30deg-3lobes-R64/three-lobe-serpentine-with-collinear-ends-bore10-30deg-3lobes-R64.html --shape=three-lobe-serpentine-with-collinear-ends
 vp ess/ribbon-ess-bore10-45deg-5arc/ribbon-ess-bore10-45deg-5arc.html --shape=ess
-vp $BSP/ribbon-spiral-bore10-45deg-R35to113.html --shape=spiral
+# The built spiral's page draws it as built (2026-10-14): the square port and
+# its cap, the bell seated in the port and the mouthpiece on the far end, the
+# last two read from trumpet-elbows-allowed's parts by --ends.
+vp $BSP/ribbon-spiral-bore10-45deg-R35to113.html --shape=spiral --port --port-square --cap --ends
 vp spiral/ribbon-spiral-bore10-45deg-R36to144/ribbon-spiral-bore10-45deg-R36to144.html --shape=spiral --spiral-facets=25 --spiral-ri=36.5 --spiral-ro=144
 vp spiral/ribbon-spiral-bore10-45deg-R74to144/ribbon-spiral-bore10-45deg-R74to144.html --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144
 vp volute/double-volute-bore10-45deg-R94-step60/ribbon-double-volute-bore10-45deg-R94-step60.html --shape=double-volute
