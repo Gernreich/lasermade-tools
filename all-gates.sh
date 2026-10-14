@@ -539,18 +539,19 @@ vp () {
   rm -rf /tmp/_ag_vp
 }
 DSP=double-spiral/ribbon-double-spiral-bore10-30deg-R62-pitch46
-vp serpentine/ribbon-serpentine-bore10-30deg-3lobes-R72/ribbon-serpentine-bore10-30deg-3lobes-R72.html --shape=serpentine
-vp three-lobe-serpentine-with-collinear-ends/three-lobe-serpentine-with-collinear-ends-bore10-30deg-3lobes-R64/three-lobe-serpentine-with-collinear-ends-bore10-30deg-3lobes-R64.html --shape=three-lobe-serpentine-with-collinear-ends
-vp ess/ribbon-ess-bore10-45deg-5arc/ribbon-ess-bore10-45deg-5arc.html --shape=ess
-# The built spiral's page draws it as built (2026-10-14): the square port and
-# its cap, the bell seated in the port and the mouthpiece on the far end, the
-# last two read from trumpet-elbows-allowed's parts by --ends.
+vp serpentine/ribbon-serpentine-bore10-30deg-3lobes-R72/ribbon-serpentine-bore10-30deg-3lobes-R72.html --shape=serpentine --ends
+vp three-lobe-serpentine-with-collinear-ends/three-lobe-serpentine-with-collinear-ends-bore10-30deg-3lobes-R64/three-lobe-serpentine-with-collinear-ends-bore10-30deg-3lobes-R64.html --shape=three-lobe-serpentine-with-collinear-ends --ends
+vp ess/ribbon-ess-bore10-45deg-5arc/ribbon-ess-bore10-45deg-5arc.html --shape=ess --ends
+# Every open design is drawn with its mouthpiece and bell (--ends, 2026-10-14),
+# read from trumpet-elbows-allowed's parts: in the port and on the far end where
+# there is a port, on the two tube ends where there is not. The built spiral's
+# page draws it as built, square port and cap. The closed rings have no ends.
 vp $BSP/ribbon-spiral-bore10-45deg-R35to113.html --shape=spiral --port --port-square --cap --ends
-vp spiral/ribbon-spiral-bore10-45deg-R36to144/ribbon-spiral-bore10-45deg-R36to144.html --shape=spiral --spiral-facets=25 --spiral-ri=36.5 --spiral-ro=144
-vp spiral/ribbon-spiral-bore10-45deg-R74to144/ribbon-spiral-bore10-45deg-R74to144.html --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144
-vp volute/double-volute-bore10-45deg-R94-step60/ribbon-double-volute-bore10-45deg-R94-step60.html --shape=double-volute
-vp $DSP-1506mm/ribbon-double-spiral-bore10-30deg-R62-pitch46-1506mm.html --shape=double-spiral
-vp $DSP-1000mm/ribbon-double-spiral-bore10-30deg-R62-pitch46-1000mm-ported-square.html --shape=double-spiral --ds-facets=9 --lead=42 --port --port-square --cap
+vp spiral/ribbon-spiral-bore10-45deg-R36to144/ribbon-spiral-bore10-45deg-R36to144.html --shape=spiral --spiral-facets=25 --spiral-ri=36.5 --spiral-ro=144 --ends
+vp spiral/ribbon-spiral-bore10-45deg-R74to144/ribbon-spiral-bore10-45deg-R74to144.html --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144 --ends
+vp volute/double-volute-bore10-45deg-R94-step60/ribbon-double-volute-bore10-45deg-R94-step60.html --shape=double-volute --ends
+vp $DSP-1506mm/ribbon-double-spiral-bore10-30deg-R62-pitch46-1506mm.html --shape=double-spiral --ends
+vp $DSP-1000mm/ribbon-double-spiral-bore10-30deg-R62-pitch46-1000mm-ported-square.html --shape=double-spiral --ds-facets=9 --lead=42 --port --port-square --cap --ends
 vp $RT/ribbon-racetrack-bore10-45deg-4lobes-R22-cap134.116-1600mm.html --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=134.115704 --race-straight=30
 vp $OV/ribbon-oval-bore10-30deg-end60-R28-side-R72-flat12.2-sideflat12.5-314mm.html --shape=oval
 vp $SC/ribbon-scallop-bore10-36deg-5lobes-R44.2214-in41-800mm.html --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square
