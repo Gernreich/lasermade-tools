@@ -458,7 +458,7 @@ overrun is `BITE` — and each then matched byte for byte.
 lyre-harp joined them on 2026-10-13 with 17 files, and the first `.repro` whose
 generator lives in another repository: it runs the lyre-harp generator out of the
 trumpet-elbows-allowed checkout beside it, so a change there that moves the frame
-fails here. square-flute followed the same day with 26, its generators its own and
+fails here. square-flute followed the same day with 30, its generators its own and
 only the stroke font borrowed from trumpet, and ten hand-drawn originals from 2017
 listed under `!`.
 
