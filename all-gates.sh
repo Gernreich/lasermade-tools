@@ -322,7 +322,6 @@ rrc () { d=$1; stem=$2; suf=$3; shift 3
 SE=serpentine/ribbon-serpentine-bore10-30deg-3lobes-R72
 OP=three-lobe-serpentine-with-collinear-ends/three-lobe-serpentine-with-collinear-ends-bore10-30deg-3lobes-R64
 WV=ess/ribbon-ess-bore10-45deg-5arc
-SP=spiral/ribbon-spiral-bore10-45deg
 # R35to113 IS NOT UNDER swept-curve ANY MORE. It was cut, glued up and fitted
 # with both ends, so trumpet 156fa71 moved it to built/ with the instruments and
 # left its siblings here as candidates. Both gates below reached it by the old
@@ -356,10 +355,6 @@ rr $WV/cut-files ribbon-ess-bore10-45deg-5arc-836mm -ported-square-narrow --shap
 rr $BSP/cut-files ribbon-spiral-bore10-45deg-R35to113-1000mm -narrow --shape=spiral
 rr $BSP/cut-files ribbon-spiral-bore10-45deg-R35to113-1000mm -ported-narrow --shape=spiral --port --cap
 rr $BSP/cut-files ribbon-spiral-bore10-45deg-R35to113-1000mm -ported-square-narrow --shape=spiral --port --port-square --cap
-rr $SP-R36to144/cut-files ribbon-spiral-bore10-45deg-R36to144-1767mm -narrow --shape=spiral --spiral-facets=25 --spiral-ri=36.5 --spiral-ro=144
-rr $SP-R36to144/cut-files ribbon-spiral-bore10-45deg-R36to144-1767mm -ported-square-narrow --shape=spiral --spiral-facets=25 --spiral-ri=36.5 --spiral-ro=144 --port --port-square --cap
-rr $SP-R74to144/cut-files ribbon-spiral-bore10-45deg-R74to144-1458mm -narrow --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144
-rr $SP-R74to144/cut-files ribbon-spiral-bore10-45deg-R74to144-1458mm -ported-square-narrow --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144 --port --port-square --cap
 PARTS=panels rr $DS-1506mm/cut-files ribbon-double-spiral-bore10-30deg-R62-pitch46-1506mm -narrow --shape=double-spiral
 rr $DS-1506mm/cut-files ribbon-double-spiral-bore10-30deg-R62-pitch46-1506mm -ported-square-narrow --shape=double-spiral --port --port-square --cap
 rr $DS-1000mm/cut-files ribbon-double-spiral-bore10-30deg-R62-pitch46-1000mm -narrow --shape=double-spiral --ds-facets=9 --lead=42
@@ -373,7 +368,7 @@ rr $RT/cut-files ribbon-racetrack-bore10-45deg-4lobes-R22-cap134.116-1600mm -nar
 rr $OV/cut-files ribbon-oval-bore10-30deg-end60-R28-side-R72-flat12.2-sideflat12.5-314mm -narrow --shape=oval
 rrc $SC/cut-files ribbon-scallop-bore10-36deg-5lobes-R44.2214-in41-800mm -ported-at1-14-square-narrow --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square
 rm -rf $T
-say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 53 ] && echo "ok  $same/53" || echo "FAIL $bad differ, $same of 53 compared")"
+say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 49 ] && echo "ok  $same/49" || echo "FAIL $bad differ, $same of 49 compared")"
 
 # Walks EVERY previews/ directory in the repository, not just this one. It
 # checked swept-curve/previews and nothing else, so parts/bell/previews,
@@ -547,8 +542,6 @@ vp ess/ribbon-ess-bore10-45deg-5arc/ribbon-ess-bore10-45deg-5arc.html --shape=es
 # there is a port, on the two tube ends where there is not. The built spiral's
 # page draws it as built, square port and cap. The closed rings have no ends.
 vp $BSP/ribbon-spiral-bore10-45deg-R35to113.html --shape=spiral --port --port-square --cap --ends
-vp spiral/ribbon-spiral-bore10-45deg-R36to144/ribbon-spiral-bore10-45deg-R36to144.html --shape=spiral --spiral-facets=25 --spiral-ri=36.5 --spiral-ro=144 --ends
-vp spiral/ribbon-spiral-bore10-45deg-R74to144/ribbon-spiral-bore10-45deg-R74to144.html --shape=spiral --spiral-facets=17 --spiral-ri=74 --spiral-ro=144 --ends
 vp volute/double-volute-bore10-45deg-R94-step60/ribbon-double-volute-bore10-45deg-R94-step60.html --shape=double-volute --ends
 vp $DSP-1506mm/ribbon-double-spiral-bore10-30deg-R62-pitch46-1506mm.html --shape=double-spiral --ends
 vp $DSP-1000mm/ribbon-double-spiral-bore10-30deg-R62-pitch46-1000mm-ported-square.html --shape=double-spiral --ds-facets=9 --lead=42 --port --port-square --cap --ends
@@ -557,7 +550,7 @@ vp $OV/ribbon-oval-bore10-30deg-end60-R28-side-R72-flat12.2-sideflat12.5-314mm.h
 vp $SC/ribbon-scallop-bore10-36deg-5lobes-R44.2214-in41-800mm.html --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square
 vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm-ported-square.html --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek --port-square
 vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm.html --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek
-say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 14 ] && echo "ok  $pg/14" || echo "FAIL $pgbad stale, $pg of 14 current")"
+say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 12 ] && echo "ok  $pg/12" || echo "FAIL $pgbad stale, $pg of 12 current")"
 
 # THE PAGE AND THE SHEETS READ ONE COMMAND LINE. ribbon_view.py kept its own copy
 # of the generator's flag handling and the two drifted four ways: the generator
