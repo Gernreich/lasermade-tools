@@ -41,6 +41,7 @@ Python 3 and no Python packages; `md2html.py` also needs [pandoc](https://pandoc
 | `make-preview.py` | a cut file rendered so it can be read on a page |
 | `test-ladder.py` | a strip of squares that finds the cut speed for the sheet in front of you |
 | `flat-part-check.py` | the pre-cut gate for a flat single-sheet part: size, closure, cut order, holes |
+| `turn3d.py` | a hand-drawn cut file turned into 3mm parts and a page that turns them in 3D |
 | `all-gates.sh` | every gate in every repository, one output, one tally |
 | `repro-svg.py` | does a repository's shipped SVG still come out of its generator? |
 | `name-check.py` | does a cut file's name agree with the geometry inside it? |
@@ -630,6 +631,30 @@ judged, and the report says how many joins it made.
 The point of both: **a checker that reports the wrong thing is worse than no checker**,
 and this one had to be run against known-good work before it was worth pointing at
 anything else.
+
+## `turn3d.py`
+
+```
+import turn3d
+parts = turn3d.parts(CUTFILE)                 # outlines, holes, engraves; mm, y up
+turn3d.write(PAGE, title, designs, note, by)
+```
+
+The bores, the flute and the lyre-harp each have a 3D viewer because a generator
+draws them, and the viewer is built from the same geometry. Kalimba, slapstick,
+bullroarer and buzz-disc are hand-drawn SVGs with no generator, so their viewers are
+built from the cut file itself, read by `flat-part-check.py`'s own parser: what turns
+on screen is what the laser cuts.
+
+`parts()` sorts the rings by nesting. A ring inside nothing is a part, a ring inside
+a part is its hole, and blue lines are engraves drawn on whichever part they fall
+on. Containment is decided by most of a ring's vertices, not its first: the
+slapstick's three paddles share their cut lines, and a first vertex on a shared line
+read as inside the neighbour, which made one paddle a hole in another.
+
+Where each part goes is the one thing a cut file does not say, so each repository
+has a `viewer.py` that places them and calls `write()`. Its `.repro` line rebuilds
+the page, so the viewer is gated like any other page.
 
 ## `make-preview.py`
 

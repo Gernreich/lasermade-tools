@@ -98,7 +98,7 @@ pre,.tw{break-inside:avoid}h1{break-after:avoid}}
 <body>
 <button class="tog" type="button">theme</button>
 <div class="wrap">
-<nav><b>Contents</b><a class="l1" href="#lasermade-tools">lasermade-tools</a><a class="l2" href="#why-these-live-in-their-own-repository">Why these live in their own repository</a><a class="l2" href="#doc-auditpy">doc-audit.py</a><a class="l2" href="#md2htmlpy">md2html.py</a><a class="l2" href="#the-checkers-audited-against-documents-they-should-reject">The checkers, audited against documents they should reject</a><a class="l2" href="#all-gatessh">all-gates.sh</a><a class="l2" href="#svg-stroke-checkpy">svg-stroke-check.py</a><a class="l2" href="#flat-part-checkpy">flat-part-check.py</a><a class="l2" href="#make-previewpy">make-preview.py</a><a class="l2" href="#test-ladderpy">test-ladder.py</a><a class="l2" href="#rebuild-pagesh">rebuild-page.sh</a><a class="l2" href="#the-review-method-these-tools-serve">The review method these tools serve</a><a class="l2" href="#checking-this-page">Checking this page</a></nav>
+<nav><b>Contents</b><a class="l1" href="#lasermade-tools">lasermade-tools</a><a class="l2" href="#why-these-live-in-their-own-repository">Why these live in their own repository</a><a class="l2" href="#doc-auditpy">doc-audit.py</a><a class="l2" href="#md2htmlpy">md2html.py</a><a class="l2" href="#the-checkers-audited-against-documents-they-should-reject">The checkers, audited against documents they should reject</a><a class="l2" href="#all-gatessh">all-gates.sh</a><a class="l2" href="#svg-stroke-checkpy">svg-stroke-check.py</a><a class="l2" href="#flat-part-checkpy">flat-part-check.py</a><a class="l2" href="#turn3dpy">turn3d.py</a><a class="l2" href="#make-previewpy">make-preview.py</a><a class="l2" href="#test-ladderpy">test-ladder.py</a><a class="l2" href="#rebuild-pagesh">rebuild-page.sh</a><a class="l2" href="#the-review-method-these-tools-serve">The review method these tools serve</a><a class="l2" href="#checking-this-page">Checking this page</a></nav>
 <main>
 <h1 id="lasermade-tools">lasermade-tools</h1>
 <p><strong><a href="https://github.com/Gernreich/lasermade-tools">Read the README</a></strong></p>
@@ -133,6 +133,10 @@ pre,.tw{break-inside:avoid}h1{break-after:avoid}}
 <tr>
 <td><code>flat-part-check.py</code></td>
 <td>the pre-cut gate for a flat single-sheet part: size, closure, cut order, holes</td>
+</tr>
+<tr>
+<td><code>turn3d.py</code></td>
+<td>a hand-drawn cut file turned into 3mm parts and a page that turns them in 3D</td>
 </tr>
 <tr>
 <td><code>all-gates.sh</code></td>
@@ -356,6 +360,13 @@ python3 flat-part-check.py ... --bed 600x308 --min-edge 3 --min-hole 2 --weld 0.
 <p>It called <code>buzz-disc/BuzzDisc1.svg</code> three kinds of broken. The disc's outline carries no <code>z</code> — Inkscape wrote the return point as an ordinary node, and the ends coincide to 0.00009mm, which cuts identically. Worse was what followed: with the outline discounted, the largest closed path was a 5mm cord hole, so the gate reported that a cord hole freed the part and that the <em>other</em> cord hole lay outside it. One wrong assumption, three confident failures, all of them nonsense.</p>
 <p>Then it called four of the five bullroarer blades open. They are drawn as a top curve and a bottom curve meeting at the two tips: two open paths that cut one closed ring. Open paths of the same colour are now stitched end to end within <code>--weld</code> before anything is judged, and the report says how many joins it made.</p>
 <p>The point of both: <strong>a checker that reports the wrong thing is worse than no checker</strong>, and this one had to be run against known-good work before it was worth pointing at anything else.</p>
+<h2 id="turn3dpy"><code>turn3d.py</code></h2>
+<pre><code>import turn3d
+parts = turn3d.parts(CUTFILE)                 # outlines, holes, engraves; mm, y up
+turn3d.write(PAGE, title, designs, note, by)</code></pre>
+<p>The bores, the flute and the lyre-harp each have a 3D viewer because a generator draws them, and the viewer is built from the same geometry. Kalimba, slapstick, bullroarer and buzz-disc are hand-drawn SVGs with no generator, so their viewers are built from the cut file itself, read by <code>flat-part-check.py</code>'s own parser: what turns on screen is what the laser cuts.</p>
+<p><code>parts()</code> sorts the rings by nesting. A ring inside nothing is a part, a ring inside a part is its hole, and blue lines are engraves drawn on whichever part they fall on. Containment is decided by most of a ring's vertices, not its first: the slapstick's three paddles share their cut lines, and a first vertex on a shared line read as inside the neighbour, which made one paddle a hole in another.</p>
+<p>Where each part goes is the one thing a cut file does not say, so each repository has a <code>viewer.py</code> that places them and calls <code>write()</code>. Its <code>.repro</code> line rebuilds the page, so the viewer is gated like any other page.</p>
 <h2 id="make-previewpy"><code>make-preview.py</code></h2>
 <pre><code>python3 make-preview.py CUTFILE.svg [OUT.svg]      # default previews/&lt;name&gt;
 python3 make-preview.py CUTFILE.svg --ground=#faf7f0  # another ground colour</code></pre>

@@ -449,7 +449,11 @@ say "search tools reproduce their output" "$( [ "$ok1$ok2$ok3$ok4$ok5" = yyyyy ]
 # lyre-harp's .repro runs a generator that lives in trumpet-elbows-allowed, and
 # claims its previews and page too, so its previews need no loop of their own.
 # square-flute's is the same shape, and borrows only a stroke font from trumpet.
-for repo in knotwork-soundholes living-hinge lyre-harp square-flute; do
+# kalimba, slapstick, bullroarer and buzz-disc joined on 2026-10-14, when each
+# got a 3D viewer built from its hand-drawn cut files by turn3d.py: the cut
+# files are acknowledged with "!", and the previews, page and viewer reproduce.
+for repo in knotwork-soundholes living-hinge lyre-harp square-flute \
+            kalimba slapstick bullroarer buzz-disc; do
   cd $R/$repo 2>/dev/null || continue
   ro=$(python3 $G/repro-svg.py . 2>&1); rc=$?
   o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
