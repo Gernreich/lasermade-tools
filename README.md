@@ -327,8 +327,8 @@ Runs every gate in every repository and prints one tally.
 Eighteen ribbon bore runs -- twelve over the six open shapes, two over the
 torus, one each over the scallop, the racetrack and the oval, and one on
 `--port-at` --
-`regress.py` over 33 block designs, `doc-audit` over
-every page in eleven repositories, `svg-stroke-check` over every SVG, and
+`regress.py` over every block design, `doc-audit` over
+every page in every repository on its `REPOS=` line, `svg-stroke-check` over every SVG, and
 `flat-part-check` over the flat parts -- then four questions about what is
 committed, and finally whether every repository is clean and pushed.
 
