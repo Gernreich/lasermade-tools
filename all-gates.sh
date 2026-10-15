@@ -368,7 +368,7 @@ rr $RT/cut-files ribbon-racetrack-bore10-45deg-4lobes-R22-cap134.116-1600mm -nar
 rr $OV/cut-files ribbon-oval-bore10-30deg-end60-R28-side-R72-flat12.2-sideflat12.5-314mm -narrow --shape=oval
 rrc $SC/cut-files ribbon-scallop-bore10-36deg-5lobes-R44.2214-in41-800mm -ported-at1-14-square-narrow --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square
 rm -rf $T
-say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 49 ] && echo "ok  $same/49" || echo "FAIL $bad differ, $same of 49 compared")"
+say "ribbon sheets reproduce byte-identical" "$( [ $bad = 0 ] && [ $same = 45 ] && echo "ok  $same/45" || echo "FAIL $bad differ, $same of 45 compared")"
 
 # Walks EVERY previews/ directory in the repository, not just this one. It
 # checked swept-curve/previews and nothing else, so parts/bell/previews,
@@ -544,7 +544,10 @@ vp ess/ribbon-ess-bore10-45deg-5arc/ribbon-ess-bore10-45deg-5arc.html --shape=es
 vp $BSP/ribbon-spiral-bore10-45deg-R35to113.html --shape=spiral --port --port-square --cap --ends
 vp volute/double-volute-bore10-45deg-R94-step60/ribbon-double-volute-bore10-45deg-R94-step60.html --shape=double-volute --ends
 vp $DSP-1506mm/ribbon-double-spiral-bore10-30deg-R62-pitch46-1506mm.html --shape=double-spiral --ends
-vp $DSP-1000mm/ribbon-double-spiral-bore10-30deg-R62-pitch46-1000mm-ported-square.html --shape=double-spiral --ds-facets=9 --lead=42 --port --port-square --cap --ends
+# The short double spiral's page is drawn without its port, the mouthpiece and
+# the bell on the two tube ends, like the long one (the author, 2026-10-14). Its
+# ported sheets are still shipped and gated above.
+vp $DSP-1000mm/ribbon-double-spiral-bore10-30deg-R62-pitch46-1000mm.html --shape=double-spiral --ds-facets=9 --lead=42 --ends
 vp $RT/ribbon-racetrack-bore10-45deg-4lobes-R22-cap134.116-1600mm.html --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=134.115704 --race-straight=30
 vp $OV/ribbon-oval-bore10-30deg-end60-R28-side-R72-flat12.2-sideflat12.5-314mm.html --shape=oval
 vp $SC/ribbon-scallop-bore10-36deg-5lobes-R44.2214-in41-800mm.html --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square
