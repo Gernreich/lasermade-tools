@@ -15,8 +15,9 @@ build repositories — [trumpet-elbows-allowed](https://github.com/Gernreich/tru
 [kalimba](https://github.com/Gernreich/kalimba),
 [bullroarer](https://github.com/Gernreich/bullroarer),
 [buzz-disc](https://github.com/Gernreich/buzz-disc),
-[lyre-harp](https://github.com/Gernreich/lyre-harp) and
-[square-flute](https://github.com/Gernreich/square-flute).
+[lyre-harp](https://github.com/Gernreich/lyre-harp),
+[square-flute](https://github.com/Gernreich/square-flute) and
+[four-hole-ocarinas](https://github.com/Gernreich/four-hole-ocarinas).
 
 `trumpet` was several repositories until 2026-09-05, among them `trumpet-coiled`,
 `trumpet-parts` and `bore-generator`; its live successor is `trumpet-elbows-allowed`.
@@ -463,7 +464,9 @@ trumpet-elbows-allowed until 2026-10-14 and is now its own, but it imports the
 swept-curve generator from the checkout beside it, so a change there that moves
 the frame fails here. square-flute followed on 2026-10-13 with 42, its
 generators its own and only that same path writer borrowed, and ten hand-drawn
-originals from 2017 listed under `!`.
+originals from 2017 listed under `!`. four-hole-ocarinas followed on 2026-10-17
+with 19, its generator borrowing the square flute's plate, packer and finger
+size, and so the path writer too.
 
 The manifest is `.repro` in the repository root, one line per shipped SVG:
 

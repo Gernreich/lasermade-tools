@@ -55,9 +55,10 @@ say () {
 # lyre-harp joined it on 2026-10-13, when it got its README and page, and
 # square-flute the same day. swept-curve joined on 2026-10-14, when the swept-
 # curve trumpet bores left trumpet-elbows-allowed for a repository of their own.
+# four-hole-ocarinas joined on 2026-10-17, with its README, page and .repro.
 REPOS="bullroarer buzz-disc kalimba knotwork-soundholes living-hinge slapstick
        lyre-harp square-flute lasermade-tools Gernreich.github.io Gernreich
-       trumpet-elbows-allowed swept-curve"
+       trumpet-elbows-allowed swept-curve four-hole-ocarinas"
 PAGED=$(echo $REPOS | tr ' ' '\n' | grep -vx Gernreich)
 m=""
 for r in $REPOS; do [ -d "$R/$r/.git" ] || m="$m $r"; done
@@ -457,8 +458,12 @@ say "search tools reproduce their output" "$( [ "$ok1$ok2$ok3$ok4$ok5" = yyyyy ]
 # kalimba, slapstick, bullroarer and buzz-disc joined on 2026-10-14, when each
 # got a 3D viewer built from its hand-drawn cut files by turn3d.py: the cut
 # files are acknowledged with "!", and the previews, page and viewer reproduce.
+# four-hole-ocarinas joined on 2026-10-17: its .repro runs four_hole_ocarinas.py,
+# which imports square_flute.py from square-flute and, through it,
+# ribbon_bore.py from swept-curve, so a change in either that moves a part
+# fails here.
 for repo in knotwork-soundholes living-hinge lyre-harp square-flute \
-            kalimba slapstick bullroarer buzz-disc; do
+            kalimba slapstick bullroarer buzz-disc four-hole-ocarinas; do
   cd $R/$repo 2>/dev/null || continue
   ro=$(python3 $G/repro-svg.py . 2>&1); rc=$?
   o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
