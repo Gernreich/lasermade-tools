@@ -81,6 +81,12 @@ remembering `--ignore` on every run. A writeup whose parts come from
 that generator serves every download as `RegularBox.svg`.
 Both names belong in the prose and neither will ever be a file there.
 
+Some sites answer every script `403` however real the page: Thingiverse, behind
+Cloudflare, does. A repository that links one lists the URL in **`.doc-audit-links`**
+at its root, the same way. `--links` then accepts a `403` from it and nothing else, so
+a page that has gone (`404`) still fails. A listed URL that answers `200` again also
+fails, until it comes off the list, so that file audits itself.
+
 **A wrong answer it gave: `.json` read as `.js`.** The filename pattern accepted an
 extension wherever it appeared rather than only at the end, so a document mentioning
 `reduced.json` was reported as naming a missing `reduced.js`. It was unfixable from the

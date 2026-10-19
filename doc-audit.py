@@ -607,6 +607,17 @@ if a.run_blocks and (BLOCKS or CBLOCKS):
                      + ", ".join(sorted(unrestorable)))
 
 # ── 8. external links ────────────────────────────────────────────────────────
+# Some sites answer every script 403 however real the page (Thingiverse, behind
+# Cloudflare). .doc-audit-links at the root lists those URLs, one a line, # for
+# comments: each must still answer 403, which a deleted page does not (404),
+# and one that answers 200 again fails until it is taken off the list, so the
+# exemption audits itself rather than waiting for ignore-audit.py, which runs
+# without --links.
+LINKS_FILE = ROOT / ".doc-audit-links"
+refuses = set()
+if LINKS_FILE.exists():
+    refuses = {ln.strip() for ln in LINKS_FILE.read_text().split("\n")
+               if ln.strip() and not ln.strip().startswith("#")}
 if a.links:
     for u in sorted(set(re.findall(r'https://[^)\s"<>]+', src))):
         try:
@@ -614,7 +625,11 @@ if a.links:
             code = urllib.request.urlopen(rq, timeout=25).status
         except Exception as e:
             code = getattr(e, "code", str(e)[:30])
-        ok(f"{u[:66]}", code == 200, f"HTTP {code}" if code != 200 else "")
+        if u in refuses:
+            ok(f"{u[:66]}", code == 403,
+               "answers 200 now: take it off .doc-audit-links" if code == 200 else f"HTTP {code}")
+        else:
+            ok(f"{u[:66]}", code == 200, f"HTTP {code}" if code != 200 else "")
 
 for line in notes:
     print(line)
