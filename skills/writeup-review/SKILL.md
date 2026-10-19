@@ -50,7 +50,7 @@ date, not a missing file.
 bash ~/LaserMadeMusic/GIT/lasermade-tools/all-gates.sh
 ```
 
-About ten minutes, and it needs the network: the link gate fails rather than
+About two and a half minutes, and it needs the network: the link gate fails rather than
 skips without one. It runs every gate in every repository, `doc-audit.py` over
 every markdown (paired with its page, with `--run-blocks`, and with `--links`),
 `svg-stroke-check.py` over every SVG, `flat-part-check.py` over the flat parts,

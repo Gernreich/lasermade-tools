@@ -19,6 +19,7 @@ $OUT is a temp path; the command must put exactly that file there. Lines
 starting with # are comments, blank lines ignored.
 """
 import filecmp, os, shlex, subprocess, sys, tempfile
+from concurrent.futures import ThreadPoolExecutor
 
 def main(repo, quiet=False):
     man = os.path.join(repo, '.repro')
@@ -63,16 +64,33 @@ def main(repo, quiet=False):
                 shipped.add(os.path.relpath(os.path.join(base, f), repo))
     same = bad = 0
     with tempfile.TemporaryDirectory() as T:
-        for name, cmd in rows:
+        # EACH ROW ITS OWN DIRECTORY, since 2026-10-18. Most commands write
+        # every sheet they draw into $(dirname $OUT), and that was one
+        # directory for the whole manifest, so a row whose generator failed
+        # could find the file an earlier row had left there and pass on it.
+        # Separate directories close that, and let the rows run at once:
+        # serially they were 80s of all-gates.sh for knotwork-soundholes
+        # alone. Results are still reported in manifest order.
+        def run(i, cmd, out):
+            os.makedirs(os.path.dirname(out))
+            return subprocess.run(cmd, shell=True, cwd=repo,
+                                  env=dict(os.environ, OUT=out),
+                                  capture_output=True, text=True)
+        outs, jobs = {}, {}
+        pool = ThreadPoolExecutor(max_workers=os.cpu_count() or 4)
+        for i, (name, cmd) in enumerate(rows):
+            if os.path.exists(os.path.join(repo, name)):
+                outs[i] = os.path.join(T, str(i), os.path.basename(name))
+                jobs[i] = pool.submit(run, i, cmd, outs[i])
+        pool.shutdown(wait=False)
+        for i, (name, cmd) in enumerate(rows):
             target = os.path.join(repo, name)
-            if not os.path.exists(target):
+            if i not in jobs:
                 print(f'  MISSING   {name}')
                 bad += 1
                 continue
-            out = os.path.join(T, os.path.basename(name))
-            env = dict(os.environ, OUT=out)
-            r = subprocess.run(cmd, shell=True, cwd=repo, env=env,
-                               capture_output=True, text=True)
+            out = outs[i]
+            r = jobs[i].result()
             if not os.path.exists(out):
                 last = ((r.stdout + r.stderr).strip().splitlines() or ['no output'])[-1]
                 print(f'  NOT DRAWN {name}: {last[:80]}')

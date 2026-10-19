@@ -20,6 +20,7 @@ file by BASENAME as well as by path and the README's own mention of LICENSE
 already covered every copy.
 """
 import os, subprocess, sys, tempfile
+from concurrent.futures import ThreadPoolExecutor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 AUDIT = os.path.join(HERE, 'doc-audit.py')
@@ -66,6 +67,8 @@ def failures(repo, which, path):
 
 def main():
     dead = total = skipped = broken = 0
+    probes = []
+    pool = ThreadPoolExecutor(max_workers=os.cpu_count() or 4)
     with tempfile.TemporaryDirectory() as T:
         for name in sorted(os.listdir(ROOT)):
             repo = os.path.join(ROOT, name)
@@ -101,12 +104,20 @@ def main():
                     continue
                 total += len(entries)
                 for e in entries:
-                    tmp = os.path.join(T, 'list')
+                    # A copy of its own per entry, so the runs can go at once.
+                    tmp = os.path.join(T, f'list{len(probes)}')
                     open(tmp, 'w').write(
                         '\n'.join(l for l in lines if l.strip() != e))
-                    if failures(repo, which, tmp)[0] == 0:
-                        print(f'  DEAD  {name} {which}: {e} suppresses nothing')
-                        dead += 1
+                    probes.append((name, which, e,
+                                   pool.submit(failures, repo, which, tmp)))
+        # Every entry's documents re-audited at once, then reported in the
+        # order the loop above found them. Serially these were 65 of
+        # all-gates.sh's 708 seconds; the method is unchanged, one line
+        # removed per run.
+        for name, which, e, job in probes:
+            if job.result()[0] == 0:
+                print(f'  DEAD  {name} {which}: {e} suppresses nothing')
+                dead += 1
     print(f'  {total} exemptions audited, {dead} suppressing nothing'
           + (f', {skipped} unaudited behind a failing list' if skipped else '')
           + (f', {broken} behind an audit that crashed' if broken else ''))

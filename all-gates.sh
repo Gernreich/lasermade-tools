@@ -7,9 +7,11 @@
 # nine chances to read only eight.
 #
 # It ends with "GATES FAILING: n", and that line is the whole point of it.
-# About ten minutes: regress.py is most of it, run_checks.sh another two and a
-# half, and the link pass roughly one. The link pass is the only gate here that
-# needs the network, and it fails rather than skips without one.
+# About two and a half minutes on ten cores, with the gates in lanes side by side
+# (see LANES below); run one after another they took twelve. The longest lane,
+# every repository's drawings reproduced, sets the time. The link pass is the
+# only gate here that needs the network, and it fails rather than skips
+# without one.
 #
 #     bash all-gates.sh
 #
@@ -38,12 +40,46 @@ R=~/LaserMadeMusic/GIT
 #
 # So a gate now has to see the SUCCESS it is looking for, and has to have found
 # something to look at. Absence of bad news is not good news.
-fail=0
-failed=()
+#
+# LANES, SINCE 2026-10-18. Run one after another the gates took 708 seconds;
+# most of them neither read nor write what another one does, so they now run
+# side by side, each LANE a group that runs in order in a subshell of its own,
+# with its output held in a file and printed whole when it is done. A lane's
+# order is the order its gates must keep; the lanes' order is fixed, so the
+# report reads the same from run to run. Three things decide the lanes:
+#
+#   - the doc-audit pass that EXECUTES each document's fenced blocks writes into
+#     the repositories and restores them. Nothing may run beside it -- a block
+#     that redraws a cut file in place, compared at that moment, would make a
+#     reproduce gate compare the new drawing with itself and pass -- so it runs
+#     first, alone.
+#   - lane A rebuilds the coil search folder's pages and transcripts IN PLACE.
+#     The gates that read every document (R and the link lane L) start only once
+#     A is finished, so none of them reads a page half written.
+#   - every other gate writes to temporary paths of its own.
+#
+# A gate's verdict is a line in its lane's output; a failing one is also
+# appended to the lane's .fail file, and the tally at the end counts those. A
+# lane that never reached its end leaves no .done, and that is a failure too: a
+# lane killed half way would otherwise drop its remaining gates from the tally
+# without a word, which is the "printed nothing" hole in a new place.
+# ONE MATHS THREAD PER PROCESS. The lanes, and regress.py, repro.py and
+# run_checks.sh inside them, already run a process per core; numpy's maths
+# library then started a thread per core in each of those, and they spun
+# against each other: regress.py took 52s at 323 CPU-seconds, and 32s at 188
+# with this.
+export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 MKL_NUM_THREADS=1
+W=$(mktemp -d)
+LANE=main
 say () {
   printf '%-46s %s\n' "$1" "$2"
-  if [[ "$2" == *FAIL* ]]; then fail=$((fail+1)); failed+=("$1  --  $2"); fi
+  if [[ "$2" == *FAIL* ]]; then echo "$1  --  $2" >> "$W/$LANE.fail"; fi
 }
+lane () {  # lane NAME FUNCTION: run FUNCTION in the background as lane NAME
+  ( LANE=$1; s=$SECONDS; $2; echo $((SECONDS - s)) > "$W/$1.done" ) > "$W/$1.out" 2>&1 &
+}
+ARGS="$*"
+START=$SECONDS
 
 # The repositories the per-repository loops walk, named ONCE. Until 2026-10-06
 # three loops each carried their own list, and all three still said `trumpet`
@@ -55,15 +91,48 @@ say () {
 # lyre-harp joined it on 2026-10-13, when it got its README and page, and
 # square-flute the same day. swept-curve joined on 2026-10-14, when the swept-
 # curve trumpet bores left trumpet-elbows-allowed for a repository of their own.
-# four-hole-ocarinas joined on 2026-10-17, with its README, page and .repro.
+# four-hole-ocarinas joined on 2026-10-17, with its README, page and .repro,
+# and octagonal-flute on 2026-10-18, the day it went to GitHub.
 REPOS="bullroarer buzz-disc kalimba knotwork-soundholes living-hinge slapstick
        lyre-harp square-flute lasermade-tools Gernreich.github.io Gernreich
-       trumpet-elbows-allowed swept-curve four-hole-ocarinas"
+       trumpet-elbows-allowed swept-curve four-hole-ocarinas octagonal-flute"
 PAGED=$(echo $REPOS | tr ' ' '\n' | grep -vx Gernreich)
+
+# ALONE, FIRST: the repositories exist, and every document's blocks run.
 m=""
 for r in $REPOS; do [ -d "$R/$r/.git" ] || m="$m $r"; done
 say "every named repository exists" "$( [ -z "$m" ] && echo "ok  $(echo $REPOS | wc -w | tr -d ' ') repos" || echo "FAIL missing:$m")"
 
+# The doc-audit gate above pairs a *.md with its published page, so it only ever
+# saw the 9 documents at the repository roots. The other 18 -- every CLAUDE.md
+# in the trumpet tree, the design notes that say what may and may not be recut --
+# went unaudited from the day they were written. They held 20 failures. Most
+# were the checker being wrong about a genre it had never been pointed at
+# (indented output read as prose, "393 checks" read as a list claim), but one
+# was real: a "Two things to know" over three bullets. A document nothing checks
+# is a document that drifts, and these are the ones a person reads before
+# cutting.
+# Gernreich added 2026-09-15. It is the GitHub profile README, one file, in no
+# loop in this script from the day the repository existed -- neither this one nor
+# the paired-page one above, which skips it correctly because it publishes no
+# page. It audits clean, and that is worth knowing rather than assuming.
+#
+# --run-blocks added the same day, for the living-hinge guide's quick start,
+# which quoted slit=10.5 against a generator printing 10.625 and passed 18/18
+# every run. doc-audit.py only knew the `$ `-prompt form; it now also reads a
+# tagged fence of one command and its output commented out. It executes what it
+# matches, and doc-audit snapshots and restores the tree around that.
+cd $R
+u=0; n=0
+for f in $(find $REPOS -name '*.md' -not -path '*/.git/*' | sort); do
+  n=$((n+1))
+  (cd "$(dirname "$f")" && python3 $G/doc-audit.py "$(basename "$f")" --run-blocks 2>&1 \
+     | grep -q '0 failed') || u=$((u+1))
+done
+say "doc-audit, every markdown in every repo" "$( [ $u = 0 ] && [ $n -gt 20 ] && echo "ok  $n docs" || echo "FAIL $u of $n")"
+
+# LANE C: swept-curve's ribbon bores and the previews of every bore sheet.
+lane_C () {
 cd $R/swept-curve
 # 13, not 12, since 2026-09-16: "no cut line crosses the airway". Every ring
 # cheek -- torus, scallop, racetrack -- was written as ONE path that stepped
@@ -147,125 +216,6 @@ say "ribbon oval narrow" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13" |
 o=$(python3 ribbon_bore.py --shape=serpentine --port --port-at=0 --no-write 2>&1)
 n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
 say "ribbon --port-at=0 is plain --port" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13" || echo "FAIL $n pass $f fail")"
-
-# trumpet-elbows-not-allowed was archived on 2026-10-06 and every trumpet gate
-# here moved to trumpet-elbows-allowed, which cuts elbows rather than refusing
-# them and carries five more designs: 31 in regress.py, 70 sheets in repro.py
-# then. The tight coil made it 32 and 103 the same day, the ziggurat 33 and 116.
-# The label below said "33 block designs" by hand until 2026-10-09, a count that
-# goes stale with the next design and that nothing checked. It counts DESIGNS now.
-cd $R/trumpet-elbows-allowed/tools
-o=$(~/Software/boxes/venv/bin/python regress.py 2>&1 | tail -1)
-nd=$(python3 -c 'import regress; print(len(regress.DESIGNS))' 2>/dev/null)
-say "regress.py, ${nd:-?} block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
-
-# regress.py MEASURES the committed sheets; it never redraws them. Every
-# invariant can hold while the SVG on disk is one the current code would no
-# longer produce -- the hole this file closed for the 40 ribbon sheets and left
-# open on the 84 Boxes.py draws. repro.py redraws them. Its second direction is
-# the one that matters: the 18 sheets describing the coil that was actually cut
-# are checked against pinned hashes instead, so a regenerate sweep that
-# overwrites the record of the instrument fails here rather than passing every
-# invariant in silence.
-# Exit status AND the success line. Check 27 made these verdicts require the
-# words they are looking for, which closes the "printed nothing" hole but not
-# the "printed the success line and then crashed" one. These four tools were
-# tested and do exit non-zero on failure, so use both.
-ro=$(~/Software/boxes/venv/bin/python repro.py 2>&1); rc=$?
-o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
-say "block sheets reproduce, as-built pinned" "$( [[ "$o" == *reproduce* && "$o" != *failing* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
-
-for repo in $PAGED; do
-  cd $R/$repo 2>/dev/null || continue
-  bad=0; n=0
-  for md in *.md; do
-    h="${md%.md}.html"
-    # README.md builds index.html in some repositories and README.html in none.
-    # Pairing on name alone skipped lasermade-tools, Gernreich.github.io and
-    # trumpet entirely, and printed nothing at all for them.
-    [ -f "$h" ] || { [ "$md" = README.md ] && [ -f index.html ] && [ ! -f index.md ] && h=index.html || continue; }
-    n=$((n+1))
-    echo "$(python3 $G/doc-audit.py "$md" --html "$h" --rebuild "python3 $G/md2html.py {md} {out}" 2>&1 | grep -E 'passed,')" | grep -q ' 0 failed' || bad=$((bad+1))
-  done
-  say "doc-audit $repo ($n pages)" "$( [ $bad = 0 ] && [ $n -gt 0 ] && echo ok || echo "FAIL ${bad} page(s), $n found")"
-done
-
-# No image carries metadata. The published build photos were found on
-# 2026-10-14 carrying the camera, the time, a P3 colour profile and a GPS block
-# (a compass bearing, not a position), and the author's rule since is none at all. Fail-closed: it has to SEE the zero.
-o=$(cd $R && python3 $G/image-meta-check.py $REPOS 2>&1 | tail -1)
-say "images carry no metadata" "$( [[ "$o" == *" 0 with metadata"* ]] && echo "ok ${o%%,*}" || echo "FAIL $o")"
-
-o=$(python3 $G/svg-stroke-check.py --dir $R --quiet 2>&1 | tail -1)
-say "svg-stroke-check, every repo" "$( [[ "$o" == *"0 conflicting"* ]] && echo "ok  ${o% file*} files" || echo "FAIL $o")"
-
-# The doc-audit gate above pairs a *.md with its published page, so it only ever
-# saw the 9 documents at the repository roots. The other 18 -- every CLAUDE.md
-# in the trumpet tree, the design notes that say what may and may not be recut --
-# went unaudited from the day they were written. They held 20 failures. Most
-# were the checker being wrong about a genre it had never been pointed at
-# (indented output read as prose, "393 checks" read as a list claim), but one
-# was real: a "Two things to know" over three bullets. A document nothing checks
-# is a document that drifts, and these are the ones a person reads before
-# cutting.
-# Gernreich added 2026-09-15. It is the GitHub profile README, one file, in no
-# loop in this script from the day the repository existed -- neither this one nor
-# the paired-page one above, which skips it correctly because it publishes no
-# page. It audits clean, and that is worth knowing rather than assuming.
-#
-# --run-blocks added the same day, for the living-hinge guide's quick start,
-# which quoted slit=10.5 against a generator printing 10.625 and passed 18/18
-# every run. doc-audit.py only knew the `$ `-prompt form; it now also reads a
-# tagged fence of one command and its output commented out. It executes what it
-# matches, and doc-audit snapshots and restores the tree around that.
-cd $R
-u=0; n=0
-for f in $(find $REPOS -name '*.md' -not -path '*/.git/*' | sort); do
-  n=$((n+1))
-  (cd "$(dirname "$f")" && python3 $G/doc-audit.py "$(basename "$f")" --run-blocks 2>&1 \
-     | grep -q '0 failed') || u=$((u+1))
-done
-say "doc-audit, every markdown in every repo" "$( [ $u = 0 ] && [ $n -gt 20 ] && echo "ok  $n docs" || echo "FAIL $u of $n")"
-
-# THE 404 GATE. On 2026-09-15 gernreich.github.io served a full-height GitHub
-# "File not found" panel where a bore viewer belongs, for as long as it took
-# someone to screenshot the deployed page. trumpet had moved the spiral into
-# built/ that morning and the front page still embedded the old path. Every gate
-# in this file passed throughout: the link is ABSOLUTE, so no relative-path check
-# resolves it, and neither doc-audit loop above passes --links.
-#
-# It needs the network, and it FAILS rather than skips when the network is gone,
-# because this file's whole argument is that absence of bad news is not good
-# news. A run with no link checked has not checked the links.
-u=0; n=0; seen=0
-for f in $(find $REPOS -name '*.md' -not -path '*/.git/*' | sort); do
-  n=$((n+1))
-  o=$(cd "$(dirname "$f")" && python3 $G/doc-audit.py "$(basename "$f")" --links 2>&1)
-  seen=$((seen + $(echo "$o" | grep -cE '^\s+[✓✗] https?://')))
-  echo "$o" | grep -q '0 failed' || u=$((u+1))
-done
-say "external links resolve, every markdown" "$( [ $u = 0 ] && [ $seen -gt 50 ] && echo "ok  $seen links in $n docs" || echo "FAIL $u of $n docs, $seen links seen")"
-
-# The paired-page loop above is `for md in *.md` at each repository root, so it
-# sees nine documents and no more. trumpet publishes five further pages from
-# subdirectory READMEs -- three-turn, switchback, greek-spiral, ribbon-spiral,
-# ends -- and the every-markdown loop drops --html, so none of them has ever been
-# compared with the markdown it is built from. They were all current when this
-# was written, which is luck rather than a gate.
-cd $R
-u=0; n=0
-for md in $(find . -name README.md -not -path '*/.git/*' | sort); do
-  d=$(dirname $md)
-  [ -f "$d/index.html" ] || continue
-  [ -f "$d/index.md" ] && continue
-  n=$((n+1))
-  (cd $d && python3 $G/md2html.py README.md /tmp/_ag_sub.html >/dev/null 2>&1) || { u=$((u+1)); continue; }
-  cmp -s /tmp/_ag_sub.html $d/index.html || { u=$((u+1)); echo "    stale: $d/index.html"; }
-done
-say "every published page is current with its README" "$( [ $u = 0 ] && [ $n -gt 5 ] && echo "ok  $n pages" || echo "FAIL $u of $n")"
-
-o=$(python3 $G/flat-part-check.py --dir $R/bullroarer --dir $R/buzz-disc 2>&1 | tail -1)
-say "flat-part-check, flat parts" "$( [[ "$o" == *"0 failed"* ]] && echo "ok  $o" || echo "FAIL $o")"
 
 # --- what the committed artefacts claim about themselves ---------------------
 # The four below were verified by hand all through 2026-09-09 and by nothing
@@ -407,111 +357,6 @@ for pv in $(find trumpet-elbows-allowed swept-curve -type d -name previews -not 
 done; rm -f /tmp/_ag.svg
 say "previews current with their cut files" "$( [ $stale = 0 ] && [ $seen -gt 0 ] && echo "ok  $seen/$seen" || echo "FAIL $stale of $seen stale")"
 
-cd $R/trumpet-elbows-allowed/parts/bore/concept/walk/coil/search
-# The generators' EXIT STATUS is checked, not just the files afterwards. Until
-# 2026-09-11 this ran them with output discarded and then compared each file
-# with its own backup -- so a script that crashed left the file untouched and
-# the comparison passed. The gate could not tell "reproduced correctly" from
-# "did not run at all", which is the one distinction it exists to make.
-# Remove the backups FIRST, for the reason the preview loop above gives: these are
-# fixed paths, and a run interrupted before the rm at the end leaves them lying there.
-# cp then fails silently on a file that has been DELETED from the repository, the
-# generator recreates it, and cmp compares it against yesterday's copy and passes --
-# so a deletion like a7e36bc, which is why README.md is watched here at all, would
-# read as ok 3/3.
-# index.html and SCORING.html joined these on 2026-09-12. They are published pages built
-# from the two markdown files by md2html.py, and were watched by nothing: the doc-audit
-# pairing gate above only walks *.md at a repository ROOT, so it has never seen this
-# directory, and this gate watched the sources but not what is served. Verified by
-# appending a line to index.html and rerunning: every gate here passed, and only the
-# clean-tree gate noticed, and only because the change was uncommitted. Committed, it
-# would have gone out stale and silent.
-# So the whole of build.sh runs, not the three node tools, and all five artefacts are
-# compared. README.md joined on 2026-09-11, having been the third generated file here
-# with nothing watching it.
-rm -f /tmp/_ag_pj /tmp/_ag_sc /tmp/_ag_rm /tmp/_ag_ix /tmp/_ag_sh
-cp parts.json /tmp/_ag_pj; cp SCORING.md /tmp/_ag_sc;   cp README.md /tmp/_ag_rm
-cp index.html /tmp/_ag_ix; cp SCORING.html /tmp/_ag_sh
-# The build's exit status decides all five, for the reason the tools were run separately
-# before: these files are written in place, so a build that dies halfway leaves the rest
-# untouched and byte-identical to their own backups. Without the status that reads as ok.
-MD2HTML=$G/md2html.py bash tools/build.sh >/dev/null 2>&1; rb=$?
-ok1=$([ $rb = 0 ] && cmp -s /tmp/_ag_pj parts.json    && echo y)
-ok2=$([ $rb = 0 ] && cmp -s /tmp/_ag_sc SCORING.md    && echo y)
-ok3=$([ $rb = 0 ] && cmp -s /tmp/_ag_rm README.md     && echo y)
-ok4=$([ $rb = 0 ] && cmp -s /tmp/_ag_ix index.html    && echo y)
-ok5=$([ $rb = 0 ] && cmp -s /tmp/_ag_sh SCORING.html  && echo y)
-rm -f /tmp/_ag_pj /tmp/_ag_sc /tmp/_ag_rm /tmp/_ag_ix /tmp/_ag_sh
-say "search tools reproduce their output" "$( [ "$ok1$ok2$ok3$ok4$ok5" = yyyyy ] && echo "ok  5/5" \
-  || echo "FAIL build=$rb parts.json=${ok1:-n} SCORING.md=${ok2:-n} README.md=${ok3:-n} index.html=${ok4:-n} SCORING.html=${ok5:-n}")"
-
-# Both reproduction gates above are trumpet-only, and every other repository
-# that ships generator-drawn SVGs had none. knotwork-soundholes draws 13 cut
-# files and living-hinge 15, and nothing checked any of them. They all do
-# reproduce -- but for four of the knots the command was recorded NOWHERE, and
-# had to be recovered on 2026-09-10 by reading the parameters back out of each
-# SVG's own description. .repro in each repository records them now.
-# lyre-harp's .repro runs its own lyre_harp.py, which imports ribbon_bore.py
-# from the swept-curve checkout beside it, and claims its previews and page too,
-# so its previews need no loop of their own. square-flute's is the same shape,
-# and borrows ribbon_bore.py's path writer from swept-curve.
-# kalimba, slapstick, bullroarer and buzz-disc joined on 2026-10-14, when each
-# got a 3D viewer built from its hand-drawn cut files by turn3d.py: the cut
-# files are acknowledged with "!", and the previews, page and viewer reproduce.
-# four-hole-ocarinas joined on 2026-10-17: its .repro runs four_hole_ocarinas.py,
-# which imports square_flute.py from square-flute and, through it,
-# ribbon_bore.py from swept-curve, so a change in either that moves a part
-# fails here.
-for repo in knotwork-soundholes living-hinge lyre-harp square-flute \
-            kalimba slapstick bullroarer buzz-disc four-hole-ocarinas; do
-  cd $R/$repo 2>/dev/null || continue
-  ro=$(python3 $G/repro-svg.py . 2>&1); rc=$?
-  o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
-  say "$repo drawings and pages reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
-done
-
-# And trumpet's OTHER two part directories, which had no reproduction gate of
-# any kind. The block bores had one, the ribbon sheets had one, and the bell and
-# the mouthpiece -- seven shipped SVGs from six generators -- had none: the only
-# thing that touched them was the previews gate, and that compares a preview
-# with a cut file rather than a cut file with the code. Scoped to the two
-# directories rather than run over trumpet whole, because the bore tree holds
-# hundreds of sheets that the two byte gates above already account for.
-for d in parts/bell parts/mouthpiece tools/examples \
-         parts/bore/concept/walk/coil/search; do
-  cd $R/trumpet-elbows-allowed
-  ro=$(python3 $G/repro-svg.py $d 2>&1); rc=$?
-  o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
-  say "${d##*/} drawings and pages reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
-done
-
-# The previews in the four hand-drawn repositories are made by make-preview.py
-# and were current with it, unwatched, the whole time. trumpet's are gated and
-# these were not, for no reason other than that nobody had looked.
-cd $R
-stale=0; n=0
-for repo in bullroarer buzz-disc kalimba slapstick; do
-  for f in $repo/previews/*.svg; do
-    [ -e "$f" ] || continue
-    src="$repo/$(basename "$f")"
-    [ -f "$src" ] || continue
-    n=$((n+1))
-    # Same fixed-path-round-a-loop hazard the trumpet preview loop above guards
-    # against, and this loop did not: without the rm, a generator that failed on
-    # one source left the PREVIOUS source's preview lying there to be compared,
-    # and the gate counted it ok.
-    rm -f /tmp/_ag2.svg
-    python3 $G/make-preview.py "$src" /tmp/_ag2.svg >/dev/null 2>&1
-    if [ ! -f /tmp/_ag2.svg ]; then
-      stale=$((stale+1)); echo "  preview would not draw: $(basename "$f")"
-    else
-      cmp -s /tmp/_ag2.svg "$f" || stale=$((stale+1))
-    fi
-  done
-done
-rm -f /tmp/_ag2.svg
-say "previews current in the hand-drawn repos" "$( [ $stale = 0 ] && [ $n -gt 0 ] && echo "ok  $n/$n" || echo "FAIL $stale stale of $n")"
-
 # The published embed gate stood here until 2026-10-12, when the serpentine
 # left gernreich.github.io for the greek spiral's lattice viewer: that page now
 # embeds nothing drawn by ribbon_view.py, so there is no cross-repo artefact.
@@ -588,6 +433,36 @@ refuses "no facet at all" python3 ribbon_view.py "${TOR[@]}" --port-at= --out=/t
 rr=$(python3 ribbon_bore.py --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=134.115704 --race-straight=30 --narrow --no-write 2>&1 | grep -c 'inner wall runs at R17$')
 rs=$(python3 ribbon_bore.py --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square --narrow --no-write 2>&1 | grep -c 'inner wall runs at R36$')
 say "ribbon page and sheets refuse alike" "$( [ $rf = 0 ] && [ $rn = 6 ] && [ "$rr" = 1 ] && [ "$rs" = 1 ] && echo "ok  $rn refusals, 2 radii" || echo "FAIL $rf of $rn not refused, radius rows $rr $rs")"
+}
+
+# LANE B: the block bores, through the Boxes.py venv.
+lane_B () {
+# trumpet-elbows-not-allowed was archived on 2026-10-06 and every trumpet gate
+# here moved to trumpet-elbows-allowed, which cuts elbows rather than refusing
+# them and carries five more designs: 31 in regress.py, 70 sheets in repro.py
+# then. The tight coil made it 32 and 103 the same day, the ziggurat 33 and 116.
+# The label below said "33 block designs" by hand until 2026-10-09, a count that
+# goes stale with the next design and that nothing checked. It counts DESIGNS now.
+cd $R/trumpet-elbows-allowed/tools
+o=$(~/Software/boxes/venv/bin/python regress.py 2>&1 | tail -1)
+nd=$(python3 -c 'import regress; print(len(regress.DESIGNS))' 2>/dev/null)
+say "regress.py, ${nd:-?} block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
+
+# regress.py MEASURES the committed sheets; it never redraws them. Every
+# invariant can hold while the SVG on disk is one the current code would no
+# longer produce -- the hole this file closed for the 40 ribbon sheets and left
+# open on the 84 Boxes.py draws. repro.py redraws them. Its second direction is
+# the one that matters: the 18 sheets describing the coil that was actually cut
+# are checked against pinned hashes instead, so a regenerate sweep that
+# overwrites the record of the instrument fails here rather than passing every
+# invariant in silence.
+# Exit status AND the success line. Check 27 made these verdicts require the
+# words they are looking for, which closes the "printed nothing" hole but not
+# the "printed the success line and then crashed" one. These four tools were
+# tested and do exit non-zero on failure, so use both.
+ro=$(~/Software/boxes/venv/bin/python repro.py 2>&1); rc=$?
+o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
+say "block sheets reproduce, as-built pinned" "$( [[ "$o" == *reproduce* && "$o" != *failing* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 
 # Every gate above checks an ARTEFACT. A tool that ships no artefact is checked
 # by nothing at all, and five of them were: coils.py, mcwalk.py, nest.py,
@@ -689,6 +564,72 @@ run python3 part-view.py $MS $T/t2.html
 rm -rf $T
 say "every bell and mouthpiece tool still runs" "$( [ $bad = 0 ] && [ $n -ge 8 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
 
+cd $R/trumpet-elbows-allowed/tools
+# Asks BORE_SPLIT rather than re-implementing the comparison, and so looks at
+# the checkout that actually draws. This had ~/Software/boxes written into it
+# while bore_split.py resolves SNAKEBOX_BOXES first and falls back to a search,
+# so with that variable set the gate and the writer were reading two different
+# installs -- a gate that agrees with itself and not with the thing it watches.
+# One copy of the rule now, in the file that depends on it.
+o=$(python3 -c "
+import sys
+sys.path.insert(0, '.')
+import bore_split as B
+d = B._installed_matches_source()
+print('; '.join(d) if d else 'ok')" 2>/dev/null)
+# Empty means the import died before it could answer -- no checkout, a syntax
+# error, anything. That is not agreement either.
+[ -n "$o" ] || o="the drift check would not run at all"
+say "Boxes install matches tools/" "$( [ "$o" = ok ] && echo ok || echo "FAIL $o")"
+}
+
+# LANE R: the gates that read every repository, after lane A.
+lane_R () {
+for repo in $PAGED; do
+  cd $R/$repo 2>/dev/null || continue
+  bad=0; n=0
+  for md in *.md; do
+    h="${md%.md}.html"
+    # README.md builds index.html in some repositories and README.html in none.
+    # Pairing on name alone skipped lasermade-tools, Gernreich.github.io and
+    # trumpet entirely, and printed nothing at all for them.
+    [ -f "$h" ] || { [ "$md" = README.md ] && [ -f index.html ] && [ ! -f index.md ] && h=index.html || continue; }
+    n=$((n+1))
+    echo "$(python3 $G/doc-audit.py "$md" --html "$h" --rebuild "python3 $G/md2html.py {md} {out}" 2>&1 | grep -E 'passed,')" | grep -q ' 0 failed' || bad=$((bad+1))
+  done
+  say "doc-audit $repo ($n pages)" "$( [ $bad = 0 ] && [ $n -gt 0 ] && echo ok || echo "FAIL ${bad} page(s), $n found")"
+done
+
+# No image carries metadata. The published build photos were found on
+# 2026-10-14 carrying the camera, the time, a P3 colour profile and a GPS block
+# (a compass bearing, not a position), and the author's rule since is none at all. Fail-closed: it has to SEE the zero.
+o=$(cd $R && python3 $G/image-meta-check.py $REPOS 2>&1 | tail -1)
+say "images carry no metadata" "$( [[ "$o" == *" 0 with metadata"* ]] && echo "ok ${o%%,*}" || echo "FAIL $o")"
+
+o=$(python3 $G/svg-stroke-check.py --dir $R --quiet 2>&1 | tail -1)
+say "svg-stroke-check, every repo" "$( [[ "$o" == *"0 conflicting"* ]] && echo "ok  ${o% file*} files" || echo "FAIL $o")"
+
+# The paired-page loop above is `for md in *.md` at each repository root, so it
+# sees nine documents and no more. trumpet publishes five further pages from
+# subdirectory READMEs -- three-turn, switchback, greek-spiral, ribbon-spiral,
+# ends -- and the every-markdown loop drops --html, so none of them has ever been
+# compared with the markdown it is built from. They were all current when this
+# was written, which is luck rather than a gate.
+cd $R
+u=0; n=0
+for md in $(find . -name README.md -not -path '*/.git/*' | sort); do
+  d=$(dirname $md)
+  [ -f "$d/index.html" ] || continue
+  [ -f "$d/index.md" ] && continue
+  n=$((n+1))
+  (cd $d && python3 $G/md2html.py README.md /tmp/_ag_sub.html >/dev/null 2>&1) || { u=$((u+1)); continue; }
+  cmp -s /tmp/_ag_sub.html $d/index.html || { u=$((u+1)); echo "    stale: $d/index.html"; }
+done
+say "every published page is current with its README" "$( [ $u = 0 ] && [ $n -gt 5 ] && echo "ok  $n pages" || echo "FAIL $u of $n")"
+
+o=$(python3 $G/flat-part-check.py --dir $R/bullroarer --dir $R/buzz-disc 2>&1 | tail -1)
+say "flat-part-check, flat parts" "$( [[ "$o" == *"0 failed"* ]] && echo "ok  $o" || echo "FAIL $o")"
+
 # Nothing reads the NAMES. Every gate above compares an artefact with the code
 # that draws it, and the reproduction gate is handed the stem on the command
 # line -- so a design called -1180mm reproduces perfectly whatever its
@@ -708,24 +649,78 @@ cd $G
 ro=$(python3 ignore-audit.py 2>&1); rc=$?
 o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
 say "every exemption still suppresses something" "$( [[ "$o" == *", 0 suppressing"* ]] && echo "ok  ${o# }" || echo "FAIL ${o# }")"
+}
 
-cd $R/trumpet-elbows-allowed/tools
-# Asks BORE_SPLIT rather than re-implementing the comparison, and so looks at
-# the checkout that actually draws. This had ~/Software/boxes written into it
-# while bore_split.py resolves SNAKEBOX_BOXES first and falls back to a search,
-# so with that variable set the gate and the writer were reading two different
-# installs -- a gate that agrees with itself and not with the thing it watches.
-# One copy of the rule now, in the file that depends on it.
-o=$(python3 -c "
-import sys
-sys.path.insert(0, '.')
-import bore_split as B
-d = B._installed_matches_source()
-print('; '.join(d) if d else 'ok')" 2>/dev/null)
-# Empty means the import died before it could answer -- no checkout, a syntax
-# error, anything. That is not agreement either.
-[ -n "$o" ] || o="the drift check would not run at all"
-say "Boxes install matches tools/" "$( [ "$o" = ok ] && echo ok || echo "FAIL $o")"
+# LANE L: the links, which wait on the network, after lane A.
+lane_L () {
+# THE 404 GATE. On 2026-09-15 gernreich.github.io served a full-height GitHub
+# "File not found" panel where a bore viewer belongs, for as long as it took
+# someone to screenshot the deployed page. trumpet had moved the spiral into
+# built/ that morning and the front page still embedded the old path. Every gate
+# in this file passed throughout: the link is ABSOLUTE, so no relative-path check
+# resolves it, and neither doc-audit loop above passes --links.
+#
+# It needs the network, and it FAILS rather than skips when the network is gone,
+# because this file's whole argument is that absence of bad news is not good
+# news. A run with no link checked has not checked the links.
+u=0; n=0; seen=0
+for f in $(find $REPOS -name '*.md' -not -path '*/.git/*' | sort); do
+  n=$((n+1))
+  o=$(cd "$(dirname "$f")" && python3 $G/doc-audit.py "$(basename "$f")" --links 2>&1)
+  seen=$((seen + $(echo "$o" | grep -cE '^\s+[✓✗] https?://')))
+  echo "$o" | grep -q '0 failed' || u=$((u+1))
+done
+say "external links resolve, every markdown" "$( [ $u = 0 ] && [ $seen -gt 50 ] && echo "ok  $seen links in $n docs" || echo "FAIL $u of $n docs, $seen links seen")"
+}
+
+# LANE A: the coil search folder, rebuilt in place, so in this one lane and in order.
+lane_A () {
+cd $R/trumpet-elbows-allowed/parts/bore/concept/walk/coil/search
+# The generators' EXIT STATUS is checked, not just the files afterwards. Until
+# 2026-09-11 this ran them with output discarded and then compared each file
+# with its own backup -- so a script that crashed left the file untouched and
+# the comparison passed. The gate could not tell "reproduced correctly" from
+# "did not run at all", which is the one distinction it exists to make.
+# Remove the backups FIRST, for the reason the preview loop above gives: these are
+# fixed paths, and a run interrupted before the rm at the end leaves them lying there.
+# cp then fails silently on a file that has been DELETED from the repository, the
+# generator recreates it, and cmp compares it against yesterday's copy and passes --
+# so a deletion like a7e36bc, which is why README.md is watched here at all, would
+# read as ok 3/3.
+# index.html and SCORING.html joined these on 2026-09-12. They are published pages built
+# from the two markdown files by md2html.py, and were watched by nothing: the doc-audit
+# pairing gate above only walks *.md at a repository ROOT, so it has never seen this
+# directory, and this gate watched the sources but not what is served. Verified by
+# appending a line to index.html and rerunning: every gate here passed, and only the
+# clean-tree gate noticed, and only because the change was uncommitted. Committed, it
+# would have gone out stale and silent.
+# So the whole of build.sh runs, not the three node tools, and all five artefacts are
+# compared. README.md joined on 2026-09-11, having been the third generated file here
+# with nothing watching it.
+rm -f /tmp/_ag_pj /tmp/_ag_sc /tmp/_ag_rm /tmp/_ag_ix /tmp/_ag_sh
+cp parts.json /tmp/_ag_pj; cp SCORING.md /tmp/_ag_sc;   cp README.md /tmp/_ag_rm
+cp index.html /tmp/_ag_ix; cp SCORING.html /tmp/_ag_sh
+# The build's exit status decides all five, for the reason the tools were run separately
+# before: these files are written in place, so a build that dies halfway leaves the rest
+# untouched and byte-identical to their own backups. Without the status that reads as ok.
+MD2HTML=$G/md2html.py bash tools/build.sh >/dev/null 2>&1; rb=$?
+ok1=$([ $rb = 0 ] && cmp -s /tmp/_ag_pj parts.json    && echo y)
+ok2=$([ $rb = 0 ] && cmp -s /tmp/_ag_sc SCORING.md    && echo y)
+ok3=$([ $rb = 0 ] && cmp -s /tmp/_ag_rm README.md     && echo y)
+ok4=$([ $rb = 0 ] && cmp -s /tmp/_ag_ix index.html    && echo y)
+ok5=$([ $rb = 0 ] && cmp -s /tmp/_ag_sh SCORING.html  && echo y)
+rm -f /tmp/_ag_pj /tmp/_ag_sc /tmp/_ag_rm /tmp/_ag_ix /tmp/_ag_sh
+say "search tools reproduce their output" "$( [ "$ok1$ok2$ok3$ok4$ok5" = yyyyy ] && echo "ok  5/5" \
+  || echo "FAIL build=$rb parts.json=${ok1:-n} SCORING.md=${ok2:-n} README.md=${ok3:-n} index.html=${ok4:-n} SCORING.html=${ok5:-n}")"
+
+# The search folder's .repro, in this lane rather than with the other trumpet
+# folders because the gate before it rebuilds that folder's pages in place.
+for d in parts/bore/concept/walk/coil/search; do
+  cd $R/trumpet-elbows-allowed
+  ro=$(python3 $G/repro-svg.py $d 2>&1); rc=$?
+  o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
+  say "${d##*/} drawings and pages reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
+done
 
 # THE CORPUS IS SUPPOSED TO BE IN STANDARD FORM -- north, counter-clockwise,
 # whole periods nearest the common target, one block in and one out -- and that
@@ -764,6 +759,91 @@ n=$(echo "$o" | grep -cE "[0-9]+ checks, [0-9]+ failed")
 say "the search transcripts regenerate" "$( [ $rc = 0 ] && [ "$n" -ge 10 ] \
   && ! echo "$o" | grep -q 'NO SUMMARY' && echo "ok  $n walks" \
   || echo "FAIL rc=$rc, $n summary line(s)")"
+}
+
+# LANE D: every other repository's drawings, reproduced.
+lane_D () {
+# Both reproduction gates above are trumpet-only, and every other repository
+# that ships generator-drawn SVGs had none. knotwork-soundholes draws 13 cut
+# files and living-hinge 15, and nothing checked any of them. They all do
+# reproduce -- but for four of the knots the command was recorded NOWHERE, and
+# had to be recovered on 2026-09-10 by reading the parameters back out of each
+# SVG's own description. .repro in each repository records them now.
+# lyre-harp's .repro runs its own lyre_harp.py, which imports ribbon_bore.py
+# from the swept-curve checkout beside it, and claims its previews and page too,
+# so its previews need no loop of their own. square-flute's is the same shape,
+# and borrows ribbon_bore.py's path writer from swept-curve.
+# kalimba, slapstick, bullroarer and buzz-disc joined on 2026-10-14, when each
+# got a 3D viewer built from its hand-drawn cut files by turn3d.py: the cut
+# files are acknowledged with "!", and the previews, page and viewer reproduce.
+# four-hole-ocarinas joined on 2026-10-17: its .repro runs four_hole_ocarinas.py,
+# which imports square_flute.py from square-flute and, through it,
+# ribbon_bore.py from swept-curve, so a change in either that moves a part
+# fails here.
+for repo in knotwork-soundholes living-hinge lyre-harp square-flute \
+            kalimba slapstick bullroarer buzz-disc four-hole-ocarinas \
+            octagonal-flute; do
+  cd $R/$repo 2>/dev/null || continue
+  ro=$(python3 $G/repro-svg.py . 2>&1); rc=$?
+  o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
+  say "$repo drawings and pages reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
+done
+
+# And trumpet's OTHER two part directories, which had no reproduction gate of
+# any kind. The block bores had one, the ribbon sheets had one, and the bell and
+# the mouthpiece -- seven shipped SVGs from six generators -- had none: the only
+# thing that touched them was the previews gate, and that compares a preview
+# with a cut file rather than a cut file with the code. Scoped to the two
+# directories rather than run over trumpet whole, because the bore tree holds
+# hundreds of sheets that the two byte gates above already account for.
+for d in parts/bell parts/mouthpiece tools/examples; do
+  cd $R/trumpet-elbows-allowed
+  ro=$(python3 $G/repro-svg.py $d 2>&1); rc=$?
+  o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
+  say "${d##*/} drawings and pages reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
+done
+
+# The previews in the four hand-drawn repositories are made by make-preview.py
+# and were current with it, unwatched, the whole time. trumpet's are gated and
+# these were not, for no reason other than that nobody had looked.
+cd $R
+stale=0; n=0
+for repo in bullroarer buzz-disc kalimba slapstick; do
+  for f in $repo/previews/*.svg; do
+    [ -e "$f" ] || continue
+    src="$repo/$(basename "$f")"
+    [ -f "$src" ] || continue
+    n=$((n+1))
+    # Same fixed-path-round-a-loop hazard the trumpet preview loop above guards
+    # against, and this loop did not: without the rm, a generator that failed on
+    # one source left the PREVIOUS source's preview lying there to be compared,
+    # and the gate counted it ok.
+    rm -f /tmp/_ag2.svg
+    python3 $G/make-preview.py "$src" /tmp/_ag2.svg >/dev/null 2>&1
+    if [ ! -f /tmp/_ag2.svg ]; then
+      stale=$((stale+1)); echo "  preview would not draw: $(basename "$f")"
+    else
+      cmp -s /tmp/_ag2.svg "$f" || stale=$((stale+1))
+    fi
+  done
+done
+rm -f /tmp/_ag2.svg
+say "previews current in the hand-drawn repos" "$( [ $stale = 0 ] && [ $n -gt 0 ] && echo "ok  $n/$n" || echo "FAIL $stale stale of $n")"
+}
+
+lane A lane_A; PA=$!
+lane B lane_B
+lane C lane_C
+lane D lane_D
+wait $PA
+lane R lane_R
+lane L lane_L
+wait
+for k in C B R L A D; do
+  cat "$W/$k.out"
+  [ -f "$W/$k.done" ] || say "lane $k finished" "FAIL it stopped before its last gate"
+done
+LANE=end
 
 cd $R
 # Counts the repositories as well as the changes: with no repositories at all
@@ -787,7 +867,7 @@ say "every repo clean" "$( [ $d = 0 ] && [ $nr -ge 9 ] && echo "ok  $nr repos" |
 #
 #     bash all-gates.sh --pre-push && git push origin main
 #
-if [[ " $* " != *" --pre-push "* ]]; then
+if [[ " $ARGS " != *" --pre-push "* ]]; then
   u=0; nr=0
   for r in */; do
     [ -d "$r/.git" ] || continue
@@ -813,11 +893,15 @@ echo
 # So: a caller can now branch on it, and the names sit at the END, where someone
 # reading the last few lines cannot see clean-and-pushed without also seeing
 # what failed.
+fail=$(cat "$W"/*.fail 2>/dev/null | wc -l | tr -d ' ')
 if (( fail )); then
   echo "FAILING GATES:"
-  for f in "${failed[@]}"; do echo "  $f"; done
+  for k in main C B R L A D end; do
+    [ -f "$W/$k.fail" ] && sed 's/^/  /' "$W/$k.fail"
+  done
   echo
 fi
+echo "ran in $((SECONDS - START))s; lanes $(for k in C B R L A D; do printf '%s %ss  ' $k "$(cat $W/$k.done 2>/dev/null || echo '?')"; done)"
+rm -rf "$W"
 echo "GATES FAILING: $fail"
 exit $(( fail > 0 ))
-

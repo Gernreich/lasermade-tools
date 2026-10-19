@@ -16,8 +16,9 @@ build repositories — [trumpet-elbows-allowed](https://github.com/Gernreich/tru
 [bullroarer](https://github.com/Gernreich/bullroarer),
 [buzz-disc](https://github.com/Gernreich/buzz-disc),
 [lyre-harp](https://github.com/Gernreich/lyre-harp),
-[square-flute](https://github.com/Gernreich/square-flute) and
-[four-hole-ocarinas](https://github.com/Gernreich/four-hole-ocarinas).
+[square-flute](https://github.com/Gernreich/square-flute),
+[four-hole-ocarinas](https://github.com/Gernreich/four-hole-ocarinas) and
+[octagonal-flute](https://github.com/Gernreich/octagonal-flute).
 
 `trumpet` was several repositories until 2026-09-05, among them `trumpet-coiled`,
 `trumpet-parts` and `bore-generator`; its live successor is `trumpet-elbows-allowed`.
@@ -375,8 +376,19 @@ project's entire claim. The last of the four matters most quietly: `bore_split`
 shells out to the INSTALLED copy of `snakeboxvar.py`, so editing the one in
 `tools/` and re-running changes nothing, silently.
 
-About ten minutes. `regress.py` is most of it; the link pass adds roughly a
-minute and is the only gate here that needs the network.
+About two and a half minutes on ten cores; it was twelve until 2026-10-18, when
+the gates went into **lanes** that run side by side. A lane is a group of gates
+that must keep their order; each runs in a subshell of its own with its output
+held back and printed whole, so the report reads the same every run. The
+doc-audit pass that executes each document's blocks runs first and alone, since
+it writes into the repositories and restores them; the coil search gates rebuild
+their folder in place, so the gates that read every document wait for them. The
+tally counts each lane's failures, and a lane that stops before its last gate
+fails as one. `regress.py`, `repro.py`, `run_checks.sh`, `repro-svg.py` and
+`ignore-audit.py` also run their own designs, rows or entries at once, and the
+harness holds numpy's maths library to one thread per process so that the
+processes do not fight over the cores. The link pass is the only gate here that
+needs the network.
 
 **It exists because of a failure of reading, not of checking.** Every one of
 those gates already existed and every one was passing; what kept going wrong was
@@ -466,7 +478,15 @@ the frame fails here. square-flute followed on 2026-10-13 with 42, its
 generators its own and only that same path writer borrowed, and ten hand-drawn
 originals from 2017 listed under `!`. four-hole-ocarinas followed on 2026-10-17
 with 19, its generator borrowing the square flute's plate, packer and finger
-size, and so the path writer too.
+size, and so the path writer too. octagonal-flute followed on 2026-10-18 with 7, borrowing the
+same from the square flute and its joint at any angle from the ocarinas.
+
+**Each row draws into a directory of its own**, since 2026-10-18, and the rows
+run at once. Most commands write every sheet they draw into `$(dirname $OUT)`,
+and that was one directory for the whole manifest, so a row whose generator
+failed could find the file an earlier row had left there and pass on it --
+shown with a two-row manifest whose second command is `false`, which passed
+before and fails now.
 
 The manifest is `.repro` in the repository root, one line per shipped SVG:
 
