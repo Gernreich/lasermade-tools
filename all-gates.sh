@@ -164,8 +164,8 @@ done
 # The floor is arithmetic -- a ring's facet is 2*R*sin(pi/n), so the port needs
 # R >= 17/(2 sin(pi/n)), which is R32.84 at n=12: R32.8 refuses with 16.98mm of
 # facet and R32.9 passes all twelve -- at n=12, which is what --facet=30 gives
-# and what this row runs; the 13 ring floors at R36 and tops out at R135 rather
-# than R133. Measured, both ways, 2026-09-15. R120 is
+# and what this row runs; the 13 ring floors at R36 and tops out at R134 rather
+# than R132 (ceilings re-measured on the 305mm bed, 2026-10-19). R120 is
 # kept here because a row wants room either side of the limit it is not
 # testing, not because it is the least that works.
 #
@@ -196,9 +196,9 @@ say "ribbon scallop plain" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13"
 # racetrack, the third closed shape, for the same reason as the other two --
 # and --narrow, which the torus and scallop rows do not need. 1600mm of closed
 # loop fits the bed ONLY on a narrow cheek: at the full-width band the part is
-# 464 x 290mm against 288 usable, over by two millimetres. A row that ran it
+# 462 x 287mm against 285 usable, over by two millimetres. A row that ran it
 # full width would be reporting on a design that cannot be cut.
-o=$(python3 ribbon_bore.py --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=134.115704 --race-straight=30 --narrow --no-write 2>&1)
+o=$(python3 ribbon_bore.py --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=132.809141 --race-straight=31 --narrow --no-write 2>&1)
 n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
 say "ribbon racetrack narrow" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13" || echo "FAIL $n pass $f fail")"
 
@@ -295,7 +295,7 @@ SC=scallop/ribbon-scallop-bore10-36deg-5lobes-R44.2214-in41-800mm
 # coil passing close enough to itself that no port clears a neighbouring
 # mortice -- square or 7 x 14, measured across lobe radii 20.5 to 40 and eight
 # facet pairs. Its two mouths are cut by hand, outside these checks.
-RT=racetrack/ribbon-racetrack-bore10-45deg-4lobes-R22-cap134.116-1600mm
+RT=racetrack/ribbon-racetrack-bore10-45deg-4lobes-R22-cap132.809-1600mm
 OV=oval/ribbon-oval-bore10-30deg-end60-R28-side-R72-flat12.2-sideflat12.5-314mm
 rr $SE/cut-files ribbon-serpentine-bore10-30deg-3lobes-R72-1000mm -narrow --shape=serpentine
 rr $SE/cut-files ribbon-serpentine-bore10-30deg-3lobes-R72-1000mm -ported-narrow --shape=serpentine --port --cap
@@ -315,7 +315,7 @@ rr $VO/cut-files ribbon-double-volute-bore10-45deg-R94-step60-1180mm -narrow --s
 rr $VO/cut-files ribbon-double-volute-bore10-45deg-R94-step60-1180mm -ported-square-narrow --shape=double-volute --port --port-square --cap
 rrc $TO/cut-files ribbon-torus-bore10-27.6923deg-R128.572-800mm -ported-at0-6-narrow --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek
 rrc $TO/cut-files ribbon-torus-bore10-27.6923deg-R128.572-800mm -ported-at0-6-square-narrow --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek --port-square
-rr $RT/cut-files ribbon-racetrack-bore10-45deg-4lobes-R22-cap134.116-1600mm -narrow --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=134.115704 --race-straight=30
+rr $RT/cut-files ribbon-racetrack-bore10-45deg-4lobes-R22-cap132.809-1600mm -narrow --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=132.809141 --race-straight=31
 rr $OV/cut-files ribbon-oval-bore10-30deg-end60-R28-side-R72-flat12.2-sideflat12.5-314mm -narrow --shape=oval
 rrc $SC/cut-files ribbon-scallop-bore10-36deg-5lobes-R44.2214-in41-800mm -ported-at1-14-square-narrow --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square
 rm -rf $T
@@ -398,7 +398,7 @@ vp $DSP-1506mm/ribbon-double-spiral-bore10-30deg-R62-pitch46-1506mm.html --shape
 # the bell on the two tube ends, like the long one (the author, 2026-10-14). Its
 # ported sheets are still shipped and gated above.
 vp $DSP-1000mm/ribbon-double-spiral-bore10-30deg-R62-pitch46-1000mm.html --shape=double-spiral --ds-facets=9 --lead=42 --ends
-vp $RT/ribbon-racetrack-bore10-45deg-4lobes-R22-cap134.116-1600mm.html --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=134.115704 --race-straight=30
+vp $RT/ribbon-racetrack-bore10-45deg-4lobes-R22-cap132.809-1600mm.html --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=132.809141 --race-straight=31
 vp $OV/ribbon-oval-bore10-30deg-end60-R28-side-R72-flat12.2-sideflat12.5-314mm.html --shape=oval
 vp $SC/ribbon-scallop-bore10-36deg-5lobes-R44.2214-in41-800mm.html --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square
 vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm-ported-square.html --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek --port-square
@@ -430,7 +430,7 @@ refuses "--out=PATH" python3 ribbon_view.py --shape=serpentine
 refuses "ports none" python3 ribbon_view.py "${TOR[@]}" --port-at=0,6 --cap --out=/tmp/_ag_rf.html
 refuses "same facet twice" python3 ribbon_view.py "${TOR[@]}" --port-at=0,0 --out=/tmp/_ag_rf.html
 refuses "no facet at all" python3 ribbon_view.py "${TOR[@]}" --port-at= --out=/tmp/_ag_rf.html
-rr=$(python3 ribbon_bore.py --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=134.115704 --race-straight=30 --narrow --no-write 2>&1 | grep -c 'inner wall runs at R17$')
+rr=$(python3 ribbon_bore.py --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=132.809141 --race-straight=31 --narrow --no-write 2>&1 | grep -c 'inner wall runs at R17$')
 rs=$(python3 ribbon_bore.py --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square --narrow --no-write 2>&1 | grep -c 'inner wall runs at R36$')
 say "ribbon page and sheets refuse alike" "$( [ $rf = 0 ] && [ $rn = 6 ] && [ "$rr" = 1 ] && [ "$rs" = 1 ] && echo "ok  $rn refusals, 2 radii" || echo "FAIL $rf of $rn not refused, radius rows $rr $rs")"
 }

@@ -609,7 +609,7 @@ it.
 ```
 python3 flat-part-check.py FILE.svg [FILE.svg ...]
 python3 flat-part-check.py --dir DIR [--dir DIR] [--quiet]
-python3 flat-part-check.py ... --bed 600x308 --min-edge 3 --min-hole 2 --weld 0.05
+python3 flat-part-check.py ... --bed 600x305 --min-edge 3 --min-hole 2 --weld 0.05
 ```
 
 The bore repositories have a gate: `bore_split.py --write` checks every net it writes,

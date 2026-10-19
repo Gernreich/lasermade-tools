@@ -309,7 +309,7 @@ python3 svg-stroke-check.py ... --fix</code></pre>
 <h2 id="flat-part-checkpy"><code>flat-part-check.py</code></h2>
 <pre><code>python3 flat-part-check.py FILE.svg [FILE.svg ...]
 python3 flat-part-check.py --dir DIR [--dir DIR] [--quiet]
-python3 flat-part-check.py ... --bed 600x308 --min-edge 3 --min-hole 2 --weld 0.05</code></pre>
+python3 flat-part-check.py ... --bed 600x305 --min-edge 3 --min-hole 2 --weld 0.05</code></pre>
 <p>The bore repositories have a gate: <code>bore_split.py --write</code> checks every net it writes, and nothing is cut from a file that has not passed. The flat parts — bullroarer blades, buzz discs, anything cut from one sheet with holes in it — had no equivalent. This is it.</p>
 <p>It reads geometry, not drawing. Paths, rects, circles, ellipses, polygons and lines are flattened to polylines with every enclosing transform applied, and then measured:</p>
 <div class="tw">

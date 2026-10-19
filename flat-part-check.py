@@ -43,7 +43,7 @@ import sys
 import xml.etree.ElementTree as ET
 
 SVG = "{http://www.w3.org/2000/svg}"
-BED_W, BED_H = 600.0, 308.0        # xTool P2S work area, mm
+BED_W, BED_H = 600.0, 305.0        # xTool P2S work area, mm (cut-tested 2026-10-19)
 MIN_EDGE = 3.0                     # mm of material between a hole and any other edge
 MIN_HOLE = 2.0                     # mm across, the smallest hole worth cutting
 FLATNESS = 0.05                    # mm; curve subdivision error budget
