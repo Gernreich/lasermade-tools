@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Commit, gate and push LaserMadeMusic work — stage by name, commit to main, run all-gates.sh in the background with output filtered to failures, and push only when the sole failure is the commits waiting to go up. Use when asked to commit and push, ship, publish or "send it up" in any repository under ~/LaserMadeMusic, or after finishing a change there that the user has asked to land.
+description: Commit, gate and push LaserMadeMusic work — stage by name, commit to main, run all-gates.sh (about 150s, in the foreground) with output filtered to failures, and push only when the sole failure is the commits waiting to go up. Use when asked to commit and push, ship, publish or "send it up" in any repository under ~/LaserMadeMusic, or after finishing a change there that the user has asked to land.
 ---
 
 # Ship LaserMadeMusic work
@@ -43,8 +43,9 @@ Commit the regenerated `index.html` with the README.
 Which repositories the gate covers is the `REPOS=` line near the top of
 `lasermade-tools/all-gates.sh`; read it rather than trusting a list here.
 
-**In the gate:** run it in the background, filtered, and do not poll. It takes about
-ten minutes and the harness says when it ends:
+**In the gate:** run it filtered, in the foreground with a 10-minute timeout. Since it
+was streamlined it takes about two and a half minutes (2:28 on 2026-10-19), so wait for
+it rather than backgrounding it:
 
 ```sh
 cd ~/LaserMadeMusic/GIT/lasermade-tools && bash all-gates.sh 2>&1 | grep -E "FAIL|GATES"; echo done
