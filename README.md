@@ -19,8 +19,9 @@ build repositories — [trumpet-elbows-allowed](https://github.com/Gernreich/tru
 [square-flute](https://github.com/Gernreich/square-flute),
 [four-hole-ocarinas](https://github.com/Gernreich/four-hole-ocarinas),
 [octagonal-flute](https://github.com/Gernreich/octagonal-flute),
-[panpipes](https://github.com/Gernreich/panpipes) and
-[practice-chanters](https://github.com/Gernreich/practice-chanters).
+[panpipes](https://github.com/Gernreich/panpipes),
+[practice-chanters](https://github.com/Gernreich/practice-chanters) and
+[ghb-chanter](https://github.com/Gernreich/ghb-chanter).
 
 `trumpet` was several repositories until 2026-09-05, among them `trumpet-coiled`,
 `trumpet-parts` and `bore-generator`; its live successor is `trumpet-elbows-allowed`.

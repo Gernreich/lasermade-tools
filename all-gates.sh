@@ -93,11 +93,12 @@ START=$SECONDS
 # curve trumpet bores left trumpet-elbows-allowed for a repository of their own.
 # four-hole-ocarinas joined on 2026-10-17, with its README, page and .repro,
 # and octagonal-flute on 2026-10-18, the day it went to GitHub; panpipes on
-# 2026-10-19, the same way, and practice-chanters later that day.
+# 2026-10-19, the same way, and practice-chanters later that day; ghb-chanter
+# that evening.
 REPOS="bullroarer buzz-disc kalimba knotwork-soundholes living-hinge slapstick
        lyre-harp square-flute lasermade-tools Gernreich.github.io Gernreich
        trumpet-elbows-allowed swept-curve four-hole-ocarinas octagonal-flute
-       panpipes practice-chanters"
+       panpipes practice-chanters ghb-chanter"
 PAGED=$(echo $REPOS | tr ' ' '\n' | grep -vx Gernreich)
 
 # ALONE, FIRST: the repositories exist, and every document's blocks run.
@@ -784,7 +785,7 @@ lane_D () {
 # fails here.
 for repo in knotwork-soundholes living-hinge lyre-harp square-flute \
             kalimba slapstick bullroarer buzz-disc four-hole-ocarinas \
-            octagonal-flute panpipes practice-chanters; do
+            octagonal-flute panpipes practice-chanters ghb-chanter; do
   cd $R/$repo 2>/dev/null || continue
   ro=$(python3 $G/repro-svg.py . 2>&1); rc=$?
   o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
