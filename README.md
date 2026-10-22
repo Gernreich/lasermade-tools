@@ -1,5 +1,7 @@
 # lasermade-tools
 
+**[← All projects](https://gernreich.github.io/)**
+
 <!-- readme-only -->
 **[Read the writeup](https://gernreich.github.io/lasermade-tools/)** — the same text as
 this page, set for reading, with a table of contents.
@@ -28,7 +30,7 @@ build repositories — [trumpet-elbows-allowed](https://github.com/Gernreich/tru
 Notes below that name one of those are describing where a lesson came from, not
 a repository you can clone.
 
-**[The rest of the build files](https://gernreich.github.io/)** — every instrument,
+**[The rest of the build files](https://gernreich.github.io/lasermademusic.html)** — every instrument,
 generator and tool, indexed.
 
 They exist because a writeup that tells someone how to cut wood can be wrong in ways
