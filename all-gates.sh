@@ -94,8 +94,8 @@ START=$SECONDS
 # four-hole-ocarinas joined on 2026-10-17, with its README, page and .repro,
 # and octagonal-flute on 2026-10-18, the day it went to GitHub; panpipes on
 # 2026-10-19, the same way, and practice-chanters later that day; ghb-chanter
-# that evening.
-REPOS="bullroarer buzz-disc kalimba knotwork-soundholes living-hinge slapstick
+# that evening. living-hinge left on 2026-10-22 for ~/Documents/GIT.
+REPOS="bullroarer buzz-disc kalimba knotwork-soundholes slapstick
        lyre-harp square-flute lasermade-tools Gernreich.github.io Gernreich
        trumpet-elbows-allowed swept-curve four-hole-ocarinas octagonal-flute
        panpipes practice-chanters ghb-chanter"
@@ -783,7 +783,7 @@ lane_D () {
 # which imports square_flute.py from square-flute and, through it,
 # ribbon_bore.py from swept-curve, so a change in either that moves a part
 # fails here.
-for repo in knotwork-soundholes living-hinge lyre-harp square-flute \
+for repo in knotwork-soundholes lyre-harp square-flute \
             kalimba slapstick bullroarer buzz-disc four-hole-ocarinas \
             octagonal-flute panpipes practice-chanters ghb-chanter; do
   cd $R/$repo 2>/dev/null || continue
