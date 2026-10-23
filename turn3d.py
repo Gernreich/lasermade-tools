@@ -206,6 +206,11 @@ color:var(--mut);pointer-events:none}
 .note summary{cursor:pointer;width:max-content;max-width:100%}
 .note summary:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .note p{margin:6px 0 0}
+/* ?embed: framed on a writeup page, which carries the title and the note itself */
+.embed .bar b,.embed .note{display:none}
+.embed .bar{padding:0 0 10px}
+.embed body{background:transparent}
+.embed .stage{border:1px solid var(--line);border-radius:8px;background:var(--card)}
 </style>
 <script>
 /* Follow the theme the site's pages store, so a framed viewer matches the page around it. */
@@ -214,6 +219,7 @@ color:var(--mut);pointer-events:none}
   function apply() { var t = null; try { t = localStorage.getItem('ctg-theme'); } catch (e) {}
     if (t === 'light' || t === 'dark') r.setAttribute('data-theme', t); else r.removeAttribute('data-theme'); }
   apply(); addEventListener('storage', function (e) { if (e.key === 'ctg-theme') apply(); });
+  if (/[?&]embed\b/.test(location.search)) r.classList.add('embed');
 })();
 </script>
 </head>
@@ -276,8 +282,8 @@ __SPIN__<button type="button" id="reset">Reset view</button></div>
     });
     scene.add(group);
     target.set(d.c[0], d.c[1], d.c[2]);
-    const v = d.view || [-0.6, 0.5, 4.2];   // yaw, pitch, distance in radii
-    home.yaw = yaw = v[0]; home.pitch = pitch = v[1]; dist = home.dist = d.r * v[2];
+    const v = d.view || [-0.6, 0.5];   // yaw, pitch; the distance is whatever fills the frame
+    home.yaw = yaw = v[0]; home.pitch = pitch = v[1]; dist = home.dist = fit();
     info.textContent = name + ' · ' + d.parts.length + (d.parts.length === 1 ? ' part' : ' parts') + ' · ' + d.size;
     document.querySelectorAll('#designs button').forEach(b => b.setAttribute('aria-pressed', b.dataset.d === name));
     place(); render();
@@ -300,9 +306,23 @@ __SPIN__<button type="button" id="reset">Reset view</button></div>
     camera.lookAt(target);
     renderer.render(scene, camera);
   }
+  function fit() {   // the nearest distance at which every corner of the design's box is on screen, with a margin
+    const dir = new THREE.Vector3(Math.cos(home.pitch) * Math.sin(home.yaw), -Math.cos(home.pitch) * Math.cos(home.yaw), Math.sin(home.pitch));
+    const right = new THREE.Vector3().crossVectors(dir.clone().negate(), camera.up).normalize();
+    const upv = new THREE.Vector3().crossVectors(right, dir.clone().negate());
+    const tv = Math.tan(camera.fov * Math.PI / 360) * 0.9, th = tv * camera.aspect, e = cur.e;
+    let n = MIN;
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) for (const sz of [-1, 1]) {
+      const q = new THREE.Vector3(sx * e[0], sy * e[1], sz * e[2]), w = q.dot(dir);
+      n = Math.max(n, w + Math.abs(q.dot(right)) / th, w + Math.abs(q.dot(upv)) / tv);
+    }
+    return n;
+  }
   function size() {
     const w = stage.clientWidth, h = stage.clientHeight;
-    renderer.setSize(w, h, false); camera.aspect = w / Math.max(h, 1); camera.updateProjectionMatrix(); render();
+    renderer.setSize(w, h, false); camera.aspect = w / Math.max(h, 1); camera.updateProjectionMatrix();
+    const atHome = dist === home.dist; home.dist = fit(); if (atHome) dist = home.dist;   // refit unless it has been zoomed
+    render();
   }
   const pts = new Map(); let pinch0 = 0, mid0 = null, panning = false;
   const MIN = 10, ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
@@ -380,7 +400,7 @@ SPIN = '<label><input type="checkbox" id="spin"> Spin it</label>'
 
 
 def bounds(design):
-    """Centre and radius of a design as placed, from its outline vertices."""
+    """Centre, radius, size and half-extents of a design as placed, from its outline vertices."""
     xs, ys, zs = [], [], []
     for p in design['parts']:
         m = p['m']
@@ -393,16 +413,17 @@ def bounds(design):
         for x, y, z in c:
             xs.append(x); ys.append(y); zs.append(z)
     c = [(min(v) + max(v)) / 2 for v in (xs, ys, zs)]
-    r = max(max(v) - min(v) for v in (xs, ys, zs)) / 2
+    e = [(max(v) - min(v)) / 2 for v in (xs, ys, zs)]
     size = ' × '.join(f'{max(v) - min(v):.0f}' for v in (xs, ys, zs) if max(v) - min(v) > 0.5) + 'mm'
-    return [round(v, 2) for v in c], round(r, 2), size
+    return [round(v, 2) for v in c], round(max(e), 2), size, [round(v, 2) for v in e]
 
 
 def write(path, title, designs, note, by, spin=False):
     """designs: {name: {'parts': [placed(...)], 'cords': [[xyz...], a loop if last == first], 'axis': [ox,oy,oz,dx,dy,dz],
-    'ex': mm the explode slider moves a part per unit of its 'x', 'view': [yaw, pitch, radii]}}"""
+    'ex': mm the explode slider moves a part per unit of its 'x', 'view': [yaw, pitch]}};
+    a third 'view' number, the distance in radii it once set, is ignored: the view opens fitted to its frame"""
     for d in designs.values():
-        d['c'], d['r'], d['size'] = bounds(d)
+        d['c'], d['r'], d['size'], d['e'] = bounds(d)
     page = (PAGE.replace('__DATA__', json.dumps(designs, separators=(',', ':')))
             .replace('__TITLE__', title).replace('__NOTE__', note).replace('__BY__', by)
             .replace('__SPIN__', SPIN if spin else '')

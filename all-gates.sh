@@ -395,6 +395,8 @@ vp ess/ribbon-ess-bore10-45deg-5arc/ribbon-ess-bore10-45deg-5arc.html --shape=es
 # there is a port, on the two tube ends where there is not. The built spiral's
 # page draws it as built, square port and cap. The closed rings have no ends.
 vp $BSP/ribbon-spiral-bore10-45deg-R35to113.html --shape=spiral --port --port-square --cap --ends
+# and its --embed build, which the writeup opens with (2026-10-23)
+vp $BSP/ribbon-spiral-bore10-45deg-R35to113-embed.html --shape=spiral --port --port-square --cap --ends --embed --home=ribbon-spiral-bore10-45deg-R35to113.html
 vp volute/double-volute-bore10-45deg-R94-step60/ribbon-double-volute-bore10-45deg-R94-step60.html --shape=double-volute --ends
 vp $DSP-1506mm/ribbon-double-spiral-bore10-30deg-R62-pitch46-1506mm.html --shape=double-spiral --ends
 # The short double spiral's page is drawn without its port, the mouthpiece and
@@ -406,7 +408,7 @@ vp $OV/ribbon-oval-bore10-30deg-end60-R28-side-R72-flat12.2-sideflat12.5-314mm.h
 vp $SC/ribbon-scallop-bore10-36deg-5lobes-R44.2214-in41-800mm.html --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square
 vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm-ported-square.html --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek --port-square
 vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm.html --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek
-say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 12 ] && echo "ok  $pg/12" || echo "FAIL $pgbad stale, $pg of 12 current")"
+say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 13 ] && echo "ok  $pg/13" || echo "FAIL $pgbad stale, $pg of 13 current")"
 
 # THE PAGE AND THE SHEETS READ ONE COMMAND LINE. ribbon_view.py kept its own copy
 # of the generator's flag handling and the two drifted four ways: the generator
