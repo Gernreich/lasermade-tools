@@ -95,10 +95,11 @@ START=$SECONDS
 # and octagonal-flute on 2026-10-18, the day it went to GitHub; panpipes on
 # 2026-10-19, the same way, and practice-chanters later that day; ghb-chanter
 # that evening. living-hinge left on 2026-10-22 for ~/Documents/GIT.
+# uilleann-chanter joined on 2026-10-23, with its README, page and .repro.
 REPOS="bullroarer buzz-disc kalimba knotwork-soundholes slapstick
        lyre-harp square-flute lasermade-tools Gernreich.github.io Gernreich
        trumpet-elbows-allowed swept-curve four-hole-ocarinas octagonal-flute
-       panpipes practice-chanters ghb-chanter"
+       panpipes practice-chanters ghb-chanter uilleann-chanter"
 PAGED=$(echo $REPOS | tr ' ' '\n' | grep -vx Gernreich)
 
 # ALONE, FIRST: the repositories exist, and every document's blocks run.
@@ -787,7 +788,7 @@ lane_D () {
 # fails here.
 for repo in knotwork-soundholes lyre-harp square-flute \
             kalimba slapstick bullroarer buzz-disc four-hole-ocarinas \
-            octagonal-flute panpipes practice-chanters ghb-chanter; do
+            octagonal-flute panpipes practice-chanters ghb-chanter uilleann-chanter; do
   cd $R/$repo 2>/dev/null || continue
   ro=$(python3 $G/repro-svg.py . 2>&1); rc=$?
   o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
