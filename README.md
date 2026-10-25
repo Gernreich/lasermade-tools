@@ -12,6 +12,7 @@ Eleven scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMade
 build repositories — [trumpet-elbows-allowed](https://github.com/Gernreich/trumpet-elbows-allowed),
 [swept-curve](https://github.com/Gernreich/swept-curve),
 [knotwork-soundholes](https://github.com/Gernreich/knotwork-soundholes),
+[living-hinge](https://github.com/Gernreich/living-hinge),
 [slapstick](https://github.com/Gernreich/slapstick),
 [kalimba](https://github.com/Gernreich/kalimba),
 [bullroarer](https://github.com/Gernreich/bullroarer),

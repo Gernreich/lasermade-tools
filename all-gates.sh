@@ -96,7 +96,8 @@ START=$SECONDS
 # 2026-10-19, the same way, and practice-chanters later that day; ghb-chanter
 # that evening. living-hinge left on 2026-10-22 for ~/Documents/GIT.
 # uilleann-chanter joined on 2026-10-23, with its README, page and .repro.
-REPOS="bullroarer buzz-disc kalimba knotwork-soundholes slapstick
+# living-hinge came back on 2026-10-24: it is for the curved surfaces of instruments.
+REPOS="bullroarer buzz-disc kalimba knotwork-soundholes living-hinge slapstick
        lyre-harp square-flute lasermade-tools Gernreich.github.io Gernreich
        trumpet-elbows-allowed swept-curve four-hole-ocarinas octagonal-flute
        panpipes practice-chanters ghb-chanter uilleann-chanter"
@@ -786,7 +787,7 @@ lane_D () {
 # which imports square_flute.py from square-flute and, through it,
 # ribbon_bore.py from swept-curve, so a change in either that moves a part
 # fails here.
-for repo in knotwork-soundholes lyre-harp square-flute \
+for repo in knotwork-soundholes living-hinge lyre-harp square-flute \
             kalimba slapstick bullroarer buzz-disc four-hole-ocarinas \
             octagonal-flute panpipes practice-chanters ghb-chanter uilleann-chanter; do
   cd $R/$repo 2>/dev/null || continue
