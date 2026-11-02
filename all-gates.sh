@@ -701,7 +701,7 @@ cd $R/trumpet-elbows-allowed/parts/bore/concept/walk/coil/search
 # appending a line to index.html and rerunning: every gate here passed, and only the
 # clean-tree gate noticed, and only because the change was uncommitted. Committed, it
 # would have gone out stale and silent.
-# So the whole of build.sh runs, not the three node tools, and all five artefacts are
+# So the whole of build.sh runs, not the three tools alone, and all five artefacts are
 # compared. README.md joined on 2026-09-11, having been the third generated file here
 # with nothing watching it.
 rm -f /tmp/_ag_pj /tmp/_ag_sc /tmp/_ag_rm /tmp/_ag_ix /tmp/_ag_sh
@@ -732,7 +732,7 @@ done
 # THE CORPUS IS SUPPOSED TO BE IN STANDARD FORM -- north, counter-clockwise,
 # whole periods nearest the common target, one block in and one out -- and that
 # is the whole basis on which two coils in it are compared. Nothing checked it.
-# standardise.js --write is idempotent on a standard corpus, so running it and
+# standardise --write is idempotent on a standard corpus, so running it and
 # requiring the tree to stay clean IS the check, the same way the transcripts
 # below are checked by regenerating them. Three seconds.
 #
@@ -740,13 +740,14 @@ done
 # would still cut. It would just no longer be comparable with the nine beside it,
 # which is the one thing the whole search directory is for.
 cd $R/trumpet-elbows-allowed/parts/bore/concept/walk/coil/search
-o=$(node tools/standardise.js --write 2>&1); rc=$?
+# Rust since 2026-11-02; build.sh above has just built it.
+o=$(target/release/standardise --write 2>&1); rc=$?
 n=$(echo "$o" | grep -oE '^[0-9]+ standardised' | grep -oE '^[0-9]+')
 say "the coil corpus is in standard form" "$( [ $rc = 0 ] && [ "${n:-0}" -ge 10 ] \
   && echo "ok  $n walks" || echo "FAIL rc=$rc, ${n:-no} walk(s) read")"
 
 # THE TEN CHECK TRANSCRIPTS in coil/search/checks/ are an INPUT to a published
-# page: gen_readme.js reads the "N checks, N failed" line out of each one and
+# page: gen_readme reads the "N checks, N failed" line out of each one and
 # prints the total in README.md, which build.sh then renders into index.html.
 # Nothing regenerated them. run_checks.sh writes them and no gate ran it, so a
 # stale transcript would have gone on publishing a stale number for as long as
