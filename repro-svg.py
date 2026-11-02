@@ -18,7 +18,7 @@ The manifest is .repro in the repository root:
 $OUT is a temp path; the command must put exactly that file there. Lines
 starting with # are comments, blank lines ignored.
 """
-import filecmp, os, shlex, subprocess, sys, tempfile
+import filecmp, os, shlex, shutil, subprocess, sys, tempfile
 from concurrent.futures import ThreadPoolExecutor
 
 def main(repo, quiet=False):
@@ -55,9 +55,27 @@ def main(repo, quiet=False):
     # pairs a page with a document of the same NAME, so a page whose source is
     # named differently, or which has no markdown at all, falls outside it
     # entirely. That is exactly where the turn pages sit.
+    # A RUST REPOSITORY IS BUILT ONCE, HERE, before any row runs (2026-11-02,
+    # when knotwork-soundholes' generators left Node). Its .repro rows then run
+    # target/release/<program> directly. They were `cargo run` at first, and
+    # under the full gate one row in thirty failed "No such file or directory":
+    # cargo re-links the finished binary into target/release on EVERY run, even
+    # when nothing changed, by deleting it and linking it again, so with the
+    # rows running at once one cargo could pull the program out from under
+    # another that was just starting it. Building here, once, also means the
+    # rows always run the code as it stands rather than a stale build.
+    if os.path.exists(os.path.join(repo, 'Cargo.toml')):
+        cargo = shutil.which('cargo') or os.path.expanduser('~/.cargo/bin/cargo')
+        b = subprocess.run([cargo, 'build', '-q', '--release', '--locked'],
+                           cwd=repo, capture_output=True, text=True)
+        if b.returncode != 0:
+            last = ((b.stdout + b.stderr).strip().splitlines() or ['no output'])[-1]
+            print(f'  cargo build failed: {last[:80]}')
+            return 2
     shipped = set()
     for base, _, files in os.walk(repo):
-        if '.git' in base.split(os.sep):
+        parts = os.path.relpath(base, repo).split(os.sep)
+        if '.git' in parts or parts[0] == 'target':   # target/: cargo's build output
             continue
         for f in files:
             if f.endswith(('.svg', '.html')):
