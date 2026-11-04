@@ -97,10 +97,11 @@ START=$SECONDS
 # that evening. living-hinge left on 2026-10-22 for ~/Documents/GIT.
 # uilleann-chanter joined on 2026-10-23, with its README, page and .repro.
 # living-hinge came back on 2026-10-24: it is for the curved surfaces of instruments.
+# bore-tmm joined on 2026-11-04, with its README and page; lane T runs its gates.
 REPOS="bullroarer buzz-disc kalimba knotwork-soundholes living-hinge slapstick
        lyre-harp square-flute lasermade-tools Gernreich.github.io Gernreich
        trumpet-elbows-allowed swept-curve four-hole-ocarinas octagonal-flute
-       panpipes practice-chanters ghb-chanter uilleann-chanter"
+       panpipes practice-chanters ghb-chanter uilleann-chanter bore-tmm"
 PAGED=$(echo $REPOS | tr ' ' '\n' | grep -vx Gernreich)
 
 # ALONE, FIRST: the repositories exist, and every document's blocks run.
@@ -839,15 +840,54 @@ rm -f /tmp/_ag2.svg
 say "previews current in the hand-drawn repos" "$( [ $stale = 0 ] && [ $n -gt 0 ] && echo "ok  $n/$n" || echo "FAIL $stale stale of $n")"
 }
 
+# LANE T: tuning, since 2026-11-04. bore-tmm is one transfer-matrix engine (Rust)
+# for the physics the instrument models each carry a copy of. Its tools read
+# every instrument's bore back out of what its generator DRAWS -- the flutes off
+# the SVGs themselves, the chanters off the parts the sheets are drawn from --
+# into a temporary directory, never the repository. Four verdicts:
+#   - the engine passes its textbook tests, and the measuring rig's analysis
+#     recovers the model's resonances through a coloured loudspeaker and noise;
+#   - the bores read now are the bores committed in bore-tmm/bores/cut and
+#     bores/predict (the trumpets and the uilleann chanter, not judged for
+#     tuning: what they play is the open question), so a
+#     generator that moved a hole shows up as a diff even before it goes out
+#     of tune;
+#   - every note of every drawn bore is within 5 cents of its model's target,
+#     or within the tolerance its reader states and gives a reason for;
+#   - the engine agrees with each designing Python model on that model's own
+#     design, to 0.01 cents, so the two physics cannot drift apart.
+# Fail-closed like the rest: each must SEE its success line.
+lane_T () {
+cd $R/bore-tmm 2>/dev/null || { say "bore-tmm present" "FAIL no checkout"; return; }
+# cargo's exit is the verdict: several test binaries each print a result
+# line, and one "0 failed" among them says nothing about the others
+o=$(cargo test --release -q 2>&1); rc=$?
+k=$(echo "$o" | grep -cE '^test result: ok\. [1-9]')
+say "bore-tmm engine tests" "$( [ $rc = 0 ] && [ "$k" -ge 2 ] && echo "ok  $k suites" || echo "FAIL cargo test exit $rc" )"
+cargo build --release -q 2>/dev/null
+T=$(mktemp -d)
+python3 tools/read_cut_files.py --out=$T >$T/read.log 2>&1; rc=$?
+d=$(( $(diff -rq $T/cut bores/cut 2>&1 | wc -l) + $(diff -rq $T/predict bores/predict 2>&1 | wc -l) ))
+n=$(( $(ls $T/cut 2>/dev/null | wc -l) + $(ls $T/predict 2>/dev/null | wc -l) ))
+say "bore-tmm bores match the drawings" "$( [ $rc = 0 ] && [ $d = 0 ] && [ $n -gt 0 ] && echo "ok  $n bores" || echo "FAIL read exit $rc, $d differ of $n: $(grep UNREADABLE $T/read.log | head -1)")"
+o=$(./target/release/bore-tmm check --tol=5 $T/cut/*.json 2>&1 | tail -1)
+say "every drawn bore in tune" "$( [[ "$o" == "TUNING OK"* ]] && echo "ok  ${o#TUNING OK: }" || echo "FAIL ${o:-no output}")"
+python3 tools/export_models.py --out=$T/models >/dev/null 2>&1
+o=$(./target/release/bore-tmm check --compare $T/models/*.json 2>&1 | tail -1)
+say "bore-tmm agrees with the models" "$( [[ "$o" == "MODEL MATCH"* ]] && echo "ok  ${o#MODEL MATCH: }" || echo "FAIL ${o:-no output}")"
+rm -rf $T
+}
+
 lane A lane_A; PA=$!
 lane B lane_B
 lane C lane_C
 lane D lane_D
+lane T lane_T
 wait $PA
 lane R lane_R
 lane L lane_L
 wait
-for k in C B R L A D; do
+for k in C B R L A D T; do
   cat "$W/$k.out"
   [ -f "$W/$k.done" ] || say "lane $k finished" "FAIL it stopped before its last gate"
 done
@@ -904,12 +944,12 @@ echo
 fail=$(cat "$W"/*.fail 2>/dev/null | wc -l | tr -d ' ')
 if (( fail )); then
   echo "FAILING GATES:"
-  for k in main C B R L A D end; do
+  for k in main C B R L A D T end; do
     [ -f "$W/$k.fail" ] && sed 's/^/  /' "$W/$k.fail"
   done
   echo
 fi
-echo "ran in $((SECONDS - START))s; lanes $(for k in C B R L A D; do printf '%s %ss  ' $k "$(cat $W/$k.done 2>/dev/null || echo '?')"; done)"
+echo "ran in $((SECONDS - START))s; lanes $(for k in C B R L A D T; do printf '%s %ss  ' $k "$(cat $W/$k.done 2>/dev/null || echo '?')"; done)"
 rm -rf "$W"
 echo "GATES FAILING: $fail"
 exit $(( fail > 0 ))
