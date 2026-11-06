@@ -137,6 +137,20 @@ with tempfile.TemporaryDirectory() as tmp:
         sys.exit(f"md2html: pandoc failed:\n{run.stderr}")
 body = run.stdout
 
+
+# Every link but an in-page #anchor opens in a new tab, so the page being read
+# stays open (the user's rule, 2026-11-06). A link that already names a target
+# keeps it.
+def new_tab(m):
+    tag = m.group(0)
+    h = re.search(r'href\s*=\s*["\']?([^"\'\s>]*)', tag)
+    if not h or h.group(1).startswith("#") or re.search(r"\btarget\s*=", tag):
+        return tag
+    return tag[:-1] + ' target="_blank" rel="noopener">'
+
+
+body = re.sub(r"<a\b[^>]*>", new_tab, body)
+
 # The contents list, from the headings pandoc wrote. Built here rather than with
 # pandoc's --toc because its list nests each level under the one above, and a page
 # with no h1 would then show every h2 at the top level, bold, as if it were one.

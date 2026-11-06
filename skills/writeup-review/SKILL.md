@@ -239,7 +239,7 @@ cut" warning, where understating removal is the dangerous direction.*
 `the smallest`, `the fewest`, `never`, `always`, `no other`. These are true when
 written and go stale the moment a file is added — and the document rarely gets
 re-read at the point that happens. Test every one you can. *Caught three in one
-pass: "the one sample not at 30mm" (contradicted by the two bullets beneath it),
+pass: "the one sample not at 30 mm" (contradicted by the two bullets beneath it),
 "the smallest panel on which five leads resolve" (a smaller one resolved fine),
 and "the only nine-lead result that passes" (another did too). Also confirmed
 two absolutes as correct, which is worth saying rather than silently leaving.*

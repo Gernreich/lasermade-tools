@@ -52,7 +52,7 @@ Python 3 and no Python packages; `md2html.py` also needs [pandoc](https://pandoc
 | `test-ladder.py` | a strip of squares that finds the cut speed for the sheet in front of you |
 | `flat-part-check.py` | the pre-cut gate for a flat single-sheet part: size, closure, cut order, holes |
 | `image-meta-check.py` | does any tracked image carry metadata — EXIF, GPS, a colour profile, a comment? |
-| `turn3d.py` | a hand-drawn cut file turned into 3mm parts and a page that turns them in 3D |
+| `turn3d.py` | a hand-drawn cut file turned into 3 mm parts and a page that turns them in 3D |
 | `all-gates.sh` | every gate in every repository, one output, one tally |
 | `repro-svg.py` | does a repository's shipped SVG still come out of its generator? |
 | `name-check.py` | does a cut file's name agree with the geometry inside it? |
@@ -515,8 +515,8 @@ can be:
 - **knotwork's previews** are filled even-odd in gold; no script in any
   repository draws that. Whatever made them was gone.
 - **living-hinge's previews** have geometry identical to what `make-preview.py`
-  draws today — 279 paths, same data — but a 0.6mm stroke where the tool now
-  writes 0.4mm, so they predated a change to it.
+  draws today — 279 paths, same data — but a 0.6 mm stroke where the tool now
+  writes 0.4 mm, so they predated a change to it.
 - **the bridge-sweep coupon sheet** is a *cut* file with no generator, which is
   the case this marker should almost never cover. It holds 756 paths, exactly
   6 × 126, and every path of all six coupons is present in it by shape. So it is
@@ -648,16 +648,16 @@ Exit status is 1 if any file fails, so it can gate a commit. `previews/` is skip
 `--dir`: those are display renderings and are not cut.
 
 **Kerf is not modelled.** Every measurement is of the path as drawn, and the beam takes
-its width from both sides of that line — a 3.0mm hole cuts about 3.1mm, a 3.0mm wall comes
-out about 2.9mm. Set `--min-edge` with that in hand rather than at the limit.
+its width from both sides of that line — a 3.0 mm hole cuts about 3.1 mm, a 3.0 mm wall comes
+out about 2.9 mm. Set `--min-edge` with that in hand rather than at the limit.
 
 **Why it exists, and the two wrong answers it gave first.** Both were found by running it
 on files known to be good, which is the only way this kind of bug surfaces.
 
 It called `buzz-disc/BuzzDisc1.svg` three kinds of broken. The disc's outline carries no
 `z` — Inkscape wrote the return point as an ordinary node, and the ends coincide to
-0.00009mm, which cuts identically. Worse was what followed: with the outline discounted,
-the largest closed path was a 5mm cord hole, so the gate reported that a cord hole freed
+0.00009 mm, which cuts identically. Worse was what followed: with the outline discounted,
+the largest closed path was a 5 mm cord hole, so the gate reported that a cord hole freed
 the part and that the *other* cord hole lay outside it. One wrong assumption, three
 confident failures, all of them nonsense.
 
@@ -770,7 +770,7 @@ whole numbers possible at all.
 
 **The rungs themselves are untested against material.** The geometry is checked — square
 count, ink uniqueness, label glyphs, parseable XML — and the ladder is known to survive
-both sibling tools. Whether `15,20,25,30` brackets 3mm Baltic birch on a 55W tube is
+both sibling tools. Whether `15,20,25,30` brackets 3 mm Baltic birch on a 55W tube is
 exactly the question the ladder exists to answer, and nothing here has answered it yet.
 Treat the default as a starting bracket, not a recommendation.
 
