@@ -200,6 +200,12 @@ The iframe's viewport really is 400px, so what is cut off there is cut off on a
 phone. For the other theme, add `--force-dark-mode
 --blink-settings=preferredColorScheme=0` to the first command.
 
+**`--disable-gpu` blanks every WebGL view.** With it, each 3D viewer
+screenshots as an empty dark box while the page around it looks fine. For a
+page with a 3D view, swap it for `--headless=new --use-angle=swiftshader
+--enable-unsafe-swiftshader`. *Produced fourteen "empty 3D viewer" findings in
+one pass (2026-11-06); all fourteen rendered with software WebGL.*
+
 This is the only lens that sees the **composition**, and that is a real category:
 every layer can be individually correct and the result still wrong, so nothing
 that reads markup will ever flag it. *Caught a warning callout rendering as

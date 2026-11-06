@@ -8,7 +8,7 @@ this page, set for reading, with a table of contents.
 
 <!-- page-only **[Read the README](https://github.com/Gernreich/lasermade-tools)** -->
 
-Eleven scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
+Thirteen scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
 build repositories — [trumpet-elbows-allowed](https://github.com/Gernreich/trumpet-elbows-allowed),
 [swept-curve](https://github.com/Gernreich/swept-curve),
 [knotwork-soundholes](https://github.com/Gernreich/knotwork-soundholes),
@@ -22,8 +22,10 @@ build repositories — [trumpet-elbows-allowed](https://github.com/Gernreich/tru
 [four-hole-ocarinas](https://github.com/Gernreich/four-hole-ocarinas),
 [octagonal-flute](https://github.com/Gernreich/octagonal-flute),
 [panpipes](https://github.com/Gernreich/panpipes),
-[practice-chanters](https://github.com/Gernreich/practice-chanters) and
-[ghb-chanter](https://github.com/Gernreich/ghb-chanter).
+[practice-chanters](https://github.com/Gernreich/practice-chanters),
+[ghb-chanter](https://github.com/Gernreich/ghb-chanter),
+[uilleann-chanter](https://github.com/Gernreich/uilleann-chanter) and
+[bore-tmm](https://github.com/Gernreich/bore-tmm).
 
 `trumpet` was several repositories until 2026-09-05, among them `trumpet-coiled`,
 `trumpet-parts` and `bore-generator`; its live successor is `trumpet-elbows-allowed`.
@@ -61,7 +63,7 @@ Python 3 and no Python packages; `md2html.py` also needs [pandoc](https://pandoc
 
 They are used by every repository above, so none of them can own the tools without all the
 others depending on it. Tools that know one build stay inside the repository they describe.
-These eleven know nothing about any particular object, so they sit here.
+These thirteen know nothing about any particular object, so they sit here.
 
 Until 2026-08-08 they lived in `~/Claude`, which is not version controlled. Their bugs
 are the reason that mattered: the failures below were found by accident, and without
