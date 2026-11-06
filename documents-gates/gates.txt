@@ -1,0 +1,44 @@
+# Every git repository under ~/Documents/GIT, and what regenerates or tests it.
+# A repository found there and missing here fails, and so does one named here
+# and not found: this list is a claim, and the gate tests it.
+#
+#   repo :: kind :: command          (run from the repository root)
+#
+#   check  read-only; passes on exit 0
+#   regen  writes in place; passes on exit 0 with the tree still clean after.
+#          Runs only on a tree that was clean before, so it never touches
+#          uncommitted work. A failure leaves the regenerated files in place,
+#          which is the diff that shows what went stale.
+#   none   nothing to run; the text says why
+#
+# {tools} is the lasermade-tools directory.
+
+atomic-layer-memory :: regen :: python3 tools/redraw.py images/atomic_i_redrawn.png
+atomic-layer-memory :: regen :: python3 tools/redraw_rgb.py images/atomic_i_rgb.png
+
+bang-for-the-buck :: none :: a cleanup tool run on a full drive; it writes nothing committed
+
+coprime-intervals :: regen :: python3 coprime_intervals.py
+
+gernreich-writing :: none :: a hand-written page with no generator
+
+gray-and-de-bruijn :: check :: python3 walks.py --check
+
+harmonics :: check :: python3 harmonics.py --check
+
+hex-dice-box :: regen :: python3 hex_dice_box.py
+
+knot-crossings :: check :: python3 knot_crossings.py --check
+
+lapping :: none :: a hand-written page with no generator
+
+Logic-Research :: check :: python3 ANN/test_nncore.py
+Logic-Research :: check :: python3 python/test_boolean16.py
+Logic-Research :: check :: cargo test --release -q --manifest-path gates-of-gates/Cargo.toml
+Logic-Research :: regen :: python3 zellweger/build_page.py
+Logic-Research :: regen :: python3 gates-of-gates/tools/build_document.py {tools}/md2html.py
+# Not here: python3 ANN/build_viewers.py --check. It reads ANN/generated_clouds/,
+# about 200 million sampled points that are gitignored and made by the
+# generate_clouds.py commands in ANN/README.md, so a fresh checkout cannot run it.
+
+windbag :: regen :: python3 bundle_tunes.py

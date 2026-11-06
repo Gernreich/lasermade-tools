@@ -1,0 +1,9 @@
+[package]
+name = "documents-gates"
+version = "0.1.0"
+edition = "2021"
+authors = ["Michael Gernreich", "Claude (Anthropic) <noreply@anthropic.com>"]
+description = "Every gate for the repositories under ~/Documents/GIT, run in parallel"
+license = "CC0-1.0"
+
+[dependencies]

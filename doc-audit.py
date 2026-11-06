@@ -11,7 +11,7 @@ itself or about files on disk, so a failure is always a real inconsistency.
 Judgment-level review (does this instruction mislead? is the order safe?) is
 not here — that is the reading half, see the writeup-review skill.
 """
-import argparse, html as H, os, re, subprocess, sys, tempfile, pathlib, urllib.request
+import argparse, fnmatch, html as H, os, re, subprocess, sys, tempfile, pathlib, urllib.request
 
 ap = argparse.ArgumentParser()
 ap.add_argument("md")
@@ -150,11 +150,17 @@ if IGNORE_FILE.exists():
 # editing the repository's own file.
 GENERATED_FILE = (pathlib.Path(a.generated_file) if a.generated_file
                   else ROOT / ".doc-audit-generated")
-generated_dirs = []
+# A line holding * ? or [ is a glob over tracked paths rather than a directory, for
+# machine output that sits loose beside hand-written files: Logic-Research keeps 21
+# run_a_* to run_g_* weight files at the top of ANN/, which no directory line can name
+# without exempting the whole of ANN/ (2026-11-06).
+generated_dirs, generated_globs = [], []
 if GENERATED_FILE.exists():
     for ln in GENERATED_FILE.read_text().split("\n"):
         ln = ln.split("#", 1)[0].strip().rstrip("/")
-        if ln:
+        if ln and any(c in ln for c in "*?["):
+            generated_globs.append(ln)
+        elif ln:
             generated_dirs.append(ln + "/")
 no_urls = re.sub(r'https?://\S+', ' ', src)          # a URL's tail is not a local file
 # The extension must end the name. Without the lookahead, ".json" matched ".js" inside
@@ -247,7 +253,8 @@ if tracked is not None:
     infra = {t for t in tracked if any(p.startswith(".") for p in t.split("/"))}
     # Contents of a declared generated directory are documented by the directory, not
     # one file at a time.
-    machine = {t for t in tracked if any(t.startswith(d) for d in generated_dirs)}
+    machine = {t for t in tracked if any(t.startswith(d) for d in generated_dirs)
+               or any(fnmatch.fnmatchcase(t, g) for g in generated_globs)}
     skip = ({"LICENSE", ".gitignore", "README.md", MD_REL} | generated | infra | machine
             | ({pathlib.Path(a.html).name} if a.html else set()))
     # A tracked file counts as mentioned whether the prose gives its full path or just

@@ -81,6 +81,20 @@ and which checks do not apply to which repositories (`flat-part-check.py` on a
 rosette or a hinge, for instance). Read the section for any tool that flags
 something before trusting the finding.
 
+### In a ~/Documents/GIT repository
+
+Those have their own harness, the Rust crate `documents-gates/` in lasermade-tools:
+each repository's regenerate and test commands (from its `gates.txt`), doc-audit
+with links on every markdown, every exemption line tested, the page conventions,
+clean and pushed, in parallel, in about 25 seconds.
+
+```
+~/LaserMadeMusic/GIT/lasermade-tools/documents-gates/target/release/documents-gates
+```
+
+Read the last lines, as with `all-gates.sh`: it ends `GATES FAILING: n`. A new
+repository there fails until it is added to `gates.txt`.
+
 ### Anywhere else
 
 `doc-audit.py` needs nothing from LaserMadeMusic: Python 3, no dependencies, any

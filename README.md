@@ -144,7 +144,9 @@ the *root* `README.md` from the pool and then reported files only that README me
 
 `.doc-audit-generated` at the root, one directory path per line, declares directories
 whose contents are machine output. The orphan check then treats the directory as
-documented rather than each file inside it. It exists for `bore-designs`, which is a
+documented rather than each file inside it. A line holding `*`, `?` or `[` is a glob
+over tracked paths instead (`ANN/run_*`), for machine output that sits loose beside
+hand-written files, where naming the directory would exempt both. It exists for `bore-designs`, which is a
 design library: seven directories of cut files, twenty-seven SVGs in one of them, and
 naming every one in prose to satisfy a check would be worse writing, not better. It is
 **declared, not inferred** — taking "this folder has its own README" as the signal was
@@ -793,6 +795,49 @@ to this repository now lives in one place.
 `all-gates.sh` runs it on two throwaway pages it makes for the purpose, never a
 real one: a clean page must pass and a page naming a missing file must fail. A
 copy of the script that always exits 0 fails that gate.
+
+## `documents-gates/`
+
+```
+cd documents-gates && cargo build --release
+target/release/documents-gates [--root=DIR] [--config=FILE] [--jobs=N] [--offline] [-v]
+```
+
+`all-gates.sh` for the repositories beside these ones: everything under
+`~/Documents/GIT` (Logic-Research, harmonics, knot-crossings and the rest), which
+until 2026-11-06 were gated by whoever remembered to run each generator's `--check`
+by hand. A Rust crate with no dependencies, `src/main.rs`, and its list of repositories,
+`gates.txt`, which says per repository what regenerates or tests it: `check` (read-only,
+passes on exit 0), `regen` (writes in place, passes when the tree is still clean after)
+or `none`, with the reason. A repository found and not listed fails, and so does one
+listed and not found.
+
+For every repository it runs the commands in `gates.txt`, `doc-audit.py --links` on
+every markdown, a test of every line of `.doc-audit-ignore` and `.doc-audit-generated`
+(the same question `ignore-audit.py` asks here: run the documents against a copy
+without the line, and fail the line if nothing then fails), the page conventions (← All
+projects atop the README and the page, a Credits section, a LICENSE, every link opening
+in a new tab), and last, clean and pushed. It does not check image metadata: that rule
+is this family's, and the author kept it here.
+
+It is one pool of jobs over every core. Regenerations are queued first, one job per
+repository so its commands run in order, and each repository's read-only jobs join the
+queue the moment its own regeneration ends; clean and pushed run last, when they can see
+everything the rest left. The first version ran all the regenerations before any reading,
+and spent 21 of its 27 seconds with every repository waiting on coprime-intervals. Now
+the whole set, about 140 gates, takes about 25 seconds, of which 22 are
+coprime-intervals regenerating itself: every other repository finishes inside it.
+
+A regeneration runs only on a tree that was clean before, so it can never write over
+uncommitted work; when one finds its output stale it leaves the rewritten files in place,
+because that diff is the finding.
+
+It was bitten before it was trusted: in clones of two repositories, a page edited
+by hand, a generator template changed and not rerun, a dead exemption, a README
+without its Credits heading, links set back to the same tab, an unlisted repository
+and a listed one that did not exist. Each failed, and nothing else did. `cargo test`
+covers the link scanner and the list's format. `Cargo.toml` names the crate's authors
+and `Cargo.lock` pins the build.
 
 ## The review method these tools serve
 
