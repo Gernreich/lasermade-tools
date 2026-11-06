@@ -878,16 +878,52 @@ say "bore-tmm agrees with the models" "$( [[ "$o" == "MODEL MATCH"* ]] && echo "
 rm -rf $T
 }
 
+# LANE G: the repositories under ~/Documents/GIT, since 2026-11-06. They are not
+# LaserMadeMusic and have gates of their own, run by documents-gates (Rust, in
+# this repository): each one's generators and tests from documents-gates/gates.txt,
+# doc-audit with links over every markdown, every exemption line re-tested,
+# the page conventions, and every repository clean and pushed. It touches
+# nothing under ~/LaserMadeMusic -- it regenerates in place only in ~/Documents/GIT,
+# and only on a clean tree -- so it starts with the first lanes. It names its own
+# failures; each is carried into this tally under its repository's name, so the
+# list at the end says which Documents gate failed rather than "documents-gates".
+# --pre-push does not reach it: a push from here cannot fix a Documents
+# repository that has not been pushed.
+lane_G () {
+cd $G/documents-gates 2>/dev/null || { say "documents-gates present" "FAIL no crate"; return; }
+cargo build --release -q 2>&1 || { say "documents-gates builds" "FAIL cargo build"; return; }
+# Three threads, not one per core: the other lanes already fill the cores, and
+# at ten this lane stretched the longest one. coprime_intervals.py, one process
+# of about 22 seconds, sets this lane's floor either way.
+o=$(./target/release/documents-gates --jobs=3 2>&1); rc=$?
+t=$(echo "$o" | grep -E '^[0-9]+ gates in [0-9]+ repos' | head -1)
+g=${t%% gates*}
+if [ $rc = 0 ] && [[ "$o" == *"GATES FAILING: 0"* ]] && [ "${g:-0}" -gt 100 ]; then
+  say "documents-gates, ~/Documents/GIT" "ok  ${t%%, ran*}"
+else
+  # One line per failing Documents gate, so the tally counts gates and not this
+  # lane; the summary line only carries FAIL when there are none to name.
+  f=$(echo "$o" | sed -n '/^FAILING GATES:/,/^GATES FAILING/p' | grep '^  ')
+  if [ -n "$f" ]; then
+    say "documents-gates, ~/Documents/GIT" "failing below; exit $rc, ${t%%, ran*}"
+    echo "$f" | while read -r x; do say "  documents: ${x%%:*}" "FAIL ${x#*: }"; done
+  else
+    say "documents-gates, ~/Documents/GIT" "FAIL exit $rc, ${t:-no tally}"
+  fi
+fi
+}
+
 lane A lane_A; PA=$!
 lane B lane_B
 lane C lane_C
 lane D lane_D
 lane T lane_T
+lane G lane_G
 wait $PA
 lane R lane_R
 lane L lane_L
 wait
-for k in C B R L A D T; do
+for k in C B R L A D T G; do
   cat "$W/$k.out"
   [ -f "$W/$k.done" ] || say "lane $k finished" "FAIL it stopped before its last gate"
 done
@@ -944,12 +980,12 @@ echo
 fail=$(cat "$W"/*.fail 2>/dev/null | wc -l | tr -d ' ')
 if (( fail )); then
   echo "FAILING GATES:"
-  for k in main C B R L A D T end; do
+  for k in main C B R L A D T G end; do
     [ -f "$W/$k.fail" ] && sed 's/^/  /' "$W/$k.fail"
   done
   echo
 fi
-echo "ran in $((SECONDS - START))s; lanes $(for k in C B R L A D T; do printf '%s %ss  ' $k "$(cat $W/$k.done 2>/dev/null || echo '?')"; done)"
+echo "ran in $((SECONDS - START))s; lanes $(for k in C B R L A D T G; do printf '%s %ss  ' $k "$(cat $W/$k.done 2>/dev/null || echo '?')"; done)"
 rm -rf "$W"
 echo "GATES FAILING: $fail"
 exit $(( fail > 0 ))

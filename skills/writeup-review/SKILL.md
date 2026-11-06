@@ -93,7 +93,8 @@ clean and pushed, in parallel, in about 25 seconds.
 ```
 
 Read the last lines, as with `all-gates.sh`: it ends `GATES FAILING: n`. A new
-repository there fails until it is added to `gates.txt`.
+repository there fails until it is added to `gates.txt`. `all-gates.sh` runs it as its
+lane G, so a full LaserMadeMusic run covers these repositories as well.
 
 ### Anywhere else
 

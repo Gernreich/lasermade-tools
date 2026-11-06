@@ -832,6 +832,12 @@ A regeneration runs only on a tree that was clean before, so it can never write 
 uncommitted work; when one finds its output stale it leaves the rewritten files in place,
 because that diff is the finding.
 
+`all-gates.sh` runs it too, as its lane G (since 2026-11-06), with `--jobs=3` because
+the other lanes already fill the cores. Each failing Documents gate becomes a line of
+that tally under its repository's name, so `GATES FAILING` counts them one by one.
+`--pre-push` does not skip its clean-and-pushed check: a push from a LaserMadeMusic
+repository cannot fix a Documents one.
+
 It was bitten before it was trusted: in clones of two repositories, a page edited
 by hand, a generator template changed and not rerun, a dead exemption, a README
 without its Credits heading, links set back to the same tab, an unlisted repository
