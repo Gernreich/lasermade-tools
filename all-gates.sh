@@ -8,8 +8,9 @@
 #
 # It ends with "GATES FAILING: n", and that line is the whole point of it.
 # About three and a half minutes on ten cores (207s on 2026-11-06), with the gates in lanes side by side
-# (see LANES below); run one after another they took twelve. The longest
-# lanes, every repository's drawings reproduced (D) and tuning (T), set the time. The link pass is the
+# (see LANES below); run one after another they took twelve. Lane A and then
+# lane L, the links, which waits for it, set the time (88s + 118s on
+# 2026-11-07); every other lane finishes inside that. The link pass is the
 # only gate here that needs the network, and it fails rather than skips
 # without one.
 #
