@@ -128,6 +128,12 @@ say "every named repository exists" "$( [ -z "$m" ] && echo "ok  $(echo $REPOS |
 # every run. doc-audit.py only knew the `$ `-prompt form; it now also reads a
 # tagged fence of one command and its output commented out. It executes what it
 # matches, and doc-audit snapshots and restores the tree around that.
+# bore-tmm's library first, before any lane: the chanter and flute generators
+# that lanes D and T run call its Rust port of their models (src/models.rs)
+# when it is built, and their own Python when it is not. Either gives the same
+# files -- each model checks the port against its Python on first use -- so a
+# missing or stale build costs only time, the time this line saves.
+(cd $R/bore-tmm && cargo build --release -q 2>/dev/null)
 cd $R
 u=0; n=0
 for f in $(find $REPOS -name '*.md' -not -path '*/.git/*' | sort); do
@@ -844,7 +850,7 @@ say "previews current in the hand-drawn repos" "$( [ $stale = 0 ] && [ $n -gt 0 
 # for the physics the instrument models each carry a copy of. Its tools read
 # every instrument's bore back out of what its generator DRAWS -- the flutes off
 # the SVGs themselves, the chanters off the parts the sheets are drawn from --
-# into a temporary directory, never the repository. Four verdicts:
+# into a temporary directory, never the repository. Five verdicts:
 #   - the engine passes its textbook tests, and the measuring rig's analysis
 #     recovers the model's resonances through a coloured loudspeaker and noise;
 #   - the bores read now are the bores committed in bore-tmm/bores/cut and
@@ -855,7 +861,10 @@ say "previews current in the hand-drawn repos" "$( [ $stale = 0 ] && [ $n -gt 0 
 #   - every note of every drawn bore is within 5 cents of its model's target,
 #     or within the tolerance its reader states and gives a reason for;
 #   - the engine agrees with each designing Python model on that model's own
-#     design, to 0.01 cents, so the two physics cannot drift apart.
+#     design, to 0.01 cents, so the two physics cannot drift apart;
+#   - the Rust port of the five models' inner loop (src/models.rs, since
+#     2026-11-07) gives the same bits as their Python, over 500 soundings of
+#     their own designs and of designs jiggled at random.
 # Fail-closed like the rest: each must SEE its success line.
 lane_T () {
 cd $R/bore-tmm 2>/dev/null || { say "bore-tmm present" "FAIL no checkout"; return; }
@@ -865,6 +874,8 @@ o=$(cargo test --release -q 2>&1); rc=$?
 k=$(echo "$o" | grep -cE '^test result: ok\. [1-9]')
 say "bore-tmm engine tests" "$( [ $rc = 0 ] && [ "$k" -ge 2 ] && echo "ok  $k suites" || echo "FAIL cargo test exit $rc" )"
 cargo build --release -q 2>/dev/null
+o=$(python3 tools/check_fast.py 2>&1 | tail -1); o=${o%% (*}
+say "Rust port matches the Python models" "$( [[ "$o" == "FAST MATCH"* ]] && echo "ok  ${o#FAST MATCH: }" || echo "FAIL ${o:-no output}")"
 T=$(mktemp -d)
 python3 tools/read_cut_files.py --out=$T >$T/read.log 2>&1; rc=$?
 d=$(( $(diff -rq $T/cut bores/cut 2>&1 | wc -l) + $(diff -rq $T/predict bores/predict 2>&1 | wc -l) ))
