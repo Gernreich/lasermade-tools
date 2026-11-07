@@ -130,12 +130,20 @@ say "every named repository exists" "$( [ -z "$m" ] && echo "ok  $(echo $REPOS |
 # every run. doc-audit only knew the `$ `-prompt form; it now also reads a
 # tagged fence of one command and its output commented out. It executes what it
 # matches, and doc-audit snapshots and restores the tree around that.
-# bore-tmm's library first, before any lane: the chanter and flute generators
-# that lanes D and T run call its Rust port of their models (src/models.rs)
-# when it is built, and their own Python when it is not. Either gives the same
-# files -- each model checks the port against its Python on first use -- so a
-# missing or stale build costs only time, the time this line saves.
+# bore-tmm's library first, before any lane: the flute generators that lanes
+# D and T run call its Rust port of their models (src/models.rs) when it is
+# built, and their own Python when it is not. Either gives the same files --
+# each model checks the port against its Python on first use -- so a missing
+# or stale build costs only time, the time this line saves.
 (cd $R/bore-tmm && cargo build --release -q 2>/dev/null)
+# The chanters are Rust since 2026-11-07, and lane T's readers run them
+# (chanter_bores, ghb_chanter --bores, uilleann_chanter --bores) while lane D's
+# repro-svg builds them too: built here, first, so neither waits on the other
+# and a reader never meets a half-linked program. A failure here shows as the
+# lanes' own failures, which name the program.
+for c in practice-chanters ghb-chanter uilleann-chanter; do
+  (cd $R/$c && cargo build --release --locked -q 2>/dev/null)
+done
 # And lasermade-tools' own programs, which nearly every gate below is: doc-audit,
 # md2html, repro-svg and the rest have been Rust since 2026-11-07 (src/bin/).
 # Built once, here, and a build that fails stops the run, rather than leaving

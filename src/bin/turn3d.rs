@@ -1,6 +1,6 @@
 //! The 3D page for a generator that draws its own parts.
 //!
-//!     python3 panpipes.py ...   # runs: turn3d --out=PAGE.html < spec.json
+//!     target/release/panpipes ...   # runs: turn3d --out=PAGE.html < spec.json
 //!
 //! The spec is JSON on standard input:
 //!

@@ -57,6 +57,48 @@ pub mod py {
         }
     }
 
+    /// f'{x:g}': six significant digits, trailing zeros dropped, the
+    /// exponent form below 1e-4 and from 1e6.
+    pub fn g(x: f64) -> String {
+        if x.is_nan() {
+            return "nan".into();
+        }
+        if x.is_infinite() {
+            return if x > 0.0 { "inf".into() } else { "-inf".into() };
+        }
+        if x == 0.0 {
+            return if x.is_sign_negative() { "-0".into() } else { "0".into() };
+        }
+        let s = format!("{:.5e}", x);
+        let (m, e) = s.split_once('e').unwrap();
+        let exp: i32 = e.parse().unwrap();
+        let strip = |t: &str| -> String {
+            if t.contains('.') {
+                t.trim_end_matches('0').trim_end_matches('.').to_string()
+            } else {
+                t.to_string()
+            }
+        };
+        if (-4..6).contains(&exp) {
+            strip(&format!("{:.*}", (5 - exp) as usize, x))
+        } else {
+            format!("{}e{}{:02}", strip(m), if exp < 0 { '-' } else { '+' }, exp.abs())
+        }
+    }
+
+    /// f'{x:.{p}e}': Python's exponent has a sign and at least two digits.
+    pub fn e(x: f64, p: usize) -> String {
+        let s = format!("{:.*e}", p, x);
+        let (m, e) = s.split_once('e').unwrap();
+        let exp: i32 = e.parse().unwrap();
+        format!("{m}e{}{:02}", if exp < 0 { '-' } else { '+' }, exp.abs())
+    }
+
+    /// math.degrees
+    pub fn degrees(x: f64) -> f64 {
+        x * (180.0 / std::f64::consts::PI)
+    }
+
     /// round(x): to the nearest integer, halves to even.
     pub fn round(x: f64) -> i64 {
         x.round_ties_even() as i64
