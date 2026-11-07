@@ -796,7 +796,7 @@ lane_D () {
 # so its previews need no loop of their own. square-flute's is the same shape,
 # and borrows ribbon_bore.py's path writer from swept-curve.
 # kalimba, slapstick, bullroarer and buzz-disc joined on 2026-10-14, when each
-# got a 3D viewer built from its hand-drawn cut files by turn3d.py: the cut
+# got a 3D viewer built from its hand-drawn cut files by turn3d (Rust since 2026-11-07): the cut
 # files are acknowledged with "!", and the previews, page and viewer reproduce.
 # four-hole-ocarinas joined on 2026-10-17: its .repro runs four_hole_ocarinas.py,
 # which imports square_flute.py from square-flute and, through it,

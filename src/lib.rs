@@ -12,6 +12,9 @@
 //!   html   html.escape and html.unescape
 //!   run    a shell command with a timeout, and a pool of threads
 
+pub mod svg;
+pub mod turn3d;
+
 pub mod py {
     use std::hint::black_box;
 
@@ -115,6 +118,8 @@ pub mod py {
         fn tan(x: f64) -> f64;
         fn acos(x: f64) -> f64;
         fn pow(x: f64, y: f64) -> f64;
+        fn atan2(y: f64, x: f64) -> f64;
+        fn fmod(x: f64, y: f64) -> f64;
     }
     fn call(f: F1, x: f64) -> f64 {
         unsafe { black_box(f)(x) }
@@ -138,6 +143,27 @@ pub mod py {
     pub fn powf(x: f64, y: f64) -> f64 {
         let f: unsafe extern "C" fn(f64, f64) -> f64 = pow;
         unsafe { black_box(f)(x, black_box(y)) }
+    }
+    /// math.atan2: libm's
+    pub fn matan2(y: f64, x: f64) -> f64 {
+        let f: unsafe extern "C" fn(f64, f64) -> f64 = atan2;
+        unsafe { black_box(f)(y, black_box(x)) }
+    }
+    /// math.remainder: CPython's own m_remainder, not libm's, for finite x and
+    /// y != 0 (the only case asked of it here)
+    pub fn remainder(x: f64, y: f64) -> f64 {
+        let f: unsafe extern "C" fn(f64, f64) -> f64 = fmod;
+        let (absx, absy) = (x.abs(), y.abs());
+        let m = unsafe { black_box(f)(absx, absy) };
+        let c = absy - m;
+        let r = if m < c {
+            m
+        } else if m > c {
+            -c
+        } else {
+            m - 2.0 * unsafe { black_box(f)(0.5 * (absx - m), absy) }
+        };
+        1.0f64.copysign(x) * r
     }
     /// math.radians
     pub fn radians(x: f64) -> f64 {

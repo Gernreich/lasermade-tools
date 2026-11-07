@@ -40,10 +40,11 @@ that cost them a sheet, and because a checker that reports the wrong thing is wo
 no checker at all. Every one of these has produced a wrong answer at some point. Each
 section below says which, because that is the part worth remembering.
 
-Ten of them are Rust programs, one file each in `src/bin/` — `doc-audit.rs`,
+Eleven of them are Rust programs, one file each in `src/bin/` — `doc-audit.rs`,
 `md2html.rs`, `repro-svg.rs`, `svg-stroke-check.rs`, `flat-part-check.rs`,
-`name-check.rs`, `ignore-audit.rs`, `image-meta-check.rs`, `make-preview.rs` and
-`test-ladder.rs` — sharing `src/lib.rs`. Build them once:
+`name-check.rs`, `ignore-audit.rs`, `image-meta-check.rs`, `make-preview.rs`,
+`test-ladder.rs` and `turn3d.rs` — sharing `src/lib.rs`, with the cut-file parser in
+`src/svg.rs` and the 3D page in `src/turn3d.rs`. Build them once:
 
 ```
 cargo build --release
@@ -53,10 +54,10 @@ and each is then `target/release/<name>`; `all-gates.sh` builds them before anyt
 else runs. `Cargo.toml` names the two crates they use (fancy-regex, for the lookbehind
 and backreferences Python's `re` had, and roxmltree, to read an SVG) and `Cargo.lock`
 pins them. `md2html` also needs [pandoc](https://pandoc.org) (`brew install pandoc`).
-`turn3d.py` is still Python, since thirteen viewer scripts import it; the two `.sh`
-files are shell. Nothing here reads or writes outside the paths you give it.
+The two `.sh` files are shell. Nothing here reads or writes outside the paths you give it.
 
-The ten were Python until 2026-11-07. Each was ported to print what the Python printed,
+The ten gates and page tools were Python until 2026-11-07, and `turn3d` the same day
+(see its section). Each was ported to print what the Python printed,
 character for character, and the port was proven that way: old and new run side by
 side over every markdown file, manifest and exemption list in every repository, every
 SVG for the stroke and preview tools, and over scratch repositories built to trip every
@@ -80,7 +81,7 @@ speed is the reason for the port: `flat-part-check` over living-hinge's cut file
 | `test-ladder` | a strip of squares that finds the cut speed for the sheet in front of you |
 | `flat-part-check` | the pre-cut gate for a flat single-sheet part: size, closure, cut order, holes |
 | `image-meta-check` | does any tracked image carry metadata — EXIF, GPS, a colour profile, a comment? |
-| `turn3d.py` | a hand-drawn cut file turned into 3 mm parts and a page that turns them in 3D |
+| `turn3d` | a hand-drawn cut file turned into 3 mm parts and a page that turns them in 3D |
 | `all-gates.sh` | every gate in every repository, one output, one tally |
 | `repro-svg` | does a repository's shipped SVG still come out of its generator? |
 | `name-check` | does a cut file's name agree with the geometry inside it? |
@@ -700,12 +701,14 @@ The point of both: **a checker that reports the wrong thing is worse than no che
 and this one had to be run against known-good work before it was worth pointing at
 anything else.
 
-## `turn3d.py`
+## `turn3d`
 
 ```
-import turn3d
-parts = turn3d.parts(CUTFILE)                 # outlines, holes, engraves; mm, y up
-turn3d.write(PAGE, title, designs, note, by)
+use lasermade_tools::turn3d::*;              // in a viewer.rs, Cargo path dependency
+let ps = parts(CUTFILE);                     // outlines, holes, engraves; mm, y up
+write(PAGE, title, &mut designs, note, by, spin);
+
+target/release/turn3d --out=PAGE.html < spec.json   # from a Python generator
 ```
 
 The bores, the flute and the lyre-harp each have a 3D viewer because a generator
@@ -730,8 +733,23 @@ page also follows the theme the site's pages store (`ctg-theme`, set by the hub'
 button), so a framed viewer turns light or dark with the page around it.
 
 Where each part goes is the one thing a cut file does not say, so each repository
-has a `viewer.py` that places them and calls `write()`. Its `.repro` line rebuilds
-the page, so the viewer is gated like any other page.
+has a `viewer.rs` that places them and calls `write()`, built against this crate as a
+Cargo path dependency (`lasermade-tools = { path = "../lasermade-tools" }`). Its
+`.repro` line rebuilds the page, so the viewer is gated like any other page.
+
+The generators that draw their own parts — panpipes, the practice chanters, the GHB
+and uilleann chanters, all Python — place them themselves and hand the result to the
+`turn3d` program as JSON on standard input: `title`, `note`, `by`, `spin`, and
+`designs`, each part an outline `o`, holes `h`, engraves `e`, a placing matrix `m` (or
+a list of matrices, chained left to right), an explode direction `x` and a wood `w`.
+
+This was `turn3d.py` until 2026-11-07, imported by the five viewers and eight
+generator files. The port writes every one of the ten 3D pages byte for byte as the
+Python did; the only change in them is the viewers' "written by" line, which now
+names `viewer.rs`. That needed Python's two kinds of number: a placing matrix built
+from `T(0, 0, 0)` holds the integers 0 and 1 and the page prints them as `0` and
+`1`, not `0.0`, so every number on its way to the page carries whether it is an
+integer, and arithmetic promotes it as Python's does.
 
 ## `make-preview`
 
