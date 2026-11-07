@@ -736,6 +736,8 @@ Where each part goes is the one thing a cut file does not say, so each repositor
 has a `viewer.rs` that places them and calls `write()`, built against this crate as a
 Cargo path dependency (`lasermade-tools = { path = "../lasermade-tools" }`). Its
 `.repro` line rebuilds the page, so the viewer is gated like any other page.
+The page itself — markup, style and the script that draws it, with blanks for the title,
+note and data — is `src/turn3d-page.html`, compiled into the program.
 
 The generators that draw their own parts — panpipes, the practice chanters, the GHB
 and uilleann chanters, all Python — place them themselves and hand the result to the
@@ -743,7 +745,7 @@ and uilleann chanters, all Python — place them themselves and hand the result 
 `designs`, each part an outline `o`, holes `h`, engraves `e`, a placing matrix `m` (or
 a list of matrices, chained left to right), an explode direction `x` and a wood `w`.
 
-This was `turn3d.py` until 2026-11-07, imported by the five viewers and eight
+This was a Python module until 2026-11-07, imported by the five viewers and eight
 generator files. The port writes every one of the ten 3D pages byte for byte as the
 Python did; the only change in them is the viewers' "written by" line, which now
 names `viewer.rs`. That needed Python's two kinds of number: a placing matrix built
