@@ -14,7 +14,7 @@ PAGE.html
 WRITEUP.md
 prose.py
 
-# The invented example in doc-audit.py's write-up, showing prose and image paths
+# The invented example in doc-audit's write-up, showing prose and image paths
 # resolving differently. It exists nowhere.
 
 bell.py
@@ -23,7 +23,7 @@ bell.py
 bore_split.py
 BuzzDisc1.svg
 
-# doc-audit.py's write-up of the ".json read as .js" wrong answer names the phantom it
+# doc-audit's write-up of the ".json read as .js" wrong answer names the phantom it
 # used to invent and the missing file its bite test still catches. Examples, not files.
 
 reduced.js

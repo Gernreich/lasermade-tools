@@ -7,10 +7,11 @@
 # nine chances to read only eight.
 #
 # It ends with "GATES FAILING: n", and that line is the whole point of it.
-# About three and a half minutes on ten cores (207s on 2026-11-06), with the gates in lanes side by side
+# About two and a half minutes on ten cores (148s on 2026-11-07), with the gates in lanes side by side
 # (see LANES below); run one after another they took twelve. Lane A and then
-# lane L, the links, which waits for it, set the time (88s + 118s on
-# 2026-11-07); every other lane finishes inside that. The link pass is the
+# lane L, the links, which waits for it, set the time with lane B beside them
+# (100s + 45s, and 141s, on 2026-11-07, after the tools became Rust and the
+# links began to be fetched eight at a time; L was 118s before). The link pass is the
 # only gate here that needs the network, and it fails rather than skips
 # without one.
 #
@@ -126,7 +127,7 @@ say "every named repository exists" "$( [ -z "$m" ] && echo "ok  $(echo $REPOS |
 #
 # --run-blocks added the same day, for the living-hinge guide's quick start,
 # which quoted slit=10.5 against a generator printing 10.625 and passed 18/18
-# every run. doc-audit.py only knew the `$ `-prompt form; it now also reads a
+# every run. doc-audit only knew the `$ `-prompt form; it now also reads a
 # tagged fence of one command and its output commented out. It executes what it
 # matches, and doc-audit snapshots and restores the tree around that.
 # bore-tmm's library first, before any lane: the chanter and flute generators
@@ -135,11 +136,16 @@ say "every named repository exists" "$( [ -z "$m" ] && echo "ok  $(echo $REPOS |
 # files -- each model checks the port against its Python on first use -- so a
 # missing or stale build costs only time, the time this line saves.
 (cd $R/bore-tmm && cargo build --release -q 2>/dev/null)
+# And lasermade-tools' own programs, which nearly every gate below is: doc-audit,
+# md2html, repro-svg and the rest have been Rust since 2026-11-07 (src/bin/).
+# Built once, here, and a build that fails stops the run, rather than leaving
+# every lane to fail for want of a program.
+(cd $G && cargo build --release --locked -q) || { echo "  FAIL lasermade-tools does not build (cargo build --release in $G)"; exit 1; }
 cd $R
 u=0; n=0
 for f in $(find $REPOS -name '*.md' -not -path '*/.git/*' | sort); do
   n=$((n+1))
-  (cd "$(dirname "$f")" && python3 $G/doc-audit.py "$(basename "$f")" --run-blocks 2>&1 \
+  (cd "$(dirname "$f")" && $G/target/release/doc-audit "$(basename "$f")" --run-blocks 2>&1 \
      | grep -q '0 failed') || u=$((u+1))
 done
 say "doc-audit, every markdown in every repo" "$( [ $u = 0 ] && [ $n -gt 20 ] && echo "ok  $n docs" || echo "FAIL $u of $n")"
@@ -280,7 +286,7 @@ rrc () { d=$1; stem=$2; suf=$3; shift 3
 # three-lobe-serpentine-with-collinear-ends have not got one. They are the reason the suffix is an argument.
 #
 # Paths are written out in full rather than held in shell variables, because
-# name-check.py reads THESE LINES as its design table and needs the literal
+# name-check reads THESE LINES as its design table and needs the literal
 # stem to read bore10, 30deg and 1180mm off. Variables saved four lines and
 # blinded that check completely -- it reported "no rr lines found".
 SE=serpentine/ribbon-serpentine-bore10-30deg-3lobes-R72
@@ -290,14 +296,14 @@ WV=ess/ribbon-ess-bore10-45deg-5arc
 # with both ends, so trumpet 156fa71 moved it to built/ with the instruments and
 # left its siblings here as candidates. Both gates below reached it by the old
 # path and both failed silently-ish -- three of the 48 rr sheets and one of the
-# 13 vp pages. The path is a variable, which the stem may never be: name-check.py
+# 13 vp pages. The path is a variable, which the stem may never be: name-check
 # mines these lines for the STEM and the FLAGS, never the folder. Since
 # 2026-10-14 both live in the swept-curve repository, built/ beside the designs.
 BSP=built/ribbon-spiral-bore10-45deg-R35to113
 DS=double-spiral/ribbon-double-spiral-bore10-30deg-R62-pitch46
 VO=volute/double-volute-bore10-45deg-R94-step60
 # The first CLOSED RING kept in this tree. Its facet angle is 360/13 and is not
-# a whole number of degrees, which is why name-check.py had to learn to hold a
+# a whole number of degrees, which is why name-check had to learn to hold a
 # name to the precision it states rather than to the nearest integer.
 TO=torus/ribbon-torus-bore10-27.6923deg-R128.572-800mm
 # A CLOSED SERPENTINE, and the second shape here that shuts on itself. Its
@@ -360,7 +366,7 @@ for pv in $(find trumpet-elbows-allowed swept-curve -type d -name previews -not 
     # generator that failed on one file left the previous file's preview lying
     # there to be compared against -- the wrong two things, silently.
     rm -f /tmp/_ag.svg
-    python3 $G/make-preview.py "$src" /tmp/_ag.svg >/dev/null 2>&1
+    $G/target/release/make-preview "$src" /tmp/_ag.svg >/dev/null 2>&1
     if [ ! -f /tmp/_ag.svg ]; then
       stale=$((stale+1)); echo "  preview would not draw: $b"
     else
@@ -481,7 +487,7 @@ say "block sheets reproduce, as-built pinned" "$( [[ "$o" == *reproduce* && "$o"
 
 # Every gate above checks an ARTEFACT. A tool that ships no artefact is checked
 # by nothing at all, and five of them were: coils.py, mcwalk.py, nest.py,
-# piece_render.py and sizes.py in trumpet, test-ladder.py here. sizes.py had
+# piece_render.py and sizes.py in trumpet, test-ladder here. sizes.py had
 # been raising AttributeError on every run since 4cbf437 renamed the function it
 # calls -- five days, truncating its own output file each time, and nothing said
 # so. This runs each entry point once and asks only that it exit 0. That is a
@@ -518,7 +524,7 @@ run $PYB nest.py "N10 U2 W2 S7 U2 E4 N9 W2 D2 N4" --out $T/n.svg
 run $PYB sizes.py coil_fold2 $T/s.html
 run $PYB piece_render.py --out $T/p.svg
 run $PYB coils.py
-run $PYB $G/test-ladder.py $T/ladder.svg
+run $G/target/release/test-ladder $T/ladder.svg
 # mcwalk.py was asked only to IMPORT, on the grounds that it "searches walks and
 # has no bounded run". It does neither: there is no search anywhere in the file,
 # and it takes a walk and writes one page, exactly like the tools around it.
@@ -610,7 +616,7 @@ for repo in $PAGED; do
     # trumpet entirely, and printed nothing at all for them.
     [ -f "$h" ] || { [ "$md" = README.md ] && [ -f index.html ] && [ ! -f index.md ] && h=index.html || continue; }
     n=$((n+1))
-    echo "$(python3 $G/doc-audit.py "$md" --html "$h" --rebuild "python3 $G/md2html.py {md} {out}" 2>&1 | grep -E 'passed,')" | grep -q ' 0 failed' || bad=$((bad+1))
+    echo "$($G/target/release/doc-audit "$md" --html "$h" --rebuild "$G/target/release/md2html {md} {out}" 2>&1 | grep -E 'passed,')" | grep -q ' 0 failed' || bad=$((bad+1))
   done
   say "doc-audit $repo ($n pages)" "$( [ $bad = 0 ] && [ $n -gt 0 ] && echo ok || echo "FAIL ${bad} page(s), $n found")"
 done
@@ -618,10 +624,10 @@ done
 # No image carries metadata. The published build photos were found on
 # 2026-10-14 carrying the camera, the time, a P3 colour profile and a GPS block
 # (a compass bearing, not a position), and the author's rule since is none at all. Fail-closed: it has to SEE the zero.
-o=$(cd $R && python3 $G/image-meta-check.py $REPOS 2>&1 | tail -1)
+o=$(cd $R && $G/target/release/image-meta-check $REPOS 2>&1 | tail -1)
 say "images carry no metadata" "$( [[ "$o" == *" 0 with metadata"* ]] && echo "ok ${o%%,*}" || echo "FAIL $o")"
 
-o=$(python3 $G/svg-stroke-check.py --dir $R --quiet 2>&1 | tail -1)
+o=$($G/target/release/svg-stroke-check --dir $R --quiet 2>&1 | tail -1)
 say "svg-stroke-check, every repo" "$( [[ "$o" == *"0 conflicting"* ]] && echo "ok  ${o% file*} files" || echo "FAIL $o")"
 
 # The paired-page loop above is `for md in *.md` at each repository root, so it
@@ -637,12 +643,12 @@ for md in $(find . -name README.md -not -path '*/.git/*' | sort); do
   [ -f "$d/index.html" ] || continue
   [ -f "$d/index.md" ] && continue
   n=$((n+1))
-  (cd $d && python3 $G/md2html.py README.md /tmp/_ag_sub.html >/dev/null 2>&1) || { u=$((u+1)); continue; }
+  (cd $d && $G/target/release/md2html README.md /tmp/_ag_sub.html >/dev/null 2>&1) || { u=$((u+1)); continue; }
   cmp -s /tmp/_ag_sub.html $d/index.html || { u=$((u+1)); echo "    stale: $d/index.html"; }
 done
 say "every published page is current with its README" "$( [ $u = 0 ] && [ $n -gt 5 ] && echo "ok  $n pages" || echo "FAIL $u of $n")"
 
-o=$(python3 $G/flat-part-check.py --dir $R/bullroarer --dir $R/buzz-disc 2>&1 | tail -1)
+o=$($G/target/release/flat-part-check --dir $R/bullroarer --dir $R/buzz-disc 2>&1 | tail -1)
 say "flat-part-check, flat parts" "$( [[ "$o" == *"0 failed"* ]] && echo "ok  $o" || echo "FAIL $o")"
 
 # Nothing reads the NAMES. Every gate above compares an artefact with the code
@@ -652,7 +658,7 @@ say "flat-part-check, flat parts" "$( [[ "$o" == *"0 failed"* ]] && echo "ok  $o
 # moves underneath it. The names are what a person reads off a sheet at the
 # machine, and for several of these numbers they are the only record.
 cd $G
-ro=$(python3 name-check.py 2>&1); rc=$?
+ro=$(target/release/name-check 2>&1); rc=$?
 o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
 say "cut-file names match their geometry" "$( [[ "$o" == *"every name agrees"* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 
@@ -661,7 +667,7 @@ say "cut-file names match their geometry" "$( [[ "$o" == *"every name agrees"* ]
 # has stopped suppressing anything is worse than none: an assertion nobody
 # re-reads, in the one list whose whole job is to be trusted.
 cd $G
-ro=$(python3 ignore-audit.py 2>&1); rc=$?
+ro=$(target/release/ignore-audit 2>&1); rc=$?
 o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
 say "every exemption still suppresses something" "$( [[ "$o" == *", 0 suppressing"* ]] && echo "ok  ${o# }" || echo "FAIL ${o# }")"
 }
@@ -681,7 +687,7 @@ lane_L () {
 u=0; n=0; seen=0
 for f in $(find $REPOS -name '*.md' -not -path '*/.git/*' | sort); do
   n=$((n+1))
-  o=$(cd "$(dirname "$f")" && python3 $G/doc-audit.py "$(basename "$f")" --links 2>&1)
+  o=$(cd "$(dirname "$f")" && $G/target/release/doc-audit "$(basename "$f")" --links 2>&1)
   seen=$((seen + $(echo "$o" | grep -cE '^\s+[✓✗] https?://')))
   echo "$o" | grep -q '0 failed' || u=$((u+1))
 done
@@ -703,7 +709,7 @@ cd $R/trumpet-elbows-allowed/parts/bore/concept/walk/coil/search
 # so a deletion like a7e36bc, which is why README.md is watched here at all, would
 # read as ok 3/3.
 # index.html and SCORING.html joined these on 2026-09-12. They are published pages built
-# from the two markdown files by md2html.py, and were watched by nothing: the doc-audit
+# from the two markdown files by md2html, and were watched by nothing: the doc-audit
 # pairing gate above only walks *.md at a repository ROOT, so it has never seen this
 # directory, and this gate watched the sources but not what is served. Verified by
 # appending a line to index.html and rerunning: every gate here passed, and only the
@@ -718,7 +724,7 @@ cp index.html /tmp/_ag_ix; cp SCORING.html /tmp/_ag_sh
 # The build's exit status decides all five, for the reason the tools were run separately
 # before: these files are written in place, so a build that dies halfway leaves the rest
 # untouched and byte-identical to their own backups. Without the status that reads as ok.
-MD2HTML=$G/md2html.py bash tools/build.sh >/dev/null 2>&1; rb=$?
+MD2HTML=$G/target/release/md2html bash tools/build.sh >/dev/null 2>&1; rb=$?
 ok1=$([ $rb = 0 ] && cmp -s /tmp/_ag_pj parts.json    && echo y)
 ok2=$([ $rb = 0 ] && cmp -s /tmp/_ag_sc SCORING.md    && echo y)
 ok3=$([ $rb = 0 ] && cmp -s /tmp/_ag_rm README.md     && echo y)
@@ -732,7 +738,7 @@ say "search tools reproduce their output" "$( [ "$ok1$ok2$ok3$ok4$ok5" = yyyyy ]
 # folders because the gate before it rebuilds that folder's pages in place.
 for d in parts/bore/concept/walk/coil/search; do
   cd $R/trumpet-elbows-allowed
-  ro=$(python3 $G/repro-svg.py $d 2>&1); rc=$?
+  ro=$($G/target/release/repro-svg $d 2>&1); rc=$?
   o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
   say "${d##*/} drawings and pages reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 done
@@ -800,7 +806,7 @@ for repo in knotwork-soundholes living-hinge lyre-harp square-flute \
             kalimba slapstick bullroarer buzz-disc four-hole-ocarinas \
             octagonal-flute panpipes practice-chanters ghb-chanter uilleann-chanter; do
   cd $R/$repo 2>/dev/null || continue
-  ro=$(python3 $G/repro-svg.py . 2>&1); rc=$?
+  ro=$($G/target/release/repro-svg . 2>&1); rc=$?
   o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
   say "$repo drawings and pages reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 done
@@ -814,12 +820,12 @@ done
 # hundreds of sheets that the two byte gates above already account for.
 for d in parts/bell parts/mouthpiece tools/examples; do
   cd $R/trumpet-elbows-allowed
-  ro=$(python3 $G/repro-svg.py $d 2>&1); rc=$?
+  ro=$($G/target/release/repro-svg $d 2>&1); rc=$?
   o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
   say "${d##*/} drawings and pages reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 done
 
-# The previews in the four hand-drawn repositories are made by make-preview.py
+# The previews in the four hand-drawn repositories are made by make-preview
 # and were current with it, unwatched, the whole time. trumpet's are gated and
 # these were not, for no reason other than that nobody had looked.
 cd $R
@@ -835,7 +841,7 @@ for repo in bullroarer buzz-disc kalimba slapstick; do
     # one source left the PREVIOUS source's preview lying there to be compared,
     # and the gate counted it ok.
     rm -f /tmp/_ag2.svg
-    python3 $G/make-preview.py "$src" /tmp/_ag2.svg >/dev/null 2>&1
+    $G/target/release/make-preview "$src" /tmp/_ag2.svg >/dev/null 2>&1
     if [ ! -f /tmp/_ag2.svg ]; then
       stale=$((stale+1)); echo "  preview would not draw: $(basename "$f")"
     else

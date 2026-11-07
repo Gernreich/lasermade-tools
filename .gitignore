@@ -8,3 +8,6 @@
 
 # documents-gates build output
 documents-gates/target/
+
+# the Rust programs build output
+/target/

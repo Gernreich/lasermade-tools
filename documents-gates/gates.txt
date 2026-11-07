@@ -11,7 +11,7 @@
 #          which is the diff that shows what went stale.
 #   none   nothing to run; the text says why
 #
-# {tools} is the lasermade-tools directory.
+# {tools} is the lasermade-tools directory; its programs are in {tools}/target/release.
 
 atomic-layer-memory :: regen :: python3 tools/redraw.py images/atomic_i_redrawn.png
 atomic-layer-memory :: regen :: python3 tools/redraw_rgb.py images/atomic_i_rgb.png
@@ -36,7 +36,7 @@ Logic-Research :: check :: python3 ANN/test_nncore.py
 Logic-Research :: check :: python3 python/test_boolean16.py
 Logic-Research :: check :: cargo test --release -q --manifest-path gates-of-gates/Cargo.toml
 Logic-Research :: regen :: python3 zellweger/build_page.py
-Logic-Research :: regen :: python3 gates-of-gates/tools/build_document.py {tools}/md2html.py
+Logic-Research :: regen :: python3 gates-of-gates/tools/build_document.py {tools}/target/release/md2html
 # Not here: python3 ANN/build_viewers.py --check. It reads ANN/generated_clouds/,
 # about 200 million sampled points that are gitignored and made by the
 # generate_clouds.py commands in ANN/README.md, so a fresh checkout cannot run it.

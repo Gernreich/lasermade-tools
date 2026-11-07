@@ -1,77 +1,36 @@
-#!/usr/bin/env python3
-"""Convert a build-writeup markdown file to a self-contained styled HTML page."""
-import html
-import re
-import sys
-import pathlib
-import shutil
-import subprocess
-import tempfile
+//! Convert a build-writeup markdown file to a self-contained styled HTML page.
+//!
+//!     target/release/md2html SOURCE.md OUTPUT.html
+//!
+//! PANDOC DOES THE PARSING. Until 2026-10-06 this was its own markdown parser,
+//! about 250 lines of regular expressions, and every construct it had not met yet
+//! came out wrong on the published page: raw HTML escaped into visible source, a
+//! blockquote kept its "> " markers, indented code was joined into prose, an image
+//! wrapped onto a second line published as literal ![...](...). Each was found
+//! after it went out. Pandoc implements the whole of GitHub-flavoured markdown, so
+//! the page now reads the way GitHub renders the README. What stays here is only
+//! what is ours: the two markers below, the filter, and the page shell.
+//!
+//! The markers are applied to the text before pandoc sees it, and never inside a
+//! fenced code block, where they are being quoted rather than used.
+//!
+//! <!-- readme-only --> drops the paragraph that follows it. A repository whose
+//! page is generated from its own README ends up publishing that README's
+//! "Read the writeup" line on the writeup itself, linking to the page you are
+//! already reading. Marked rather than detected: the converter knows only its
+//! input and output paths, and guessing the site URL from the directory name is
+//! wrong the moment a directory and its repository differ. GitHub renders the
+//! comment as nothing, so the README is unaffected.
+//!
+//! <!-- page-only TEXT --> is the reverse: GitHub hides the whole comment, and
+//! here TEXT replaces the line and is read as ordinary markdown. It carries the
+//! page's link back to its README, which on the README would point at itself.
+use lasermade_tools::re::{all, first, g, rx, sub};
+use lasermade_tools::{die, html, text, TempDir};
+use std::path::Path;
 
-# A MISSING ARGUMENT CAME BACK AS AN IndexError. This is the most-used tool in
-# the repository -- every published page in nine repositories goes through it --
-# and run bare it answered with a stack trace on sys.argv[1] rather than saying
-# what it takes.
-if len(sys.argv) < 3:
-    sys.exit("usage: md2html.py SOURCE.md OUTPUT.html")
-src = pathlib.Path(sys.argv[1])
-dst = pathlib.Path(sys.argv[2])
-if not src.exists():
-    sys.exit(f"md2html: no such file: {src}")
-lines = src.read_text().split("\n")
-
-# The tab title is the document's own first h1, so one converter serves several
-# writeups. Falls back to the filename for a document that has none. Strips ` and *
-# but NOT _, which is a literal in names like knot_soundhole rather than emphasis.
-title = next((re.sub(r"[`*]", "", ln[2:]).strip() for ln in lines if ln.startswith("# ")),
-             src.stem)
-
-
-# PANDOC DOES THE PARSING. Until 2026-10-06 this file was its own markdown parser,
-# about 250 lines of regular expressions, and every construct it had not met yet
-# came out wrong on the published page: raw HTML escaped into visible source, a
-# blockquote kept its "> " markers, indented code was joined into prose, an image
-# wrapped onto a second line published as literal ![...](...). Each was found
-# after it went out. Pandoc implements the whole of GitHub-flavoured markdown, so
-# the page now reads the way GitHub renders the README. What stays here is only
-# what is ours: the two markers below, the filter, and the page shell.
-if not shutil.which("pandoc"):
-    sys.exit("md2html: needs pandoc (brew install pandoc)")
-
-# The markers are applied to the text before pandoc sees it, and never inside a
-# fenced code block, where they are being quoted rather than used.
-#
-# <!-- readme-only --> drops the paragraph that follows it. A repository whose
-# page is generated from its own README ends up publishing that README's
-# "Read the writeup" line on the writeup itself, linking to the page you are
-# already reading. Marked rather than detected: the converter knows only its
-# input and output paths, and guessing the site URL from the directory name is
-# wrong the moment a directory and its repository differ - as test/ and
-# bore-designs do. GitHub renders the comment as nothing, so the README is
-# unaffected.
-#
-# <!-- page-only TEXT --> is the reverse: GitHub hides the whole comment, and
-# here TEXT replaces the line and is read as ordinary markdown. It carries the
-# page's link back to its README, which on the README would point at itself.
-kept, i, fenced = [], 0, False
-while i < len(lines):
-    ln = lines[i]
-    if ln.startswith("```"):
-        fenced = not fenced
-    elif not fenced and ln.strip() == "<!-- readme-only -->":
-        i += 1
-        while i < len(lines) and not lines[i].strip():   # any blank lines after it
-            i += 1
-        while i < len(lines) and lines[i].strip():       # then the paragraph itself
-            i += 1
-        continue
-    elif not fenced and (m := re.match(r"^<!-- page-only (.+) -->$", ln.strip())):
-        ln = m.group(1)
-    kept.append(ln)
-    i += 1
-
-# The filter holds the three things pandoc would otherwise do differently.
-FILTER = r'''
+// The filter holds the three things pandoc would otherwise do differently.
+const FILTER: &str = r###"
 -- Runs with the source's own directory as its working directory, so the image
 -- paths the markdown gives resolve exactly as they do beside it.
 
@@ -122,46 +81,9 @@ function Para(p)
   return pandoc.RawBlock("html", '<figure><img src="' .. esc(img.src) ..
                          '" alt="' .. esc(alt) .. '"></figure>')
 end
-'''
+"###;
 
-with tempfile.TemporaryDirectory() as tmp:
-    flt = pathlib.Path(tmp, "md2html.lua")
-    flt.write_text(FILTER)
-    srcfile = pathlib.Path(tmp, src.name)
-    srcfile.write_text("\n".join(kept))
-    run = subprocess.run(
-        ["pandoc", "-f", "gfm", "-t", "html5", "--wrap=none",
-         "--syntax-highlighting=none", "--lua-filter", str(flt), str(srcfile)],
-        capture_output=True, text=True, cwd=src.parent.resolve())
-    if run.returncode:
-        sys.exit(f"md2html: pandoc failed:\n{run.stderr}")
-body = run.stdout
-
-
-# Every link but an in-page #anchor opens in a new tab, so the page being read
-# stays open (the user's rule, 2026-11-06). A link that already names a target
-# keeps it.
-def new_tab(m):
-    tag = m.group(0)
-    h = re.search(r'href\s*=\s*["\']?([^"\'\s>]*)', tag)
-    if not h or h.group(1).startswith("#") or re.search(r"\btarget\s*=", tag):
-        return tag
-    return tag[:-1] + ' target="_blank" rel="noopener">'
-
-
-body = re.sub(r"<a\b[^>]*>", new_tab, body)
-
-# The contents list, from the headings pandoc wrote. Built here rather than with
-# pandoc's --toc because its list nests each level under the one above, and a page
-# with no h1 would then show every h2 at the top level, bold, as if it were one.
-# Level 1 and 2 only, each marked with its own level, as before.
-toc = [(int(m.group(1)), html.unescape(re.sub(r"<[^>]+>", "", m.group(3))), m.group(2))
-       for m in re.finditer(r'<h([12]) id="([^"]+)"[^>]*>(.*?)</h\1>', body, re.S)]
-nav = "".join(
-    f'<a class="l{l}" href="#{s}">{html.escape(t)}</a>' for l, t, s in toc
-)
-
-CSS = """
+const CSS: &str = r###"
 :root{--bg:#fbfbfa;--fg:#1a1c1e;--mut:#5b6067;--line:#e2e4e7;--card:#fff;--accent:#1d4ed8;
 --codebg:#f4f5f7;--thbg:#f0f1f3;--mark:#fff8c4}
 @media (prefers-color-scheme:dark){:root{--bg:#15171a;--fg:#e6e8ea;--mut:#9aa1a9;--line:#2b2f34;
@@ -251,36 +173,146 @@ nav{position:static;max-height:none;border-right:0;border-bottom:1px solid var(-
 padding:0 0 16px;columns:2;column-gap:20px}}
 @media print{nav,.tog{display:none}.wrap{display:block;max-width:none;padding:0}
 pre,.tw{break-inside:avoid}h1{break-after:avoid}}
-"""
+"###;
 
-JS = """
+const JS: &str = r###"
 var r=document.documentElement,b=document.querySelector('.tog');
 function set(t){r.setAttribute('data-theme',t);try{localStorage.setItem('ctg-theme',t)}catch(e){}
-b.textContent=t==='dark'?'\\u2600 light':'\\u263e dark';}
+b.textContent=t==='dark'?'\u2600 light':'\u263e dark';}
 var saved=null;try{saved=localStorage.getItem('ctg-theme')}catch(e){}
 set(saved||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
 b.addEventListener('click',function(){set(r.getAttribute('data-theme')==='dark'?'light':'dark')});
-"""
+"###;
 
-doc = f"""<!doctype html>
-<html lang="en">
+/// Every link but an in-page #anchor opens in a new tab, so the page being
+/// read stays open (the user's rule, 2026-11-06). A link that already names a
+/// target keeps it.
+fn new_tab(body: &str) -> String {
+    let href = rx(r#"href\s*=\s*["']?([^"'\s>]*)"#);
+    let target = rx(r"\btarget\s*=");
+    sub(&rx(r"<a\b[^>]*>"), body, |m| {
+        let tag = g(m, 0);
+        match first(&href, tag) {
+            Some(h) if !g(&h, 1).starts_with('#') && first(&target, tag).is_none() => {
+                format!("{} target=\"_blank\" rel=\"noopener\">", &tag[..tag.len() - 1])
+            }
+            _ => tag.to_string(),
+        }
+    })
+}
+
+fn main() {
+    // Run bare, this answered with a stack trace rather than saying what it takes.
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if args.len() < 2 {
+        die("usage: md2html SOURCE.md OUTPUT.html");
+    }
+    let (src, dst) = (text::pathstr(&args[0]), text::pathstr(&args[1]));
+    let sp = Path::new(&src);
+    if !sp.exists() {
+        die(format!("md2html: no such file: {src}"));
+    }
+    let source = text::read_strict(sp).unwrap_or_else(|e| die(format!("md2html: {src}: {e}")));
+    let lines: Vec<&str> = source.split('\n').collect();
+
+    // The tab title is the document's own first h1, so one converter serves several
+    // writeups. Falls back to the filename for a document that has none. Strips ` and *
+    // but NOT _, which is a literal in names like knot_soundhole rather than emphasis.
+    let name = sp.file_name().unwrap().to_string_lossy().into_owned();
+    let stem = match name.rfind('.') {
+        Some(i) if i > 0 => name[..i].to_string(),
+        _ => name.clone(),
+    };
+    let title = lines
+        .iter()
+        .find(|l| l.starts_with("# "))
+        .map(|l| l[2..].replace(['`', '*'], "").trim().to_string())
+        .unwrap_or(stem);
+
+    if !std::env::var("PATH").unwrap_or_default().split(':').any(|d| Path::new(d).join("pandoc").is_file()) {
+        die("md2html: needs pandoc (brew install pandoc)");
+    }
+
+    let page_only = rx(r"^<!-- page-only (.+) -->$");
+    let mut kept: Vec<String> = Vec::new();
+    let (mut i, mut fenced) = (0, false);
+    while i < lines.len() {
+        let mut ln = lines[i].to_string();
+        if ln.starts_with("```") {
+            fenced = !fenced;
+        } else if !fenced && ln.trim() == "<!-- readme-only -->" {
+            i += 1;
+            while i < lines.len() && lines[i].trim().is_empty() {
+                i += 1; // any blank lines after it
+            }
+            while i < lines.len() && !lines[i].trim().is_empty() {
+                i += 1; // then the paragraph itself
+            }
+            continue;
+        } else if !fenced {
+            if let Some(m) = first(&page_only, ln.trim()) {
+                ln = g(&m, 1).to_string();
+            }
+        }
+        kept.push(ln);
+        i += 1;
+    }
+
+    let tmp = TempDir::new("md2html");
+    let flt = tmp.0.join("md2html.lua");
+    std::fs::write(&flt, FILTER).unwrap();
+    let srcfile = tmp.0.join(&name);
+    std::fs::write(&srcfile, kept.join("\n")).unwrap();
+    let cwd = std::fs::canonicalize(sp.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new(".")))
+        .unwrap_or_else(|e| die(format!("md2html: {e}")));
+    let run = std::process::Command::new("pandoc")
+        .args(["-f", "gfm", "-t", "html5", "--wrap=none", "--syntax-highlighting=none", "--lua-filter"])
+        .arg(&flt)
+        .arg(&srcfile)
+        .current_dir(cwd)
+        .output()
+        .unwrap_or_else(|e| die(format!("md2html: pandoc failed:\n{e}")));
+    if !run.status.success() {
+        die(format!("md2html: pandoc failed:\n{}", text::decode(&run.stderr)));
+    }
+    drop(tmp);
+    let body = new_tab(&text::decode(&run.stdout));
+
+    // The contents list, from the headings pandoc wrote. Built here rather than with
+    // pandoc's --toc because its list nests each level under the one above, and a page
+    // with no h1 would then show every h2 at the top level, bold, as if it were one.
+    // Level 1 and 2 only, each marked with its own level, as before.
+    let tags = rx(r"<[^>]+>");
+    let toc: Vec<(String, String, String)> = all(&rx(r#"(?s)<h([12]) id="([^"]+)"[^>]*>(.*?)</h\1>"#), &body)
+        .iter()
+        .map(|m| (g(m, 1).to_string(), html::unescape(&sub(&tags, g(m, 3), |_| String::new())), g(m, 2).to_string()))
+        .collect();
+    let nav: String = toc.iter().map(|(l, t, s)| format!("<a class=\"l{l}\" href=\"#{s}\">{}</a>", html::escape(t))).collect();
+
+    let doc = format!(
+        "<!doctype html>
+<html lang=\"en\">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{html.escape(title)}</title>
+<meta charset=\"utf-8\">
+<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">
+<title>{}</title>
 <style>{CSS}</style>
 </head>
 <body>
-<button class="tog" type="button">theme</button>
-<div class="wrap">
+<button class=\"tog\" type=\"button\">theme</button>
+<div class=\"wrap\">
 <nav><b>Contents</b>{nav}</nav>
 <main>
-{body.rstrip()}
+{}
 </main>
 </div>
 <script>{JS}</script>
 </body>
 </html>
-"""
-dst.write_text(doc)
-print(f"wrote {dst}  ({len(doc)} bytes, {len(toc)} toc entries)")
+",
+        html::escape(&title),
+        body.trim_end()
+    );
+    std::fs::write(&dst, &doc).unwrap_or_else(|e| die(format!("md2html: {dst}: {e}")));
+    println!("wrote {dst}  ({} bytes, {} toc entries)", doc.chars().count(), toc.len());
+}

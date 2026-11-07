@@ -3,7 +3,7 @@
 #
 #   rebuild-page.sh [DIR] [--md=README.md] [--html=index.html] [--links]
 #
-# Runs md2html.py and then doc-audit.py --rebuild from DIR (default: here), so
+# Runs md2html and then doc-audit --rebuild from DIR (default: here), so
 # the paths come out right wherever it is called from. That is the reason it
 # exists: the same two commands were written out by hand in eight CLAUDE.md
 # files, each with its own relative path to this repository, and one of them
@@ -28,9 +28,9 @@ done
 cd "$DIR" || { echo "rebuild-page.sh: no directory $DIR" >&2; exit 2; }
 [ -f "$MD" ] || { echo "rebuild-page.sh: no $MD in $(pwd)" >&2; exit 2; }
 
-python3 "$G/md2html.py" "$MD" "$HTML" >/dev/null || { echo "FAIL md2html.py $MD" >&2; exit 1; }
-out=$(python3 "$G/doc-audit.py" "$MD" --html "$HTML" \
-        --rebuild "python3 $G/md2html.py {md} {out}" $LINKS 2>&1)
+"$G/target/release/md2html" "$MD" "$HTML" >/dev/null || { echo "FAIL md2html $MD" >&2; exit 1; }
+out=$("$G/target/release/doc-audit" "$MD" --html "$HTML" \
+        --rebuild "$G/target/release/md2html {md} {out}" $LINKS 2>&1)
 echo "$out" | grep -E '✗' | cut -c1-200
 tally=$(echo "$out" | grep -E 'passed,' | tail -1)
 echo "${tally:-FAIL doc-audit printed no tally}  $(pwd)/$MD"

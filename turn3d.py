@@ -5,7 +5,7 @@ The bores have had a turnable viewer since they were first drawn, and the flute
 and the lyre-harp grew one from their generators. The flat instruments --
 kalimba, slapstick, bullroarer, buzz-disc -- are hand-drawn SVGs with no
 generator behind them, so their viewer is built from the cut file itself: the
-same geometry flat-part-check.py measures, read by the same parser, so what
+same geometry flat-part-check measures, read by the same parser, so what
 turns on screen is what the laser cuts.
 
     import turn3d
@@ -24,16 +24,415 @@ Each repository's viewer.py places the parts -- that is the one thing the cut
 file does not say -- and calls write(). The page is self-contained apart from
 three.js r128 off cdnjs, the version the lyre-harp viewer already loads.
 """
-import importlib.util
 import json
 import math
 import os
+import re
 import xml.etree.ElementTree as ET
 
-_here = os.path.dirname(os.path.abspath(__file__))
-_spec = importlib.util.spec_from_file_location('fpc', os.path.join(_here, 'flat-part-check.py'))
-fpc = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(fpc)
+# --- the cut file's geometry ------------------------------------------------
+# These functions were flat-part-check.py's, imported from it, until that gate
+# became Rust on 2026-11-07 (src/bin/flat-part-check.rs). They are kept here,
+# unchanged, so the turn pages still come out byte for byte the same; the Rust
+# gate does the same arithmetic in the same order. Until turn3d is ported
+# too, a change to how a cut file is read is made in both places.
+
+FLATNESS = 0.05                    # mm; curve subdivision error budget
+
+
+NAMED = {"black": "#000000", "lime": "#00ff00", "blue": "#0000ff",
+         "cyan": "#00ffff", "aqua": "#00ffff", "red": "#ff0000",
+         "white": "#ffffff", "green": "#008000", "none": "none"}
+
+
+def norm(c):
+    """#00FF00, #0f0 and 'lime' are one ink."""
+    c = (c or "").strip().lower()
+    if c in NAMED:
+        return NAMED[c]
+    if re.fullmatch(r"#[0-9a-f]{3}", c):
+        return "#" + "".join(ch * 2 for ch in c[1:])
+    return c
+
+
+I = (1.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+
+
+def mul(m, n):
+    a, b, c, d, e, f = m
+    A, B, C, D, E, F = n
+    return (a * A + c * B, b * A + d * B,
+            a * C + c * D, b * C + d * D,
+            a * E + c * F + e, b * E + d * F + f)
+
+
+def apply(m, p):
+    a, b, c, d, e, f = m
+    x, y = p
+    return (a * x + c * y + e, b * x + d * y + f)
+
+
+def parse_transform(s):
+    m = I
+    for name, args in re.findall(r"(\w+)\s*\(([^)]*)\)", s or ""):
+        v = [float(x) for x in re.split(r"[\s,]+", args.strip()) if x]
+        if name == "translate":
+            m = mul(m, (1, 0, 0, 1, v[0], v[1] if len(v) > 1 else 0))
+        elif name == "scale":
+            m = mul(m, (v[0], 0, 0, v[1] if len(v) > 1 else v[0], 0, 0))
+        elif name == "matrix" and len(v) == 6:
+            m = mul(m, tuple(v))
+        elif name == "rotate":
+            t = math.radians(v[0])
+            r = (math.cos(t), math.sin(t), -math.sin(t), math.cos(t), 0, 0)
+            if len(v) == 3:
+                m = mul(mul(m, (1, 0, 0, 1, v[1], v[2])), r)
+                m = mul(m, (1, 0, 0, 1, -v[1], -v[2]))
+            else:
+                m = mul(m, r)
+        elif name == "skewX":
+            m = mul(m, (1, 0, math.tan(math.radians(v[0])), 1, 0, 0))
+        elif name == "skewY":
+            m = mul(m, (1, math.tan(math.radians(v[0])), 0, 1, 0, 0))
+    return m
+
+
+TOKENS = re.compile(r"[MmZzLlHhVvCcSsQqTtAa]|-?\d*\.?\d+(?:[eE][-+]?\d+)?")
+
+
+def steps(*pts):
+    """Segment count for a curve, from its control polygon length."""
+    n = sum(math.dist(pts[i], pts[i + 1]) for i in range(len(pts) - 1))
+    return max(4, min(160, int(math.sqrt(n / FLATNESS)) + 4))
+
+
+def cubic(p0, p1, p2, p3):
+    out = []
+    for i in range(1, (n := steps(p0, p1, p2, p3)) + 1):
+        t = i / n
+        u = 1 - t
+        out.append((u**3 * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t**3 * p3[0],
+                    u**3 * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t**3 * p3[1]))
+    return out
+
+
+def quad(p0, p1, p2):
+    return cubic(p0, (p0[0] + 2/3 * (p1[0] - p0[0]), p0[1] + 2/3 * (p1[1] - p0[1])),
+                 (p2[0] + 2/3 * (p1[0] - p2[0]), p2[1] + 2/3 * (p1[1] - p2[1])), p2)
+
+
+def arc(p0, rx, ry, rot, large, sweep, p1):
+    """Endpoint parametrisation, F.6.5 of the SVG spec."""
+    if p0 == p1:
+        return []
+    rx, ry = abs(rx), abs(ry)
+    if rx == 0 or ry == 0:
+        return [p1]
+    t = math.radians(rot)
+    cos, sin = math.cos(t), math.sin(t)
+    dx, dy = (p0[0] - p1[0]) / 2, (p0[1] - p1[1]) / 2
+    x1, y1 = cos * dx + sin * dy, -sin * dx + cos * dy
+    # F.6.6: grow the radii if they cannot span the chord
+    lam = x1 * x1 / (rx * rx) + y1 * y1 / (ry * ry)
+    if lam > 1:
+        rx, ry = rx * math.sqrt(lam), ry * math.sqrt(lam)
+    num = rx * rx * ry * ry - rx * rx * y1 * y1 - ry * ry * x1 * x1
+    den = rx * rx * y1 * y1 + ry * ry * x1 * x1
+    co = math.sqrt(max(0.0, num / den)) * (-1 if large == sweep else 1)
+    cx1, cy1 = co * rx * y1 / ry, -co * ry * x1 / rx
+    cx = cos * cx1 - sin * cy1 + (p0[0] + p1[0]) / 2
+    cy = sin * cx1 + cos * cy1 + (p0[1] + p1[1]) / 2
+
+    def ang(ux, uy, vx, vy):
+        d = (math.hypot(ux, uy) * math.hypot(vx, vy)) or 1e-12
+        a = math.acos(max(-1.0, min(1.0, (ux * vx + uy * vy) / d)))
+        return -a if ux * vy - uy * vx < 0 else a
+
+    th0 = ang(1, 0, (x1 - cx1) / rx, (y1 - cy1) / ry)
+    dth = ang((x1 - cx1) / rx, (y1 - cy1) / ry, (-x1 - cx1) / rx, (-y1 - cy1) / ry)
+    if not sweep and dth > 0:
+        dth -= 2 * math.pi
+    elif sweep and dth < 0:
+        dth += 2 * math.pi
+    n = max(6, min(240, int(abs(dth) * max(rx, ry) / max(FLATNESS, 1e-6)) + 6))
+    out = []
+    for i in range(1, n + 1):
+        th = th0 + dth * i / n
+        ex, ey = rx * math.cos(th), ry * math.sin(th)
+        out.append((cos * ex - sin * ey + cx, sin * ex + cos * ey + cy))
+    return out
+
+
+def flatten_path(d):
+    """-> [(points, closed)], one entry per subpath, in user units."""
+    t = TOKENS.findall(d or "")
+    subs, pts, closed = [], [], False
+    cur = start = (0.0, 0.0)
+    cmd = None
+    prev_c = prev_q = None
+    i = 0
+
+    def end():
+        nonlocal pts, closed
+        if len(pts) > 1:
+            subs.append((pts, closed))
+        pts, closed = [], False
+
+    while i < len(t):
+        if re.fullmatch(r"[A-Za-z]", t[i]):
+            cmd = t[i]
+            i += 1
+            if cmd in "Zz":
+                if pts:
+                    if pts[0] != pts[-1]:
+                        pts.append(pts[0])
+                    closed = True
+                    end()
+                cur = start
+                continue
+        if cmd is None:
+            break
+        rel = cmd.islower()
+        C = cmd.upper()
+
+        def num(k=1):
+            nonlocal i
+            v = [float(x) for x in t[i:i + k]]
+            i += k
+            return v
+
+        if C == "M":
+            x, y = num(2)
+            end()
+            cur = start = (cur[0] + x, cur[1] + y) if rel else (x, y)
+            pts = [cur]
+            cmd = "l" if rel else "L"
+        elif C == "L":
+            x, y = num(2)
+            cur = (cur[0] + x, cur[1] + y) if rel else (x, y)
+            pts.append(cur)
+        elif C == "H":
+            (x,) = num(1)
+            cur = (cur[0] + x, cur[1]) if rel else (x, cur[1])
+            pts.append(cur)
+        elif C == "V":
+            (y,) = num(1)
+            cur = (cur[0], cur[1] + y) if rel else (cur[0], y)
+            pts.append(cur)
+        elif C in "CS":
+            if C == "C":
+                x1, y1, x2, y2, x, y = num(6)
+                p1 = (cur[0] + x1, cur[1] + y1) if rel else (x1, y1)
+            else:
+                x2, y2, x, y = num(4)
+                p1 = (2 * cur[0] - prev_c[0], 2 * cur[1] - prev_c[1]) if prev_c else cur
+            p2 = (cur[0] + x2, cur[1] + y2) if rel else (x2, y2)
+            p3 = (cur[0] + x, cur[1] + y) if rel else (x, y)
+            pts += cubic(cur, p1, p2, p3)
+            cur, prev_c, prev_q = p3, p2, None
+            continue
+        elif C in "QT":
+            if C == "Q":
+                x1, y1, x, y = num(4)
+                p1 = (cur[0] + x1, cur[1] + y1) if rel else (x1, y1)
+            else:
+                x, y = num(2)
+                p1 = (2 * cur[0] - prev_q[0], 2 * cur[1] - prev_q[1]) if prev_q else cur
+            p2 = (cur[0] + x, cur[1] + y) if rel else (x, y)
+            pts += quad(cur, p1, p2)
+            cur, prev_q, prev_c = p2, p1, None
+            continue
+        elif C == "A":
+            rx, ry, rot, la, sw, x, y = num(7)
+            p1 = (cur[0] + x, cur[1] + y) if rel else (x, y)
+            pts += arc(cur, rx, ry, rot, int(la), int(sw), p1)
+            cur = p1
+        else:
+            i += 1
+            continue
+        prev_c = prev_q = None
+    end()
+    return subs
+
+
+def nums(s):
+    return [float(x) for x in re.findall(r"-?\d*\.?\d+(?:[eE][-+]?\d+)?", s or "")]
+
+
+def shape_subpaths(el):
+    """-> [(points, closed)] for one drawable element, in user units."""
+    tag = el.tag.split("}")[-1]
+    g = el.get
+    if tag == "path":
+        return flatten_path(g("d"))
+    if tag == "rect":
+        x, y = float(g("x", 0)), float(g("y", 0))
+        w, h = float(g("width", 0)), float(g("height", 0))
+        if w <= 0 or h <= 0:
+            return []
+        p = [(x, y), (x + w, y), (x + w, y + h), (x, y + h), (x, y)]
+        return [(p, True)]
+    if tag in ("circle", "ellipse"):
+        cx, cy = float(g("cx", 0)), float(g("cy", 0))
+        if tag == "circle":
+            rx = ry = float(g("r", 0))
+        else:
+            rx, ry = float(g("rx", 0)), float(g("ry", 0))
+        if rx <= 0 or ry <= 0:
+            return []
+        n = max(24, min(360, int(2 * math.pi * max(rx, ry) / max(FLATNESS, 1e-6)) + 8))
+        p = [(cx + rx * math.cos(2 * math.pi * i / n),
+              cy + ry * math.sin(2 * math.pi * i / n)) for i in range(n + 1)]
+        return [(p, True)]
+    if tag in ("polygon", "polyline"):
+        v = nums(g("points"))
+        p = list(zip(v[0::2], v[1::2]))
+        if len(p) < 2:
+            return []
+        if tag == "polygon" and p[0] != p[-1]:
+            p.append(p[0])
+        return [(p, tag == "polygon")]
+    if tag == "line":
+        return [([(float(g("x1", 0)), float(g("y1", 0))),
+                  (float(g("x2", 0)), float(g("y2", 0)))], False)]
+    return []
+
+
+def ink(el, inherited=None):
+    """The stroke colour this element cuts in, or None if it is not a cut.
+
+    STROKE IS INHERITED. An element with no stroke of its own takes its
+    ancestors', which is ordinary SVG and what most generators here emit: a
+    <g stroke="#000000"> around a run of bare <path d="...">. Reading only the
+    element's own attributes made every such path "not a cut", so a file full
+    of geometry came out as "no stroked geometry" and stopped after two checks.
+    Found 2026-09-09 by running this over the bore cut files, which is a thing
+    nobody had done: 69 shipped files across knotwork-soundholes, living-hinge
+    and the ribbon bores were getting 2 checks each where bullroarer got 9.
+    The count was the tell -- 13 files and 26 checks against 5 files and 45.
+    """
+    style = el.get("style") or ""
+    m = re.search(r"(?<![-\w])stroke\s*:\s*([^;]+)", style)
+    own = m.group(1) if m else el.get("stroke")
+    c = norm(own if own is not None else inherited)
+    if c in ("none", "", None):
+        # a filled shape with no stroke still cuts on some importers, but in these
+        # repositories every cut is stroked; treat it as artwork, not geometry
+        return None
+    return c
+
+
+def collect(root):
+    """-> [(colour, points, closed)] in millimetres, transforms applied."""
+    out = []
+    scale = user_scale(root)
+
+    def walk(el, m, stroke=None):
+        m = mul(m, parse_transform(el.get("transform")))
+        style = el.get("style") or ""
+        sm = re.search(r"(?<![-\w])stroke\s*:\s*([^;]+)", style)
+        here = sm.group(1) if sm else el.get("stroke")
+        if here is not None:
+            stroke = here
+        for kid in el:
+            tag = kid.tag.split("}")[-1]
+            if tag in ("g", "a", "svg"):
+                walk(kid, m, stroke)
+                continue
+            if tag in ("defs", "metadata", "title", "desc"):
+                continue
+            c = ink(kid, stroke)
+            if c is None:
+                continue
+            km = mul(m, parse_transform(kid.get("transform")))
+            for pts, closed in shape_subpaths(kid):
+                p = [apply(km, q) for q in pts]
+                out.append((c, [(x * scale, y * scale) for x, y in p], closed))
+
+    walk(root, I)
+    return out
+
+
+def user_scale(root):
+    """Millimetres per user unit, from width/height against the viewBox."""
+    vb = nums(root.get("viewBox") or "")
+    w = root.get("width") or ""
+    if len(vb) == 4 and vb[2] and w.strip().endswith("mm"):
+        return nums(w)[0] / vb[2]
+    return 1.0
+
+
+def area(p):
+    a = 0.0
+    for i in range(len(p) - 1):
+        a += p[i][0] * p[i + 1][1] - p[i + 1][0] * p[i][1]
+    return abs(a) / 2
+
+
+def inside(pt, poly):
+    """Ray casting, over the edges as a cycle.
+
+    Taking the edges as poly[i]..poly[i+1] and stopping leaves out the edge that
+    closes the ring. On a path whose ends only nearly meet — Inkscape writes the
+    return point as an ordinary node, so they differ in the ninth decimal — that
+    missing edge is a real one, and a ray passing between the two endpoint heights
+    loses a crossing and reports inside as outside. BuzzDisc1's outline starts at
+    3 o'clock, exactly the height of its two cord holes, so it hit this every time.
+    """
+    x, y = pt
+    hit = False
+    n = len(poly)
+    for i in range(n):
+        x1, y1 = poly[i]
+        x2, y2 = poly[(i + 1) % n]
+        if (y1 > y) != (y2 > y):
+            xx = x1 + (y - y1) * (x2 - x1) / ((y2 - y1) or 1e-12)
+            if x < xx:
+                hit = not hit
+    return hit
+
+
+def stitch(paths, tol):
+    """Join open polylines whose ends meet. -> (rings, leftovers, joins made).
+
+    A profile is not always one path. Drawn as two curves sharing their endpoints it
+    cuts exactly the same ring, so judging each half on its own reports two open
+    paths and no outline — which is what this said about four of the five bullroarer
+    blades before it could stitch.
+    """
+    chains = [list(p) for p in paths]
+    joins = 0
+    while True:
+        done = True
+        for i in range(len(chains)):
+            for j in range(len(chains)):
+                if i == j:
+                    continue
+                a, b = chains[i], chains[j]
+                if math.dist(a[0], a[-1]) <= tol:      # already a ring
+                    continue
+                if math.dist(a[-1], b[0]) <= tol:
+                    chains[i] = a + b[1:]
+                elif math.dist(a[-1], b[-1]) <= tol:
+                    chains[i] = a + b[::-1][1:]
+                elif math.dist(a[0], b[-1]) <= tol:
+                    chains[i] = b + a[1:]
+                elif math.dist(a[0], b[0]) <= tol:
+                    chains[i] = b[::-1] + a[1:]
+                else:
+                    continue
+                chains.pop(j)
+                joins += 1
+                done = False
+                break
+            if not done:
+                break
+        if done:
+            break
+    rings = [c for c in chains if len(c) > 3 and math.dist(c[0], c[-1]) <= tol]
+    rest = [c for c in chains if c not in rings]
+    return rings, rest, joins
+
 
 ENGRAVE = '#0000ff'
 SKIP = '#8000ff'
@@ -61,7 +460,7 @@ def _r(p):
 def parts(svg):
     """-> the cut file's parts, largest first, y up, in millimetres."""
     root = ET.parse(svg).getroot()
-    got = fpc.collect(root)
+    got = collect(root)
     cuts, engr = {}, []
     for c, pts, closed in got:
         if c == SKIP:
@@ -74,10 +473,10 @@ def parts(svg):
     for c, paths in cuts.items():
         closed = [p for p in paths if math.dist(p[0], p[-1]) <= TOL]
         rest = [p for p in paths if math.dist(p[0], p[-1]) > TOL]
-        joined, _, _ = fpc.stitch(rest, TOL) if rest else ([], [], 0)
+        joined, _, _ = stitch(rest, TOL) if rest else ([], [], 0)
         for p in closed + joined:
             rings.append((c, _simplify(p[:-1] if p[0] == p[-1] else p)))
-    rings.sort(key=lambda r: -abs(fpc.area(r[1] + [r[1][0]])))
+    rings.sort(key=lambda r: -abs(area(r[1] + [r[1][0]])))
 
     def holder(i):
         """The smallest ring that contains ring i, or None. Most of its
@@ -87,7 +486,7 @@ def parts(svg):
         best = None
         for j in range(i):
             ring = rings[j][1] + [rings[j][1][0]]
-            if sum(fpc.inside(q, ring) for q in pts) * 2 > len(pts):
+            if sum(inside(q, ring) for q in pts) * 2 > len(pts):
                 best = j
         return best
 
@@ -105,8 +504,8 @@ def parts(svg):
             out[index[owner[i]]]['h'].append(p)
     for e in engr:
         for prt in out:
-            if fpc.inside(e[0], prt['o'] + [prt['o'][0]]) or \
-               fpc.inside(e[len(e) // 2], prt['o'] + [prt['o'][0]]):
+            if inside(e[0], prt['o'] + [prt['o'][0]]) or \
+               inside(e[len(e) // 2], prt['o'] + [prt['o'][0]]):
                 prt['e'].append(e)
                 break
     for prt in out:

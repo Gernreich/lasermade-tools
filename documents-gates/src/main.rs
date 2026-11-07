@@ -4,14 +4,14 @@
 //! all-gates.sh covers the LaserMadeMusic repositories and knows nothing of the
 //! ones beside them, so until 2026-11-06 the Documents repositories were gated
 //! by whoever remembered to run each generator's --check by hand. This runs, for
-//! every repository: what gates.txt says regenerates or tests it, doc-audit.py
+//! every repository: what gates.txt says regenerates or tests it, doc-audit
 //! over every markdown (with --links unless --offline), a test of every line in
 //! .doc-audit-ignore and .doc-audit-generated (does it still suppress
 //! anything?), the page conventions (← All projects, Credits, LICENSE, links in
 //! a new tab), and finally whether the tree is clean and pushed.
 //!
 //! Not image metadata: that rule is the LaserMadeMusic repositories' (all-gates.sh
-//! runs image-meta-check.py there), and the author kept it to them on 2026-11-06.
+//! runs image-meta-check there), and the author kept it to them on 2026-11-06.
 //!
 //! One pool of jobs over every core. Regenerations go first (they write in
 //! place, so one repository's run in order, and only on a clean tree); each
@@ -216,8 +216,10 @@ fn parse_args() -> Result<Opts, String> {
             return Err(format!("documents-gates: not a flag: {a} (try --help)"));
         }
     }
-    if !o.tools.join("doc-audit.py").is_file() {
-        return Err(format!("documents-gates: no doc-audit.py in {}", o.tools.display()));
+    // doc-audit is lasermade-tools' own program, Rust since 2026-11-07, so the
+    // tools must be built: cargo build --release in that directory.
+    if !o.tools.join("target/release/doc-audit").is_file() {
+        return Err(format!("documents-gates: no target/release/doc-audit in {} (cargo build --release there)", o.tools.display()));
     }
     Ok(o)
 }
@@ -527,18 +529,18 @@ fn same_tab_links(html: &str) -> usize {
     n
 }
 
-/// doc-audit.py on one document: (failed count, the ✗ lines). Fail-closed: a
+/// doc-audit on one document: (failed count, the ✗ lines). Fail-closed: a
 /// run that prints no tally is an error, never a pass.
 fn doc_audit(o: &Opts, dir: &Path, md: &str, extra: &[String]) -> Result<(usize, String), String> {
-    let mut c = Command::new("python3");
-    c.arg(o.tools.join("doc-audit.py")).arg(md).args(extra).current_dir(dir);
-    let out = c.output().map_err(|e| format!("could not run doc-audit.py: {e}"))?;
+    let mut c = Command::new(o.tools.join("target/release/doc-audit"));
+    c.arg(md).args(extra).current_dir(dir);
+    let out = c.output().map_err(|e| format!("could not run doc-audit: {e}"))?;
     let text = String::from_utf8_lossy(&out.stdout).into_owned() + &String::from_utf8_lossy(&out.stderr);
     let tally = text
         .lines()
         .rev()
         .find(|l| l.contains(" passed,") && l.contains(" failed"))
-        .ok_or_else(|| format!("no tally from doc-audit.py: {}", tail(&text, 2)))?;
+        .ok_or_else(|| format!("no tally from doc-audit: {}", tail(&text, 2)))?;
     let failed = tally
         .split(',')
         .nth(1)

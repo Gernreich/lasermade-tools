@@ -1,0 +1,20 @@
+[package]
+name = "lasermade-tools"
+version = "0.1.0"
+edition = "2021"
+authors = ["Michael Gernreich", "Claude (Anthropic) <noreply@anthropic.com>"]
+description = "The gates and page builder for the LaserMadeMusic repositories"
+license = "CC0-1.0"
+
+# One program per file in src/bin/, named after it: doc-audit, md2html,
+# repro-svg, svg-stroke-check, flat-part-check, name-check, ignore-audit,
+# image-meta-check, make-preview, test-ladder. src/lib.rs holds what they share.
+
+[dependencies]
+# Python's re has lookbehind and backreferences; the regex crate has neither
+fancy-regex = "0.14"
+# for the well-formedness checks and flat-part-check's reading of an SVG
+roxmltree = "0.20"
+
+[profile.release]
+opt-level = 3

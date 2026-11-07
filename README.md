@@ -8,7 +8,7 @@ this page, set for reading, with a table of contents.
 
 <!-- page-only **[Read the README](https://github.com/Gernreich/lasermade-tools)** -->
 
-Thirteen scripts shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
+Thirteen tools shared by the [LaserMadeMusic](https://www.youtube.com/@LaserMadeMusic)
 build repositories — [trumpet-elbows-allowed](https://github.com/Gernreich/trumpet-elbows-allowed),
 [swept-curve](https://github.com/Gernreich/swept-curve),
 [knotwork-soundholes](https://github.com/Gernreich/knotwork-soundholes),
@@ -40,23 +40,51 @@ that cost them a sheet, and because a checker that reports the wrong thing is wo
 no checker at all. Every one of these has produced a wrong answer at some point. Each
 section below says which, because that is the part worth remembering.
 
-Python 3 and no Python packages; `md2html.py` also needs [pandoc](https://pandoc.org)
-(`brew install pandoc`). Nothing here reads or writes outside the paths you give it.
+Ten of them are Rust programs, one file each in `src/bin/` — `doc-audit.rs`,
+`md2html.rs`, `repro-svg.rs`, `svg-stroke-check.rs`, `flat-part-check.rs`,
+`name-check.rs`, `ignore-audit.rs`, `image-meta-check.rs`, `make-preview.rs` and
+`test-ladder.rs` — sharing `src/lib.rs`. Build them once:
+
+```
+cargo build --release
+```
+
+and each is then `target/release/<name>`; `all-gates.sh` builds them before anything
+else runs. `Cargo.toml` names the two crates they use (fancy-regex, for the lookbehind
+and backreferences Python's `re` had, and roxmltree, to read an SVG) and `Cargo.lock`
+pins them. `md2html` also needs [pandoc](https://pandoc.org) (`brew install pandoc`).
+`turn3d.py` is still Python, since thirteen viewer scripts import it; the two `.sh`
+files are shell. Nothing here reads or writes outside the paths you give it.
+
+The ten were Python until 2026-11-07. Each was ported to print what the Python printed,
+character for character, and the port was proven that way: old and new run side by
+side over every markdown file, manifest and exemption list in every repository, every
+SVG for the stroke and preview tools, and over scratch repositories built to trip every
+check, until the outputs agreed. `flat-part-check` was compared on the eight
+repositories it is meant for or has been run over, and on the first 122 of all 415
+SVGs; the Python needed 38 minutes to get that far, and the Rust reads all 415 in three.
+`src/lib.rs` holds the Python behaviour that shows in the output — float `repr`,
+rounding, `math.dist` as CPython computes it, `str()` of a list — so a figure
+`flat-part-check` prints is the figure it printed before. Two things differ on
+purpose: a `--rebuild` command that writes no page is now a failed check rather than
+a traceback, and `doc-audit --links` fetches eight URLs at a time instead of one. The
+speed is the reason for the port: `flat-part-check` over living-hinge's cut files took
+642 seconds in Python and takes 7, and `ignore-audit` went from 20 seconds to 9.
 
 | | |
 |---|---|
-| `doc-audit.py` | claims a writeup makes about itself and about files on disk |
-| `md2html.py` | markdown → one self-contained HTML page |
-| `svg-stroke-check.py` | SVG elements whose stroke colour is declared twice and disagrees |
-| `make-preview.py` | a cut file rendered so it can be read on a page |
-| `test-ladder.py` | a strip of squares that finds the cut speed for the sheet in front of you |
-| `flat-part-check.py` | the pre-cut gate for a flat single-sheet part: size, closure, cut order, holes |
-| `image-meta-check.py` | does any tracked image carry metadata — EXIF, GPS, a colour profile, a comment? |
+| `doc-audit` | claims a writeup makes about itself and about files on disk |
+| `md2html` | markdown → one self-contained HTML page |
+| `svg-stroke-check` | SVG elements whose stroke colour is declared twice and disagrees |
+| `make-preview` | a cut file rendered so it can be read on a page |
+| `test-ladder` | a strip of squares that finds the cut speed for the sheet in front of you |
+| `flat-part-check` | the pre-cut gate for a flat single-sheet part: size, closure, cut order, holes |
+| `image-meta-check` | does any tracked image carry metadata — EXIF, GPS, a colour profile, a comment? |
 | `turn3d.py` | a hand-drawn cut file turned into 3 mm parts and a page that turns them in 3D |
 | `all-gates.sh` | every gate in every repository, one output, one tally |
-| `repro-svg.py` | does a repository's shipped SVG still come out of its generator? |
-| `name-check.py` | does a cut file's name agree with the geometry inside it? |
-| `ignore-audit.py` | does every `.doc-audit-ignore` line still suppress something? |
+| `repro-svg` | does a repository's shipped SVG still come out of its generator? |
+| `name-check` | does a cut file's name agree with the geometry inside it? |
+| `ignore-audit` | does every `.doc-audit-ignore` line still suppress something? |
 | `rebuild-page.sh` | regenerate a writeup's page and audit the pair, from any directory |
 
 ## Why these live in their own repository
@@ -71,11 +99,11 @@ history there was no way to see when a check started lying.
 
 ---
 
-## `doc-audit.py`
+## `doc-audit`
 
 ```
-python3 doc-audit.py WRITEUP.md [--html PAGE.html]
-        [--rebuild "python3 md2html.py {md} {out}"]
+target/release/doc-audit WRITEUP.md [--html PAGE.html]
+        [--rebuild "target/release/md2html {md} {out}"]
         [--links] [--run-blocks] [--ignore 'named,in,prose.py'] [--strict-h1]
 ```
 
@@ -193,10 +221,10 @@ the commit that would have shipped them.
 
 **Verify anything it flags against the source before acting on it.**
 
-## `md2html.py`
+## `md2html`
 
 ```
-python3 md2html.py WRITEUP.md PAGE.html
+target/release/md2html WRITEUP.md PAGE.html
 ```
 
 **Pandoc does the parsing**, as GitHub-flavoured markdown, so the page reads the way
@@ -208,7 +236,7 @@ markers, a small Lua filter, and the page shell. The filter rewrites `.md` links
 inlining a local SVG.
 
 One self-contained page: no external CSS, no fonts, no scripts. SVG figures are **inlined
-into the HTML**, which is why `doc-audit.py` treats a page older than any of its figures
+into the HTML**, which is why `doc-audit` treats a page older than any of its figures
 as stale — regenerating an SVG does not change the page that already swallowed a copy of
 it. Tab title comes from the document's own first `# ` heading.
 
@@ -257,7 +285,7 @@ the marker showing.
 
 Done 2026-09-08. Each check was given something it ought to fail.
 
-**`flat-part-check.py` — all eight hold.** A file whose user unit is not a
+**`flat-part-check` — all eight hold.** A file whose user unit is not a
 millimetre, a part too big for the bed, a genuinely open cut path, an ink
 outside the palette, a hole under the floor, a hole outside the outline, a hole
 too near an edge, and a hole moved into the last cut stage — every one fails,
@@ -269,7 +297,7 @@ or not it has a `z`; the near edge of a long thin blade is across it, not along
 it; and the cut order is the ink, not the document order. **A check that does
 not fire has not been tested until you know your input reached it.**
 
-**`doc-audit.py` — effective, with two narrow blind spots.** A named file that
+**`doc-audit` — effective, with two narrow blind spots.** A named file that
 is not there, a heading level skipped, a stale page, a doubled word, a count
 that contradicts its list, and a figure with no text alternative all fail.
 
@@ -283,15 +311,15 @@ that contradicts its list, and a figure with no text alternative all fail.
   nothing. Write `115 checks` exactly, or reword.
 
 **What the figure check found.** An inlined SVG carries no `alt`, and
-`md2html.py` was dropping it: the description written in the markdown reached
+`md2html` was dropping it: the description written in the markdown reached
 nothing, and a page was accessible only where the drawing happened to carry its
 own `aria-label`. The two had already drifted — `living-hinge-guide.md` says
 "x across the width" and `panel-convention.svg` says "x runs across the width".
-`md2html.py` now uses the alt as the label when the SVG has none, and leaves the
+`md2html` now uses the alt as the label when the SVG has none, and leaves the
 drawing's own label alone where it has one. Every published page regenerates
 byte-identical.
 
-**What the unrendered-markdown check found, on its first sweep.** `md2html.py`
+**What the unrendered-markdown check found, on its first sweep.** `md2html`
 converts an image only when it is **alone on its line**. Anything else — two on
 one line, or one whose alt text is hard-wrapped, which at 80 columns is easy to
 write without noticing — falls through to the inline pass, which does not handle
@@ -313,7 +341,7 @@ a writeup may quote markdown on purpose and this README does, then the remaining
 tags, so no attribute value can trip it. Nine repositories, twenty-four
 documents, one real failure and no false ones.
 
-**The cause is fixed too, for the case that bites.** `md2html.py` now joins a
+**The cause is fixed too, for the case that bites.** `md2html` now joins a
 wrapped image back onto one line before matching it, so an alt text may run to as
 many lines as it needs. A run that never closes is left exactly as it was, so
 prose that merely opens with those two characters is untouched. Re-rendering all
@@ -391,7 +419,7 @@ project's entire claim. The last of the four matters most quietly: `bore_split`
 shells out to the INSTALLED copy of `snakeboxvar.py`, so editing the one in
 `tools/` and re-running changes nothing, silently.
 
-About three and a half minutes on ten cores (207 s on 2026-11-06, with the Documents lane); it was twelve until 2026-10-18, when
+About two and a half minutes on ten cores (148 s on 2026-11-07, with the Documents lane, once the tools were Rust; 207 s the day before); it was twelve until 2026-10-18, when
 the gates went into **lanes** that run side by side. A lane is a group of gates
 that must keep their order; each runs in a subshell of its own with its output
 held back and printed whole, so the report reads the same every run. The
@@ -399,8 +427,8 @@ doc-audit pass that executes each document's blocks runs first and alone, since
 it writes into the repositories and restores them; the coil search gates rebuild
 their folder in place, so the gates that read every document wait for them. The
 tally counts each lane's failures, and a lane that stops before its last gate
-fails as one. `regress.py`, `repro.py`, `run_checks.sh`, `repro-svg.py` and
-`ignore-audit.py` also run their own designs, rows or entries at once, and the
+fails as one. `regress.py`, `repro.py`, `run_checks.sh`, `repro-svg` and
+`ignore-audit` also run their own designs, rows or entries at once, and the
 harness holds numpy's maths library to one thread per process so that the
 processes do not fight over the cores. The link pass is the only gate here that
 needs the network.
@@ -411,7 +439,7 @@ running them one at a time and not reading one of the answers -- a page
 regenerated and its audit then run in a different repository, a tally printed
 and pushed over. Nine gates run by hand are nine chances to read only eight.
 
-### `ignore-audit.py` — does every exemption still suppress something?
+### `ignore-audit` — does every exemption still suppress something?
 
 Every line of a `.doc-audit-ignore` is a standing claim: *this name is prose, not
 a file here*. Every other gate checks an artefact, some code, or a document.
@@ -433,7 +461,7 @@ rediscovering: fixing an instance without asking where else it lives. 70
 exemptions across nine repositories, and every directory-level one does still
 suppress something.
 
-`doc-audit.py` grew `--ignore-file` for this, so the audit never edits the file
+`doc-audit` grew `--ignore-file` for this, so the audit never edits the file
 it is auditing.
 
 ### The harness exits non-zero now
@@ -446,7 +474,7 @@ line to read; it was then pushed over four more times in a single session. The
 failing gates are now named again at the **end**, where the last few lines cannot
 show clean-and-pushed without also showing what failed.
 
-### `name-check.py` — does a cut file's name agree with the geometry inside it?
+### `name-check` — does a cut file's name agree with the geometry inside it?
 
 `ribbon-double-volute-bore10-45deg-R94-step60-1180mm` asserts a section, a facet angle,
 a radius, a step and a centreline. Every other gate here compares an artefact
@@ -471,7 +499,7 @@ place, once per claim type, and was interrupted mid-loop with five stems
 corrupted. Restored from git, and the tool changed so that demonstrating it
 works cannot damage what it checks.
 
-### `repro-svg.py` — does a repository's shipped SVG still come out of its generator?
+### `repro-svg` — does a repository's shipped SVG still come out of its generator?
 
 Both of trumpet's reproduction gates are trumpet-only, and every other
 repository that ships generator-drawn cut files had none: knotwork-soundholes
@@ -516,7 +544,7 @@ can be:
 
 - **knotwork's previews** are filled even-odd in gold; no script in any
   repository draws that. Whatever made them was gone.
-- **living-hinge's previews** have geometry identical to what `make-preview.py`
+- **living-hinge's previews** have geometry identical to what `make-preview`
   draws today — 279 paths, same data — but a 0.6 mm stroke where the tool now
   writes 0.4 mm, so they predated a change to it.
 - **the bridge-sweep coupon sheet** is a *cut* file with no generator, which is
@@ -530,7 +558,7 @@ byte-identical, keeping the look each repository chose, so nothing on a front
 page changed. Re-nesting the coupon sheet is the author's call, so the gate
 records it and says so.
 
-### What `doc-audit.py` got wrong on 27 documents
+### What `doc-audit` got wrong on 27 documents
 
 It had only ever been pointed at the nine documents that have a published page.
 Aimed at the eighteen design notes as well, it produced 20 failures, of which
@@ -589,12 +617,12 @@ repositories -- because it paired `README.md` with `README.html` and those build
 matches nothing reports a clean run over no files, which `check.py` had already
 learned once and this then repeated.
 
-## `svg-stroke-check.py`
+## `svg-stroke-check`
 
 ```
-python3 svg-stroke-check.py FILE.svg [FILE.svg ...]
-python3 svg-stroke-check.py --dir DIR [--dir DIR] [--quiet]
-python3 svg-stroke-check.py ... --fix
+target/release/svg-stroke-check FILE.svg [FILE.svg ...]
+target/release/svg-stroke-check --dir DIR [--dir DIR] [--quiet]
+target/release/svg-stroke-check ... --fix
 ```
 
 Finds SVG elements that declare their stroke colour twice, in two places that disagree —
@@ -619,12 +647,12 @@ saying green or cyan, attribute saying black. Read the attribute way, all sixtee
 cut that frees the plates. Nothing in the file looked wrong, and no other check could see
 it.
 
-## `flat-part-check.py`
+## `flat-part-check`
 
 ```
-python3 flat-part-check.py FILE.svg [FILE.svg ...]
-python3 flat-part-check.py --dir DIR [--dir DIR] [--quiet]
-python3 flat-part-check.py ... --bed 600x305 --min-edge 3 --min-hole 2 --weld 0.05
+target/release/flat-part-check FILE.svg [FILE.svg ...]
+target/release/flat-part-check --dir DIR [--dir DIR] [--quiet]
+target/release/flat-part-check ... --bed 600x305 --min-edge 3 --min-hole 2 --weld 0.05
 ```
 
 The bore repositories have a gate: `bore_split.py --write` checks every net it writes,
@@ -683,7 +711,7 @@ turn3d.write(PAGE, title, designs, note, by)
 The bores, the flute and the lyre-harp each have a 3D viewer because a generator
 draws them, and the viewer is built from the same geometry. Kalimba, slapstick,
 bullroarer and buzz-disc are hand-drawn SVGs with no generator, so their viewers are
-built from the cut file itself, read by `flat-part-check.py`'s own parser: what turns
+built from the cut file itself, read by `flat-part-check`'s own parser: what turns
 on screen is what the laser cuts.
 
 `parts()` sorts the rings by nesting. A ring inside nothing is a part, a ring inside
@@ -694,7 +722,7 @@ read as inside the neighbour, which made one paddle a hole in another.
 
 It reads a sheet of separate parts. A rosette sheet is a cut-out with no single
 outline, so its openings come back as dozens of small parts — the same limit
-`flat-part-check.py` has.
+`flat-part-check` has.
 
 The page's explanation sits folded under "How to use this view", so on a phone, where
 the hub frames it about 370px wide, the model keeps the frame until someone asks. The
@@ -705,11 +733,11 @@ Where each part goes is the one thing a cut file does not say, so each repositor
 has a `viewer.py` that places them and calls `write()`. Its `.repro` line rebuilds
 the page, so the viewer is gated like any other page.
 
-## `make-preview.py`
+## `make-preview`
 
 ```
-python3 make-preview.py CUTFILE.svg [OUT.svg]      # default previews/<name>
-python3 make-preview.py CUTFILE.svg --ground=#faf7f0  # another ground colour
+target/release/make-preview CUTFILE.svg [OUT.svg]      # default previews/<name>
+target/release/make-preview CUTFILE.svg --ground=#faf7f0  # another ground colour
 ```
 
 A cut file draws hairlines on no background: nearly invisible in a browser, and a black
@@ -733,10 +761,10 @@ being lighter only raises their contrast: orange, the lowest, goes from 4.83:1 t
 5.17:1. `--ground=#rrggbb` sets another colour, at the cost of rechecking those
 figures.
 
-## `test-ladder.py`
+## `test-ladder`
 
 ```
-python3 test-ladder.py OUT.svg [--speeds 15,20,25,30] [--square 15]
+target/release/test-ladder OUT.svg [--speeds 15,20,25,30] [--square 15]
 ```
 
 Settings for a sheet of plywood are a property of that sheet, not of the species on the
@@ -756,8 +784,8 @@ repositories, and it is forced. xTool Studio and XCS split an import into proces
 layers by colour, so a separate colour is the only place a separate speed can live. Same
 ink would mean one layer and one speed: a row of identical squares and no ladder at all.
 
-The inks are still the house stages, so `make-preview.py` renders a ladder and
-`svg-stroke-check.py` reads it. Four rungs, because four stages actually cut — green,
+The inks are still the house stages, so `make-preview` renders a ladder and
+`svg-stroke-check` reads it. Four rungs, because four stages actually cut — green,
 orange, cyan, black — with blue engraving the labels as it always does. **Violet is never
 emitted**, since it means skip and a skipped rung is a missing answer. Four is also the
 better way to work: bracket coarse, then bisect. `15,25,35,45` finds the decade and a
@@ -782,7 +810,7 @@ Treat the default as a starting bracket, not a recommendation.
 rebuild-page.sh [DIR] [--md=WRITEUP.md] [--html=PAGE.html] [--links]
 ```
 
-`md2html.py` and then `doc-audit.py --rebuild`, run from DIR, which defaults to
+`md2html` and then `doc-audit --rebuild`, run from DIR, which defaults to
 README.md and index.html in the current directory. It prints the audit's failed
 lines and its tally and nothing else, so a clean run is one line, and like
 `all-gates.sh` it is fail-closed: it exits 0 only when it sees `0 failed`.
@@ -812,9 +840,9 @@ passes on exit 0), `regen` (writes in place, passes when the tree is still clean
 or `none`, with the reason. A repository found and not listed fails, and so does one
 listed and not found.
 
-For every repository it runs the commands in `gates.txt`, `doc-audit.py --links` on
+For every repository it runs the commands in `gates.txt`, `doc-audit --links` on
 every markdown, a test of every line of `.doc-audit-ignore` and `.doc-audit-generated`
-(the same question `ignore-audit.py` asks here: run the documents against a copy
+(the same question `ignore-audit` asks here: run the documents against a copy
 without the line, and fail the line if nothing then fails), the page conventions (← All
 projects atop the README and the page, a Credits section, a LICENSE, every link opening
 in a new tab), and last, clean and pushed. It does not check image metadata: that rule
@@ -858,7 +886,7 @@ edited and committed here, beside the tools it names. It was moved in on
 were.
 
 The lenses apply to any project. Only the first section is specific to these
-repositories: `all-gates.sh` here, `doc-audit.py` alone elsewhere, with what it
+repositories: `all-gates.sh` here, `doc-audit` alone elsewhere, with what it
 cannot see outside its home spelled out.
 
 Two more skills live beside it, symlinked into `~/.claude/skills` the same way,
@@ -877,17 +905,17 @@ procedures are skills: each is needed in some sessions and not most.
 
 ## Checking this page
 
-`index.html` is this README rendered by `md2html.py` and committed, not built on the
+`index.html` is this README rendered by `md2html` and committed, not built on the
 server, so it goes stale silently unless it is regenerated after every edit:
 
 ```
-python3 md2html.py README.md index.html
-python3 doc-audit.py README.md --html index.html
+target/release/md2html README.md index.html
+target/release/doc-audit README.md --html index.html
 ```
 
 The names that check would otherwise trip on now live in `.doc-audit-ignore` rather than
 in an `--ignore` flag on the command line, so the documented self-check needs no arguments.
-They are the usage-synopsis placeholders, and `bell.py`, which lives nowhere at all, since it is the invented example in the `doc-audit.py` section
+They are the usage-synopsis placeholders, and `bell.py`, which lives nowhere at all, since it is the invented example in the `doc-audit` section
 showing prose and image paths resolving differently. `bell.py` was missing from the flag
 for as long as the flag existed, so the documented self-check reported two failures against
 a README that was right.

@@ -1,6 +1,6 @@
 ---
 name: ship
-description: Commit, gate and push LaserMadeMusic work — stage by name, commit to main, run all-gates.sh (about three and a half minutes, in the foreground) with output filtered to failures, and push only when the sole failure is the commits waiting to go up. Use when asked to commit and push, ship, publish or "send it up" in any repository under ~/LaserMadeMusic, or after finishing a change there that the user has asked to land.
+description: Commit, gate and push LaserMadeMusic work — stage by name, commit to main, run all-gates.sh (about two and a half minutes, in the foreground) with output filtered to failures, and push only when the sole failure is the commits waiting to go up. Use when asked to commit and push, ship, publish or "send it up" in any repository under ~/LaserMadeMusic, or after finishing a change there that the user has asked to land.
 ---
 
 # Ship LaserMadeMusic work
@@ -44,7 +44,7 @@ Which repositories the gate covers is the `REPOS=` line near the top of
 `lasermade-tools/all-gates.sh`; read it rather than trusting a list here.
 
 **In the gate:** run it filtered, in the foreground with a 10-minute timeout. Since it
-was streamlined it takes about three and a half minutes (3:27 on 2026-11-06, Documents lane included), so wait for
+was streamlined it takes about two and a half minutes (2:28 on 2026-11-07, Documents lane included), so wait for
 it rather than backgrounding it:
 
 ```sh
@@ -58,7 +58,7 @@ cd ~/LaserMadeMusic/GIT/lasermade-tools && bash all-gates.sh 2>&1 | grep -E "FAI
   it unfiltered to "see progress".
 
 **Not in the gate** (e.g. `~/LaserMadeMusic/octomino-snakes`): there is no gate to run.
-Audit what changed instead: `doc-audit.py FILE` for markdown, the repository's own
+Audit what changed instead: `doc-audit FILE` for markdown, the repository's own
 check for anything else (its CLAUDE.md says which). A non-git folder has nothing to push.
 
 ## 4. Read the verdict, then push or stop

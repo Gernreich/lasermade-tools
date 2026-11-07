@@ -50,13 +50,13 @@ date, not a missing file.
 bash ~/LaserMadeMusic/GIT/lasermade-tools/all-gates.sh
 ```
 
-About three and a half minutes, and it needs the network: the link gate fails rather than
-skips without one. It runs every gate in every repository, `doc-audit.py` over
+About two and a half minutes, and it needs the network: the link gate fails rather than
+skips without one. It runs every gate in every repository, `doc-audit` over
 every markdown (paired with its page, with `--run-blocks`, and with `--links`),
-`svg-stroke-check.py` over every SVG, `flat-part-check.py` over the flat parts,
-`repro-svg.py` (does each shipped SVG still come out of its generator),
-`name-check.py` (does a cut file's name agree with its geometry) and
-`ignore-audit.py` (does every exemption still suppress something), then asks
+`svg-stroke-check` over every SVG, `flat-part-check` over the flat parts,
+`repro-svg` (does each shipped SVG still come out of its generator),
+`name-check` (does a cut file's name agree with its geometry) and
+`ignore-audit` (does every exemption still suppress something), then asks
 whether every repository is clean and pushed. **Read the last lines.** It ends
 `GATES FAILING: n` and names the failures again beneath it; it exits non-zero
 when any gate fails. It exists because the recurring fault was not a bad check
@@ -67,17 +67,17 @@ detail the tally hides:
 
 ```
 G=~/LaserMadeMusic/GIT/lasermade-tools
-python3 $G/doc-audit.py WRITEUP.md --html PAGE.html \
-    --rebuild "python3 $G/md2html.py {md} {out}" --run-blocks --links
+$G/target/release/doc-audit WRITEUP.md --html PAGE.html \
+    --rebuild "$G/target/release/md2html {md} {out}" --run-blocks --links
 ```
 
 Names the prose mentions but the repository does not ship belong in
 `.doc-audit-ignore` at the repository root, and directories of machine output
 in `.doc-audit-generated` — not in an `--ignore` flag retyped on every run.
-Adding a line to either is a claim; `ignore-audit.py` is what tests it.
+Adding a line to either is a claim; `ignore-audit` is what tests it.
 
 The tools' README records, per tool, the wrong answers each one has produced,
-and which checks do not apply to which repositories (`flat-part-check.py` on a
+and which checks do not apply to which repositories (`flat-part-check` on a
 rosette or a hinge, for instance). Read the section for any tool that flags
 something before trusting the finding.
 
@@ -98,11 +98,11 @@ lane G, so a full LaserMadeMusic run covers these repositories as well.
 
 ### Anywhere else
 
-`doc-audit.py` needs nothing from LaserMadeMusic: Python 3, no dependencies, any
-markdown file.
+`doc-audit` needs nothing from LaserMadeMusic, only a build of the tools
+(`cargo build --release` in `lasermade-tools`, once), and reads any markdown file.
 
 ```
-python3 ~/LaserMadeMusic/GIT/lasermade-tools/doc-audit.py README.md --links
+~/LaserMadeMusic/GIT/lasermade-tools/target/release/doc-audit README.md --links
 ```
 
 Know its limits outside its home:
@@ -116,7 +116,7 @@ Know its limits outside its home:
   Ten, then `things`, `pitfalls`, `rules`, `steps`, `reasons`, `ways`, `checks`
   or `traps` — "Three steps". Numerals are never read as list claims, so "the
   three stages", "Four options" and "5 steps" are yours to count.
-- Leave out `--rebuild` and `--html` unless the page really is `md2html.py`
+- Leave out `--rebuild` and `--html` unless the page really is `md2html`
   output. Use the project's own build to regenerate the page, then compare the
   result with what is committed or deployed.
 - `--run-blocks` executes the commands it recognises. Read the document's fenced
@@ -131,7 +131,7 @@ see it.
 ### Either way
 
 For a repository whose SVGs are cut files, also run
-`python3 $G/svg-stroke-check.py --dir . --quiet` (`all-gates.sh` already does
+`$G/target/release/svg-stroke-check --dir . --quiet` (`all-gates.sh` already does
 this for the LaserMadeMusic ones). It finds elements whose stroke colour is
 declared twice and disagrees with itself — a `style` property and a
 presentation attribute naming different colours. The cascade picks the style
@@ -141,7 +141,7 @@ order, that is a part cut at the wrong moment. Exit status is 1 when conflicts
 exist; `--fix` drops the redundant attribute.
 
 Anything a script flags is a real inconsistency — but **verify before reporting**. On
-its first run `doc-audit.py` reported four failures that were all bugs in the
+its first run `doc-audit` reported four failures that were all bugs in the
 checker, not the document. Never report a finding you have not confirmed against
 the source.
 
