@@ -7,9 +7,9 @@
 # nine chances to read only eight.
 #
 # It ends with "GATES FAILING: n", and that line is the whole point of it.
-# About four minutes on ten cores (232s on 2026-11-06), with the gates in lanes side by side
-# (see LANES below); run one after another they took twelve. The longest lane,
-# every repository's drawings reproduced, sets the time. The link pass is the
+# About three and a half minutes on ten cores (207s on 2026-11-06), with the gates in lanes side by side
+# (see LANES below); run one after another they took twelve. The longest
+# lanes, every repository's drawings reproduced (D) and tuning (T), set the time. The link pass is the
 # only gate here that needs the network, and it fails rather than skips
 # without one.
 #

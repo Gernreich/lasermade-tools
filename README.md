@@ -391,7 +391,7 @@ project's entire claim. The last of the four matters most quietly: `bore_split`
 shells out to the INSTALLED copy of `snakeboxvar.py`, so editing the one in
 `tools/` and re-running changes nothing, silently.
 
-About four minutes on ten cores (232 s on 2026-11-06, with the Documents lane); it was twelve until 2026-10-18, when
+About three and a half minutes on ten cores (207 s on 2026-11-06, with the Documents lane); it was twelve until 2026-10-18, when
 the gates went into **lanes** that run side by side. A lane is a group of gates
 that must keep their order; each runs in a subshell of its own with its output
 held back and printed whole, so the report reads the same every run. The
