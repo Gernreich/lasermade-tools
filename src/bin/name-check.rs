@@ -25,7 +25,8 @@
 //!     3lobes        half-circles in a serpentine
 //!     <shape>       the second word of the name, against what the generator says
 //!
-//! The generator it asks is swept-curve's ribbon_bore.py, run as a program.
+//! The generator it asks is swept-curve's ribbon_bore, run as a program: Rust
+//! since 2026-11-07, built there (all-gates.sh builds it before the lanes).
 use lasermade_tools::re::{all, first, g, rx};
 use lasermade_tools::{die, py, text, TempDir};
 use std::collections::HashSet;
@@ -117,8 +118,7 @@ fn check(gates: &str) -> i32 {
     let mut bad = 0;
     let t = TempDir::new("name-check");
     for (stem, sw) in &rows {
-        let out = std::process::Command::new("python3")
-            .arg("ribbon_bore.py")
+        let out = std::process::Command::new(format!("{swept}/target/release/ribbon_bore"))
             .args(sw)
             .arg(format!("--out={}/x.svg", t.0.display()))
             .current_dir(&swept)
