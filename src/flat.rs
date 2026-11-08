@@ -12,8 +12,10 @@ pub enum Unit {
     Len,
     /// degrees
     Ang,
-    /// a plain number, a count
+    /// a count: a whole number
     Num,
+    /// a plain number that need not be whole: a fraction, a ratio
+    Ratio,
 }
 
 #[derive(Clone)]
@@ -89,7 +91,7 @@ impl Params {
             match p.unit {
                 Unit::Len => s.len(p.name, format!("{} mm", n(p.value)), p.comment),
                 Unit::Ang => s.angle(p.name, format!("{} deg", n(p.value)), p.comment),
-                Unit::Num => s.num(p.name, n(p.value), p.comment),
+                Unit::Num | Unit::Ratio => s.num(p.name, n(p.value), p.comment),
             }
         }
     }
@@ -101,7 +103,7 @@ impl Params {
             let u = match p.unit {
                 Unit::Len => " mm",
                 Unit::Ang => "°",
-                Unit::Num => "",
+                Unit::Num | Unit::Ratio => "",
             };
             o.push_str(&format!("| `{}` | {}{u} | {} |\n", p.name, n(p.value), p.comment));
         }
