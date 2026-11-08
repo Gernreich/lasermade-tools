@@ -12,6 +12,7 @@
 //!   html   html.escape and html.unescape
 //!   run    a shell command with a timeout, and a pool of threads
 
+pub mod flat;
 pub mod solidcraft;
 pub mod svg;
 pub mod turn3d;

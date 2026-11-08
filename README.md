@@ -45,7 +45,10 @@ Thirteen of them are Rust programs, one file each in `src/bin/` — `doc-audit.r
 `name-check.rs`, `ignore-audit.rs`, `image-meta-check.rs`, `make-preview.rs`,
 `test-ladder.rs`, `turn3d.rs`, `step-export.rs` and `sc-slim.rs` — sharing `src/lib.rs`, with the cut-file parser in
 `src/svg.rs`, the 3D page in `src/turn3d.rs` and the writer of the instruments'
-parametric SolidCraft designs in `src/solidcraft.rs`. Build them once:
+parametric SolidCraft designs in `src/solidcraft.rs`. `src/flat.rs` is what the
+bullroarer, buzz disc, kalimba and slapstick generators share: one table of parameters
+that drives both the cut sheet and the SolidCraft design, so every size is a flag and a
+design parameter of the same name. Build them once:
 
 ```
 cargo build --release
