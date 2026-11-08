@@ -433,6 +433,36 @@ vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm-ported-square.html --shape=
 vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm.html --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek
 say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 13 ] && echo "ok  $pg/13" || echo "FAIL $pgbad stale, $pg of 13 current")"
 
+# AND EACH DESIGN'S SOLIDCRAFT DESIGN (2026-11-08): the script ribbon_view
+# writes with the page's flags plus --narrow, the slimmed .sc SolidCraft saves
+# from it, and the STEP file it builds -- three files a design, eleven designs,
+# all redrawn and compared byte for byte. The torus's two pages are one bore.
+scd=0; scbad=0
+scr () {
+  # local names: the lane's wrapper times itself with $s
+  local d=$1; shift; local n=${d##*/} t=/tmp/_ag_rsc; rm -rf $t && mkdir -p $t
+  if ./target/release/ribbon_view "$@" --narrow --solidcraft=$t/$n.solidcraft.json >/dev/null 2>&1 \
+     && solidcraft-cli run $t/$n.solidcraft.json --save $t/$n.sc --quiet 2>/dev/null \
+     && $G/target/release/sc-slim $t/$n.sc \
+     && solidcraft-cli run $t/$n.solidcraft.json --out $t/$n.step --quiet 2>/dev/null \
+     && cmp -s $t/$n.solidcraft.json $d/solidcraft/$n.solidcraft.json \
+     && cmp -s $t/$n.sc $d/solidcraft/$n.sc && cmp -s $t/$n.step $d/step/$n.step
+  then scd=$((scd+1)); else scbad=$((scbad+1)); fi
+  rm -rf $t
+}
+scr serpentine/ribbon-serpentine-bore10-30deg-3lobes-R72 --shape=serpentine
+scr three-lobe-serpentine-with-collinear-ends/three-lobe-serpentine-with-collinear-ends-bore10-30deg-3lobes-R64 --shape=three-lobe-serpentine-with-collinear-ends
+scr ess/ribbon-ess-bore10-45deg-5arc --shape=ess
+scr $BSP --shape=spiral --port --port-square --cap
+scr volute/double-volute-bore10-45deg-R94-step60 --shape=double-volute
+scr $DSP-1506mm --shape=double-spiral
+scr $DSP-1000mm --shape=double-spiral --ds-facets=9 --lead=42
+scr $RT --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=132.809141 --race-straight=31
+scr $OV --shape=oval
+scr $SC --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41
+scr $TO --shape=torus --facet=27.6923076923 --radius=128.571738
+say "SolidCraft designs match their generator" "$( [ $scbad = 0 ] && [ $scd = 11 ] && echo "ok  $scd/11" || echo "FAIL $scbad stale, $scd of 11 current")"
+
 # THE PAGE AND THE SHEETS READ ONE COMMAND LINE. ribbon_view.rs kept its own copy
 # of the generator's flag handling and the two drifted four ways: the generator
 # ignored a flag the viewer refused (--lobe-radius=50 built the default lobe),
