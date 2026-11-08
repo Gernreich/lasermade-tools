@@ -132,13 +132,14 @@ say "every named repository exists" "$( [ -z "$m" ] && echo "ok  $(echo $REPOS |
 # matches, and doc-audit snapshots and restores the tree around that.
 # bore-tmm's own program first, before any lane: lane T runs it.
 (cd $R/bore-tmm && cargo build --release -q 2>/dev/null)
-# The flutes, the ocarinas and the chanters are Rust since 2026-11-07, and lane
-# T's readers run them (naf_model --bores, flute_model --bores, chanter_bores,
-# ghb_chanter --bores, uilleann_chanter --bores) while lane D's repro-svg
-# builds them too: built here, first, so neither waits on the other and a
-# reader never meets a half-linked program. A failure here shows as the lanes'
-# own failures, which name the program.
-for c in square-flute four-hole-ocarinas octagonal-flute practice-chanters ghb-chanter uilleann-chanter; do
+# The flutes, the ocarinas, the chanters, swept-curve and lyre-harp are Rust
+# since 2026-11-07, and lane T's readers run them (naf_model --bores,
+# flute_model --bores, chanter_bores, ghb_chanter --bores, uilleann_chanter
+# --bores), lane C runs ribbon_bore and ribbon_view, and lane D's repro-svg
+# builds them too: built here, first, so none waits on another and a reader
+# never meets a half-linked program. A failure here shows as the lanes' own
+# failures, which name the program.
+for c in square-flute four-hole-ocarinas octagonal-flute practice-chanters ghb-chanter uilleann-chanter swept-curve lyre-harp; do
   (cd $R/$c && cargo build --release --locked -q 2>/dev/null)
 done
 # And lasermade-tools' own programs, which nearly every gate below is: doc-audit,
@@ -165,14 +166,14 @@ cd $R/swept-curve
 # ran.
 for s in serpentine three-lobe-serpentine-with-collinear-ends ess spiral double-spiral double-volute; do
   for mode in "" "--port"; do
-    o=$(python3 ribbon_bore.py --shape=$s $mode --no-write 2>&1)
+    o=$(./target/release/ribbon_bore --shape=$s $mode --no-write 2>&1)
     n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
     say "ribbon $s ${mode:-plain}" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13" || echo "FAIL $n pass $f fail")"
   done
 done
 
 # TORUS GETS ITS OWN TWO ROWS, and cannot join the loop above. It is the seventh
-# entry in ribbon_bore.py's SHAPES and was the only one this file never ran --
+# entry in ribbon_bore.rs's SHAPES and was the only one this file never ran --
 # found 2026-09-15, the same day a seam bug in it was fixed. Before that fix
 # EVERY torus ever drawn failed "no two wall panels share plan area" with two
 # jamming pairs, one per wall, and nothing here would have said so. The pre-fix
@@ -204,7 +205,7 @@ done
 # that means zero checks. Which is why every row here asserts the pass count and
 # not just the failure count -- the header's rule, in one concrete case.
 for spec in "" "--radius=120 --port --port-at=0,6"; do
-  o=$(python3 ribbon_bore.py --shape=torus $spec --no-write 2>&1)
+  o=$(./target/release/ribbon_bore --shape=torus $spec --no-write 2>&1)
   n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
   say "ribbon torus ${spec:-plain}" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13" || echo "FAIL $n pass $f fail")"
 done
@@ -213,7 +214,7 @@ done
 # the loop above cannot carry it either -- a bare --port on a shape with no
 # ends puts both holes at the seam. An unported row is what the loop would have
 # given it, and it is the row that would have caught the torus seam bug.
-o=$(python3 ribbon_bore.py --shape=scallop --no-write 2>&1)
+o=$(./target/release/ribbon_bore --shape=scallop --no-write 2>&1)
 n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
 say "ribbon scallop plain" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13" || echo "FAIL $n pass $f fail")"
 
@@ -222,14 +223,14 @@ say "ribbon scallop plain" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13"
 # loop fits the bed ONLY on a narrow cheek: at the full-width band the part is
 # 462 x 287mm against 285 usable, over by two millimetres. A row that ran it
 # full width would be reporting on a design that cannot be cut.
-o=$(python3 ribbon_bore.py --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=132.809141 --race-straight=31 --narrow --no-write 2>&1)
+o=$(./target/release/ribbon_bore --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=132.809141 --race-straight=31 --narrow --no-write 2>&1)
 n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
 say "ribbon racetrack narrow" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13" || echo "FAIL $n pass $f fail")"
 
 # oval, the fourth closed shape, bare: its defaults ARE the shipped design, the
 # smallest flattened ellipse the checks allow. A bare row is what catches a
 # default drifting off the design folder that was cut from it.
-o=$(python3 ribbon_bore.py --shape=oval --narrow --no-write 2>&1)
+o=$(./target/release/ribbon_bore --shape=oval --narrow --no-write 2>&1)
 n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
 say "ribbon oval narrow" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13" || echo "FAIL $n pass $f fail")"
 
@@ -237,7 +238,7 @@ say "ribbon oval narrow" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13" |
 # failure on all six, so the new flag subsumes the old path rather than sitting
 # beside it. One row watches that, because the torus rows above exercise
 # --port-at only on the shape that has no alternative.
-o=$(python3 ribbon_bore.py --shape=serpentine --port --port-at=0 --no-write 2>&1)
+o=$(./target/release/ribbon_bore --shape=serpentine --port --port-at=0 --no-write 2>&1)
 n=$(echo "$o" | grep -c '^  pass'); f=$(echo "$o" | grep -cE '^  FAIL|^error')
 say "ribbon --port-at=0 is plain --port" "$( [ "$f" = 0 ] && [ "$n" = 13 ] && echo "ok  $n/13" || echo "FAIL $n pass $f fail")"
 
@@ -269,7 +270,7 @@ T=$(mktemp -d); same=0; bad=0
 # the generator writes: the 1506mm double spiral's plain cheek was removed on
 # 2026-10-12 and its panels kept, so that row compares the panels alone.
 rr () { d=$1; stem=$2; suf=$3; shift 3
-  python3 ribbon_bore.py "$@" --narrow --out=$T/$stem$suf.svg >/dev/null 2>&1
+  ./target/release/ribbon_bore "$@" --narrow --out=$T/$stem$suf.svg >/dev/null 2>&1
   for part in ${PARTS:-cheek-x2 panels}; do
     cmp -s "$d/$stem$suf-$part-cut-files.svg" \
            "$T/$stem$suf-$part-cut-files.svg" && same=$((same+1)) || bad=$((bad+1))
@@ -280,7 +281,7 @@ rr () { d=$1; stem=$2; suf=$3; shift 3
 # the same shape of stale gate the note above records, which is why this is a
 # second function rather than a cleverer first one.
 rrc () { d=$1; stem=$2; suf=$3; shift 3
-  python3 ribbon_bore.py "$@" --narrow --out=$T/$stem$suf.svg >/dev/null 2>&1
+  ./target/release/ribbon_bore "$@" --narrow --out=$T/$stem$suf.svg >/dev/null 2>&1
   for part in cheek-a cheek-b panels; do
     cmp -s "$d/$stem$suf-$part-cut-files.svg" \
            "$T/$stem$suf-$part-cut-files.svg" && same=$((same+1)) || bad=$((bad+1))
@@ -383,7 +384,7 @@ say "previews current with their cut files" "$( [ $stale = 0 ] && [ $seen -gt 0 
 
 # The published embed gate stood here until 2026-10-12, when the serpentine
 # left gernreich.github.io for the greek spiral's lattice viewer: that page now
-# embeds nothing drawn by ribbon_view.py, so there is no cross-repo artefact.
+# embeds nothing drawn by ribbon_view.rs, so there is no cross-repo artefact.
 
 # THE DESIGN PAGES WERE GATED BY NOTHING, and went stale the first time the
 # viewer changed under them. Ten of twelve were a viewer revision behind, and
@@ -401,7 +402,7 @@ pg=0; pgbad=0
 vp () {
   rm -rf /tmp/_ag_vp && mkdir -p /tmp/_ag_vp
   f=$1; shift
-  python3 ribbon_view.py "$@" --out=/tmp/_ag_vp/p.html >/dev/null 2>&1; rv=$?
+  ./target/release/ribbon_view "$@" --out=/tmp/_ag_vp/p.html >/dev/null 2>&1; rv=$?
   if [ $rv != 0 ] || [ ! -f /tmp/_ag_vp/p.html ]; then pgbad=$((pgbad+1))
   elif cmp -s /tmp/_ag_vp/p.html "$f"; then pg=$((pg+1))
   else pgbad=$((pgbad+1)); fi
@@ -431,7 +432,7 @@ vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm-ported-square.html --shape=
 vp $TO/ribbon-torus-bore10-27.6923deg-R128.572-800mm.html --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek
 say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 13 ] && echo "ok  $pg/13" || echo "FAIL $pgbad stale, $pg of 13 current")"
 
-# THE PAGE AND THE SHEETS READ ONE COMMAND LINE. ribbon_view.py kept its own copy
+# THE PAGE AND THE SHEETS READ ONE COMMAND LINE. ribbon_view.rs kept its own copy
 # of the generator's flag handling and the two drifted four ways: the generator
 # ignored a flag the viewer refused (--lobe-radius=50 built the default lobe),
 # the viewer drew pages the generator refuses (--port-at with --cap, a facet
@@ -450,14 +451,14 @@ refuses () {  # refuses WHAT CMD...: exits non-zero, writes no page, says WHAT
   rm -f /tmp/_ag_rf.html
 }
 TOR=(--shape=torus --facet=27.6923076923 --radius=128.571738 --port)
-refuses "not a flag" python3 ribbon_bore.py --lobe-radius=50 --no-write
-refuses "not a flag" python3 ribbon_view.py --lobe-radius=50 --out=/tmp/_ag_rf.html
-refuses "--out=PATH" python3 ribbon_view.py --shape=serpentine
-refuses "ports none" python3 ribbon_view.py "${TOR[@]}" --port-at=0,6 --cap --out=/tmp/_ag_rf.html
-refuses "same facet twice" python3 ribbon_view.py "${TOR[@]}" --port-at=0,0 --out=/tmp/_ag_rf.html
-refuses "no facet at all" python3 ribbon_view.py "${TOR[@]}" --port-at= --out=/tmp/_ag_rf.html
-rr=$(python3 ribbon_bore.py --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=132.809141 --race-straight=31 --narrow --no-write 2>&1 | grep -c 'inner wall runs at R17$')
-rs=$(python3 ribbon_bore.py --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square --narrow --no-write 2>&1 | grep -c 'inner wall runs at R36$')
+refuses "not a flag" ./target/release/ribbon_bore --lobe-radius=50 --no-write
+refuses "not a flag" ./target/release/ribbon_view --lobe-radius=50 --out=/tmp/_ag_rf.html
+refuses "--out=PATH" ./target/release/ribbon_view --shape=serpentine
+refuses "ports none" ./target/release/ribbon_view "${TOR[@]}" --port-at=0,6 --cap --out=/tmp/_ag_rf.html
+refuses "same facet twice" ./target/release/ribbon_view "${TOR[@]}" --port-at=0,0 --out=/tmp/_ag_rf.html
+refuses "no facet at all" ./target/release/ribbon_view "${TOR[@]}" --port-at= --out=/tmp/_ag_rf.html
+rr=$(./target/release/ribbon_bore --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=132.809141 --race-straight=31 --narrow --no-write 2>&1 | grep -c 'inner wall runs at R17$')
+rs=$(./target/release/ribbon_bore --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square --narrow --no-write 2>&1 | grep -c 'inner wall runs at R36$')
 say "ribbon page and sheets refuse alike" "$( [ $rf = 0 ] && [ $rn = 6 ] && [ "$rr" = 1 ] && [ "$rs" = 1 ] && echo "ok  $rn refusals, 2 radii" || echo "FAIL $rf of $rn not refused, radius rows $rr $rs")"
 }
 
@@ -796,10 +797,11 @@ lane_D () {
 # reproduce -- but for four of the knots the command was recorded NOWHERE, and
 # had to be recovered on 2026-09-10 by reading the parameters back out of each
 # SVG's own description. .repro in each repository records them now.
-# lyre-harp's .repro runs its own lyre_harp.py, which imports ribbon_bore.py
-# from the swept-curve checkout beside it, and claims its previews and page too,
-# so its previews need no loop of their own. square-flute's is the same shape,
-# and borrows swept-curve's path writer (Rust, both, since 2026-11-07).
+# lyre-harp's .repro runs its own lyre_harp, which borrows the panels, slots
+# and sheets of swept-curve's ribbon_bore library beside it (Rust, both, since
+# 2026-11-07), and claims its previews and page too, so its previews need no
+# loop of their own. square-flute's is the same shape, and borrows swept-curve's
+# path writer.
 # kalimba, slapstick, bullroarer and buzz-disc joined on 2026-10-14, when each
 # got a 3D viewer built from its hand-drawn cut files by turn3d (Rust since 2026-11-07): the cut
 # files are acknowledged with "!", and the previews, page and viewer reproduce.
