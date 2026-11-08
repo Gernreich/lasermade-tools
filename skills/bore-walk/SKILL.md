@@ -1,6 +1,6 @@
 ---
 name: bore-walk
-description: Intake for a trumpet bore walk such as "N1 W3 U2 E3 N3 D3 W2 U3 N1" — split it with bore_split.py, lead with the elbow count, build the turnable viewer and publish it as an artifact link. Use whenever the user supplies, pastes or proposes a bore walk (a string of N/S/E/W/U/D terms with distances), asks what a walk costs, or asks for a walk's viewer.
+description: Intake for a trumpet bore walk such as "N1 W3 U2 E3 N3 D3 W2 U3 N1" — split it with bore_split, lead with the elbow count, build the turnable viewer and publish it as an artifact link. Use whenever the user supplies, pastes or proposes a bore walk (a string of N/S/E/W/U/D terms with distances), asks what a walk costs, or asks for a walk's viewer.
 ---
 
 # Bore walk intake
@@ -10,7 +10,9 @@ the elbow count, build the viewer, give the link.** Writing cut files or filing 
 happens only when asked.
 
 The tools are in `~/LaserMadeMusic/GIT/trumpet-elbows-allowed/tools/`, the only live
-trumpet repository. `bore_split.py` there is **the authority** on what a walk costs: over
+trumpet repository, as Rust programs built into `../target/release/` (Python until
+2026-11-08; run `cargo build --release` in the repository root if they are missing).
+`bore_split` there is **the authority** on what a walk costs: over
 this skill, over any CLAUDE.md, over a hand count.
 
 ## Vocabulary, before anything else
@@ -33,7 +35,7 @@ If a word in the request could change what counts as a cost ("only bends", "tigh
 
 ```sh
 cd ~/LaserMadeMusic/GIT/trumpet-elbows-allowed/tools
-python3 bore_split.py --no-write "<walk>"
+../target/release/bore_split --no-write "<walk>"
 ```
 
 It prints blocks, centreline length, pieces, and an assembly table whose `kind` column
@@ -63,18 +65,17 @@ supply a walk"). The user reads walks off a Minecraft model, and a still picture
 show where a spiral goes.
 
 ```sh
-python3 viewer.py "<walk>" --out SCRATCH/<name>.html --title "<Title>"
+../target/release/viewer "<walk>" --out SCRATCH/<name>.html --title "<Title>"
 ```
 
 - `SCRATCH` is the session scratchpad. Never write into the repository unless asked.
-- If the walk already has a design folder, `bore_split.py --write DIR` writes the viewer
+- If the walk already has a design folder, `bore_split --write DIR` writes the viewer
   as `DIR/<dirname>.html` with the cut files. That rewrites the folder, so only when asked.
 - Publish the HTML with the Artifact tool and give the link. Keep the `<title>` the same
   across redeploys; to republish a renamed file, pass the old artifact URL as `url`.
 
 ## 4. Only when asked
 
-Cut files, a design folder, a `regress.py` entry, a walk file in `tools/walks/`. Then
-follow `tools/CLAUDE.md`: the Boxes venv for anything that gates
-(`~/Software/boxes/venv/bin/python`), `--blocksize`/`--bore` as the design needs, and
-the `ship` skill to land it.
+Cut files, a design folder, a `regress` entry (`tools/designs.rs`), a walk file in
+`tools/walks/`. Then follow `tools/CLAUDE.md`: `--blocksize`/`--bore` as the design
+needs, and the `ship` skill to land it.

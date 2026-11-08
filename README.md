@@ -374,7 +374,7 @@ Runs every gate in every repository and prints one tally.
 Eighteen ribbon bore runs -- twelve over the six open shapes, two over the
 torus, one each over the scallop, the racetrack and the oval, and one on
 `--port-at` --
-`regress.py` over every block design, `doc-audit` over
+`regress` over every block design, `doc-audit` over
 every page in every repository on its `REPOS=` line, `svg-stroke-check` over every SVG, and
 `flat-part-check` over the flat parts -- then four questions about what is
 committed, and finally whether every repository is clean and pushed.
@@ -413,13 +413,16 @@ with what shipped rather than running the code at all:
     ribbon sheets reproduce byte-identical    53/53
     previews current with their cut files     44/44
     search tools reproduce their output
-    Boxes install matches tools/
+    block sheets reproduce, as-built pinned
 
 A harness that runs the generators and never diffs them against the artefacts
 cannot tell you the sheets on disk are the sheets the code draws, which is this
-project's entire claim. The last of the four matters most quietly: `bore_split`
-shells out to the INSTALLED copy of `snakeboxvar.py`, so editing the one in
-`tools/` and re-running changes nothing, silently.
+project's entire claim. The last of the four replaced one that asked whether the
+copy of `snakeboxvar.py` installed in the Boxes checkout matched the one in `tools/`, since
+`bore_split` shelled out to the installed one and an edit to the other changed
+nothing, silently. That gate retired on 2026-11-08, when the trumpet tools
+became Rust and the generator was compiled into them: there is no second copy
+left to drift.
 
 About two and a half minutes on ten cores (148 s on 2026-11-07, with the Documents lane, once the tools were Rust; 207 s the day before); it was twelve until 2026-10-18, when
 the gates went into **lanes** that run side by side. A lane is a group of gates
@@ -429,7 +432,7 @@ doc-audit pass that executes each document's blocks runs first and alone, since
 it writes into the repositories and restores them; the coil search gates rebuild
 their folder in place, so the gates that read every document wait for them. The
 tally counts each lane's failures, and a lane that stops before its last gate
-fails as one. `regress.py`, `repro.py`, `run_checks.sh`, `repro-svg` and
+fails as one. `regress`, `repro`, `run_checks.sh`, `repro-svg` and
 `ignore-audit` also run their own designs, rows or entries at once, and the
 harness holds numpy's maths library to one thread per process so that the
 processes do not fight over the cores. The link pass is the only gate here that
@@ -608,7 +611,7 @@ pushed* was proved in a scratch repository, since breaking it in a real one
 means an unpushed commit. `doc-audit` and `flat-part-check` have failed
 repeatedly in ordinary use.
 
-The one exception is `regress.py`'s own verdict line, which has never been seen
+The one exception is `regress`'s own verdict line, which has never been seen
 to fail here -- that gate is inherited whole from the repository it checks, and
 its history of catching things is recorded there rather than proved here.
 
@@ -657,7 +660,7 @@ target/release/flat-part-check --dir DIR [--dir DIR] [--quiet]
 target/release/flat-part-check ... --bed 600x305 --min-edge 3 --min-hole 2 --weld 0.05
 ```
 
-The bore repositories have a gate: `bore_split.py --write` checks every net it writes,
+The bore repositories have a gate: `bore_split --write` checks every net it writes,
 and nothing is cut from a file that has not passed. The flat parts — bullroarer blades,
 buzz discs, anything cut from one sheet with holes in it — had no equivalent. This is it.
 
@@ -949,7 +952,7 @@ added 2026-10-09:
   to `main`, run `all-gates.sh` in the background filtered to its failures, and
   push only when the one failure is the commits waiting to go up.
 - `skills/bore-walk/SKILL.md` is the intake for a trumpet bore walk: split it
-  with `bore_split.py`, lead with the elbow count, build the turnable viewer and
+  with `bore_split`, lead with the elbow count, build the turnable viewer and
   publish the link.
 
 A skill costs one line of description in a session until it is used, where the

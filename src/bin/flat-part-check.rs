@@ -1,6 +1,6 @@
 //! Check a flat single-sheet cut file before it is sent to the laser.
 //!
-//! The bore repositories have `bore_split.py --write`, which gates every net it writes.
+//! The bore repositories have `bore_split --write`, which gates every net it writes.
 //! The flat parts — bullroarer blades, buzz discs, anything cut from one sheet with holes
 //! in it — had nothing. This is that gate. It reads the geometry rather than the drawing:
 //! paths, rects, circles, ellipses, polygons and lines, flattened to polylines with every

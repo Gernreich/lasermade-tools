@@ -20,7 +20,6 @@ prose.py
 bell.py
 
 # In the build repositories these check, not here.
-bore_split.py
 BuzzDisc1.svg
 
 # doc-audit's write-up of the ".json read as .js" wrong answer names the phantom it
@@ -35,12 +34,10 @@ ghost.js
 living-hinge-guide.md
 panel-convention.svg
 
-# all-gates.sh runs these three from trumpet-elbows-allowed/tools; they are named to say what it
-# covers, and they live in the repository they gate.
+# The trumpet gate's Python checker (trumpet-elbows-allowed/tools, Rust since
+# 2026-11-08), named in the history of a wrong answer it had learned first.
 
 check.py
-regress.py
-repro.py
 
 # The page that does NOT exist, which is the whole point of the sentence naming
 # it: pairing README.md with README.html is what made the script silently skip
@@ -48,9 +45,9 @@ repro.py
 
 README.html
 
-# The Boxes.py generator all-gates.sh compares against its installed copy. It
-# lives in trumpet-elbows-allowed/tools and is installed into the Boxes checkout; neither is
-# here.
+# The Boxes.py generator all-gates.sh compared against its installed copy until
+# 2026-11-08, named in the README's account of that retired gate. It was in
+# trumpet-elbows-allowed/tools and is snakebox.rs there now.
 
 snakeboxvar.py
 
@@ -68,8 +65,6 @@ probe.html
 bridge1.svg
 
 # Named by skills/ship and skills/bore-walk, and kept in the repositories those
-# skills work on (each trumpet folder's CLAUDE.md; trumpet-elbows-allowed/tools/
-# viewer.py), not here. doc-audit matches on the bare name, so a full path in the
-# skill does not help.
+# skills work on (each trumpet folder's CLAUDE.md), not here. doc-audit matches
+# on the bare name, so a full path in the skill does not help.
 CLAUDE.md
-viewer.py

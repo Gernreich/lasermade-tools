@@ -66,10 +66,11 @@ R=~/LaserMadeMusic/GIT
 # lane killed half way would otherwise drop its remaining gates from the tally
 # without a word, which is the "printed nothing" hole in a new place.
 # ONE MATHS THREAD PER PROCESS. The lanes, and regress.py, repro.py and
-# run_checks.sh inside them, already run a process per core; numpy's maths
+# run_checks.sh inside them, already ran a process per core; numpy's maths
 # library then started a thread per core in each of those, and they spun
 # against each other: regress.py took 52s at 323 CPU-seconds, and 32s at 188
-# with this.
+# with this. Those three are Rust since 2026-11-08 (regress takes 3s) and use
+# no numpy; the setting stays for any Python a lane still runs.
 export OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 MKL_NUM_THREADS=1
 W=$(mktemp -d)
 LANE=main
@@ -462,8 +463,11 @@ rs=$(./target/release/ribbon_bore --shape=scallop --facet=36 --lobes=5 --scallop
 say "ribbon page and sheets refuse alike" "$( [ $rf = 0 ] && [ $rn = 6 ] && [ "$rr" = 1 ] && [ "$rs" = 1 ] && echo "ok  $rn refusals, 2 radii" || echo "FAIL $rf of $rn not refused, radius rows $rr $rs")"
 }
 
-# LANE B: the block bores, through the Boxes.py venv.
+# LANE B: the block bores. Through the Boxes.py venv until 2026-11-08; every
+# trumpet tool is Rust since (trumpet-elbows-allowed/target/release), built
+# above with the other crates, and no lane needs the venv any more.
 lane_B () {
+TB=$R/trumpet-elbows-allowed/target/release
 # trumpet-elbows-not-allowed was archived on 2026-10-06 and every trumpet gate
 # here moved to trumpet-elbows-allowed, which cuts elbows rather than refusing
 # them and carries five more designs: 31 in regress.py, 70 sheets in repro.py
@@ -471,14 +475,14 @@ lane_B () {
 # The label below said "33 block designs" by hand until 2026-10-09, a count that
 # goes stale with the next design and that nothing checked. It counts DESIGNS now.
 cd $R/trumpet-elbows-allowed/tools
-o=$(~/Software/boxes/venv/bin/python regress.py 2>&1 | tail -1)
-nd=$(python3 -c 'import regress; print(len(regress.DESIGNS))' 2>/dev/null)
-say "regress.py, ${nd:-?} block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
+o=$($TB/regress 2>&1 | tail -1)
+nd=$($TB/regress --count 2>/dev/null)
+say "regress, ${nd:-?} block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
 
-# regress.py MEASURES the committed sheets; it never redraws them. Every
+# regress MEASURES the committed sheets; it never redraws them. Every
 # invariant can hold while the SVG on disk is one the current code would no
 # longer produce -- the hole this file closed for the 40 ribbon sheets and left
-# open on the 84 Boxes.py draws. repro.py redraws them. Its second direction is
+# open on the 84 Boxes.py draws. repro redraws them. Its second direction is
 # the one that matters: the 18 sheets describing the coil that was actually cut
 # are checked against pinned hashes instead, so a regenerate sweep that
 # overwrites the record of the instrument fails here rather than passing every
@@ -487,7 +491,7 @@ say "regress.py, ${nd:-?} block designs" "$( [[ "$o" == *"all designs pass"* ]] 
 # words they are looking for, which closes the "printed nothing" hole but not
 # the "printed the success line and then crashed" one. These four tools were
 # tested and do exit non-zero on failure, so use both.
-ro=$(~/Software/boxes/venv/bin/python repro.py 2>&1); rc=$?
+ro=$($TB/repro 2>&1); rc=$?
 o=$(echo "$ro" | tail -1); [ $rc = 0 ] || o="tool exited $rc"
 say "block sheets reproduce, as-built pinned" "$( [[ "$o" == *reproduce* && "$o" != *failing* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 
@@ -499,21 +503,21 @@ say "block sheets reproduce, as-built pinned" "$( [[ "$o" == *reproduce* && "$o"
 # so. This runs each entry point once and asks only that it exit 0. That is a
 # low bar and it is the bar that was missing; the tools with shipped output are
 # held to byte-identity elsewhere.
-# THE PORTS PATH, which no design in regress.py can carry. A port lets a change
+# THE PORTS PATH, which no design in regress can carry. A port lets a change
 # of plane happen inside a piece and cuts the part count sharply -- the test
 # bore goes from three pieces to two -- and it is kept because it works: with
 # two sections assembled the joint closes, the bore carries on through it and
 # the whole passage is sealed. What it costs is a joint with no tab, and the
-# fingers of the cell whose plate was removed facing nothing. check.py is
+# fingers of the cell whose plate was removed facing nothing. check is
 # written to refuse it for exactly those two reasons plus the third that
 # follows from them, so a ported design cannot sit in the corpus and be "pass".
 #
-# It was gated by nothing at all instead, and check.py had no --ports to be
+# It was gated by nothing at all instead, and check had no --ports to be
 # gated with. This pins the REFUSAL: three named failures and no fourth. A
 # fourth means the ports path has broken in some new way; two means one of the
 # objections has quietly stopped being raised.
 cd $R/trumpet-elbows-allowed/tools
-o=$(~/Software/boxes/venv/bin/python check.py "U2 E2 S2 U2" --ports 2>&1)
+o=$($TB/check "U2 E2 S2 U2" --ports 2>&1)
 tot=$(echo "$o" | tail -1); hit=0
 for w in "the section closes round its bore" \
          "no wall finger left unengaged" \
@@ -523,24 +527,28 @@ done
 say "the ports path refuses for its three reasons" "$( [[ "$tot" == *"3 failed"* ]] && [ $hit = 3 ] && echo "ok  ${tot# }" || echo "FAIL ${tot:-no output}, $hit of 3 expected")"
 
 cd $R/trumpet-elbows-allowed/tools
-PYB=~/Software/boxes/venv/bin/python
 T=$(mktemp -d); bad=0; n=0
-run() { n=$((n+1)); "$@" >/dev/null 2>&1 || { bad=$((bad+1)); echo "  FAILS: $2"; }; }
-run $PYB nest.py "N10 U2 W2 S7 U2 E4 N9 W2 D2 N4" --out $T/n.svg
-run $PYB sizes.py coil_fold2 $T/s.html
-run $PYB piece_render.py --out $T/p.svg
-run $PYB coils.py
+run() { n=$((n+1)); "$@" >/dev/null 2>&1 || { bad=$((bad+1)); echo "  FAILS: $1"; }; }
+run $TB/nest "N10 U2 W2 S7 U2 E4 N9 W2 D2 N4" --out $T/n.svg
+run $TB/sizes coil_fold2 $T/s.html
+run $TB/piece_render --out $T/p.svg
+run $TB/coils
 run $G/target/release/test-ladder $T/ladder.svg
+# hilbert and bed_sheets joined on 2026-11-08, when the tools became Rust and
+# the list was read against tools/ again: neither had a line. bed_sheets is
+# handed the tight coil's sheets and writes its bed sheet into $T.
+run $TB/hilbert 1 --split
+run $TB/bed_sheets ../parts/bore/concept/walk/coil/tight/bore/cut-files $T bore10-coil-tight
 # mcwalk.py was asked only to IMPORT, on the grounds that it "searches walks and
 # has no bounded run". It does neither: there is no search anywhere in the file,
 # and it takes a walk and writes one page, exactly like the tools around it.
 # Importing proves the module parses and nothing else -- build() and main() went
 # untested behind a claim about the tool that was not true of it.
-run $PYB mcwalk.py "N3 U3 W5 N10 E5 S8 W3 S3 N12" --out $T/w.html
+run $TB/mcwalk "N3 U3 W5 N10 E5 S8 W3 S3 N12" --out $T/w.html
 # bore_render.py joins them on 2026-09-10. It could not be run without changing
 # the tree -- a fixed output name in the current directory, no --out -- which is
 # exactly why it had no line here. It has one now, so it does.
-run $PYB bore_render.py "D3 E4" --out=$T/r.svg
+run $TB/bore_render "D3 E4" --out=$T/r.svg
 # rebuild-page.sh joins them on 2026-10-09, on pages made here in $T and never a
 # real one: it rewrites the index.html beside whatever README it is given. It is
 # fail-closed, so it is checked from both sides -- a clean page passes and a page
@@ -553,7 +561,7 @@ run bash $G/rebuild-page.sh $T/page
 n=$((n+1)); bash $G/rebuild-page.sh $T/bad >/dev/null 2>&1 \
   && { bad=$((bad+1)); echo "  FAILS: rebuild-page.sh passed a broken page"; }
 rm -rf $T
-say "every entry-point tool still runs" "$( [ $bad = 0 ] && [ $n -ge 9 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
+say "every entry-point tool still runs" "$( [ $bad = 0 ] && [ $n -ge 11 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
 
 # THE BELL AND THE MOUTHPIECE. The comment above names six tools that were run
 # by nothing and stops there; twelve more, every one under parts/, were in the
@@ -592,23 +600,10 @@ run ../target/release/part-view $MS $T/t2.html
 rm -rf $T
 say "every bell and mouthpiece tool still runs" "$( [ $bad = 0 ] && [ $n -ge 8 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
 
-cd $R/trumpet-elbows-allowed/tools
-# Asks BORE_SPLIT rather than re-implementing the comparison, and so looks at
-# the checkout that actually draws. This had ~/Software/boxes written into it
-# while bore_split.py resolves SNAKEBOX_BOXES first and falls back to a search,
-# so with that variable set the gate and the writer were reading two different
-# installs -- a gate that agrees with itself and not with the thing it watches.
-# One copy of the rule now, in the file that depends on it.
-o=$(python3 -c "
-import sys
-sys.path.insert(0, '.')
-import bore_split as B
-d = B._installed_matches_source()
-print('; '.join(d) if d else 'ok')" 2>/dev/null)
-# Empty means the import died before it could answer -- no checkout, a syntax
-# error, anything. That is not agreement either.
-[ -n "$o" ] || o="the drift check would not run at all"
-say "Boxes install matches tools/" "$( [ "$o" = ok ] && echo ok || echo "FAIL $o")"
+# "Boxes install matches tools/" asked bore_split.py whether the Boxes.py
+# checkout it imported still matched tools/snakeboxvar.py. Retired 2026-11-08:
+# SnakeBoxVar is tools/snakebox.rs, compiled into every tool that draws, so
+# there is no second copy left to drift.
 }
 
 # LANE R: the gates that read every repository, after lane A.
