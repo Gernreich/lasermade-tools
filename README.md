@@ -44,7 +44,8 @@ Twelve of them are Rust programs, one file each in `src/bin/` — `doc-audit.rs`
 `md2html.rs`, `repro-svg.rs`, `svg-stroke-check.rs`, `flat-part-check.rs`,
 `name-check.rs`, `ignore-audit.rs`, `image-meta-check.rs`, `make-preview.rs`,
 `test-ladder.rs`, `turn3d.rs` and `step-export.rs` — sharing `src/lib.rs`, with the cut-file parser in
-`src/svg.rs` and the 3D page in `src/turn3d.rs`. Build them once:
+`src/svg.rs`, the 3D page in `src/turn3d.rs` and the writer of the instruments'
+parametric SolidCraft designs in `src/solidcraft.rs`. Build them once:
 
 ```
 cargo build --release
