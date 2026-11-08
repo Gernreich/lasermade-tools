@@ -8,7 +8,7 @@ license = "CC0-1.0"
 
 # One program per file in src/bin/, named after it: doc-audit, md2html,
 # repro-svg, svg-stroke-check, flat-part-check, name-check, ignore-audit,
-# image-meta-check, make-preview, test-ladder, turn3d. src/lib.rs holds what
+# image-meta-check, make-preview, test-ladder, turn3d, step-export. src/lib.rs holds what
 # they share; src/svg.rs is the cut-file parser flat-part-check and turn3d use,
 # and src/turn3d.rs is the 3D page the instrument repositories' viewers build on.
 

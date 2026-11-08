@@ -26,7 +26,7 @@ gray-and-de-bruijn :: check :: python3 walks.py --check
 
 harmonics :: check :: python3 harmonics.py --check
 
-hex-dice-box :: regen :: python3 hex_dice_box.py
+hex-dice-box :: regen :: python3 hex_dice_box.py && {tools}/target/release/step-export index.html --name=hex-dice-box
 
 knot-crossings :: check :: python3 knot_crossings.py --check
 

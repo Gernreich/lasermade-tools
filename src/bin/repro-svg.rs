@@ -105,7 +105,8 @@ fn check(repo: &str) -> i32 {
         if p.is_dir() {
             continue;
         }
-        if rel.ends_with(".svg") || rel.ends_with(".html") {
+        // and the STEP exports of the 3D views, since 2026-11-07
+        if rel.ends_with(".svg") || rel.ends_with(".html") || rel.ends_with(".step") {
             shipped.insert(rel);
         }
     }

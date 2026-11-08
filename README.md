@@ -40,10 +40,10 @@ that cost them a sheet, and because a checker that reports the wrong thing is wo
 no checker at all. Every one of these has produced a wrong answer at some point. Each
 section below says which, because that is the part worth remembering.
 
-Eleven of them are Rust programs, one file each in `src/bin/` — `doc-audit.rs`,
+Twelve of them are Rust programs, one file each in `src/bin/` — `doc-audit.rs`,
 `md2html.rs`, `repro-svg.rs`, `svg-stroke-check.rs`, `flat-part-check.rs`,
 `name-check.rs`, `ignore-audit.rs`, `image-meta-check.rs`, `make-preview.rs`,
-`test-ladder.rs` and `turn3d.rs` — sharing `src/lib.rs`, with the cut-file parser in
+`test-ladder.rs`, `turn3d.rs` and `step-export.rs` — sharing `src/lib.rs`, with the cut-file parser in
 `src/svg.rs` and the 3D page in `src/turn3d.rs`. Build them once:
 
 ```
@@ -82,6 +82,7 @@ speed is the reason for the port: `flat-part-check` over living-hinge's cut file
 | `flat-part-check` | the pre-cut gate for a flat single-sheet part: size, closure, cut order, holes |
 | `image-meta-check` | does any tracked image carry metadata — EXIF, GPS, a colour profile, a comment? |
 | `turn3d` | a hand-drawn cut file turned into 3 mm parts and a page that turns them in 3D |
+| `step-export` | a 3D page's parts as STEP solids, to open in a CAD program |
 | `all-gates.sh` | every gate in every repository, one output, one tally |
 | `repro-svg` | does a repository's shipped SVG still come out of its generator? |
 | `name-check` | does a cut file's name agree with the geometry inside it? |
@@ -752,6 +753,38 @@ names `viewer.rs`. That needed Python's two kinds of number: a placing matrix bu
 from `T(0, 0, 0)` holds the integers 0 and 1 and the page prints them as `0` and
 `1`, not `0.0`, so every number on its way to the page carries whether it is an
 integer, and arithmetic promotes it as Python's does.
+
+## `step-export`
+
+```
+target/release/step-export PAGE [--out=DIR] [--name=STEM]
+```
+
+The 3D views as files a CAD program opens: SolidCraft, Fusion, FreeCAD, anything
+that reads STEP. Each design on the page becomes `DIR/<stem>-<design>.step` (a page
+of one design, `DIR/<stem>.step`), one solid body per part, assembled as the page
+shows it with nothing pulled apart. `DIR` defaults to `step/` beside the page.
+
+It reads the model the page already carries, the one line `const DATA = …;` or
+`const D = …;`, in five shapes: a `turn3d` page; the square flute's `viewer.js` and
+the ocarina and octagonal-flute copies of it, whose holes may be circles; the
+lyre-harp page, whose cheeks, panels and laminated blocks it builds as the page's
+script does; a stack of rings drawn as quads, the trumpet bell and mouthpiece, one
+solid per ply; and hex-dice-box's plates. The swept-curve and trumpet bore pages draw
+the bore's surface or its cells, not the parts that are cut, so they have nothing to
+export, and the program says so.
+
+Every face is flat: a curve comes in as the page's straight runs, and a circular hole
+as 64 sides. What the page shows without depth, engraving and flue marks, and the
+hardware it shows, pins and magnets, are left out. Each solid is checked by its
+signed volume and turned inside out if its faces came out wound the wrong way. The
+file carries no time stamp, so the same page always writes the same bytes, and the
+repositories' `.repro` rows rebuild their STEP files like any page; `repro-svg` has
+counted `.step` as shipped since 2026-11-07, so a STEP file no row claims fails.
+
+It was checked against SolidCraft's own reader (`solidcraft-cli eval`): every body in
+every file it wrote on 2026-11-07 came in closed, with positive volume, and with no
+error or warning.
 
 ## `make-preview`
 
