@@ -26,7 +26,7 @@ gray-and-de-bruijn :: check :: python3 walks.py --check
 
 harmonics :: check :: python3 harmonics.py --check
 
-hex-dice-box :: regen :: python3 hex_dice_box.py && {tools}/target/release/step-export index.html --name=hex-dice-box
+hex-dice-box :: regen :: cargo build --release -q && ./target/release/hex_dice_box && ./target/release/hex_dice_box --solidcraft=solidcraft && cd solidcraft && solidcraft-cli run hex-dice-box.solidcraft.json --save hex-dice-box.sc --out ../step/hex-dice-box.step --quiet && {tools}/target/release/sc-slim hex-dice-box.sc
 
 knot-crossings :: check :: python3 knot_crossings.py --check
 
