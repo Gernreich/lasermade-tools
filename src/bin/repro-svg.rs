@@ -105,8 +105,10 @@ fn check(repo: &str) -> i32 {
         if p.is_dir() {
             continue;
         }
-        // and the STEP exports of the 3D views, since 2026-11-07
-        if rel.ends_with(".svg") || rel.ends_with(".html") || rel.ends_with(".step") {
+        // and the STEP exports of the 3D views, since 2026-11-07, and the
+        // SolidCraft designs and their scripts, since 2026-11-08
+        let kinds = [".svg", ".html", ".step", ".sc", ".solidcraft.json"];
+        if kinds.iter().any(|k| rel.ends_with(k)) {
             shipped.insert(rel);
         }
     }

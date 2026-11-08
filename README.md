@@ -40,10 +40,10 @@ that cost them a sheet, and because a checker that reports the wrong thing is wo
 no checker at all. Every one of these has produced a wrong answer at some point. Each
 section below says which, because that is the part worth remembering.
 
-Twelve of them are Rust programs, one file each in `src/bin/` — `doc-audit.rs`,
+Thirteen of them are Rust programs, one file each in `src/bin/` — `doc-audit.rs`,
 `md2html.rs`, `repro-svg.rs`, `svg-stroke-check.rs`, `flat-part-check.rs`,
 `name-check.rs`, `ignore-audit.rs`, `image-meta-check.rs`, `make-preview.rs`,
-`test-ladder.rs`, `turn3d.rs` and `step-export.rs` — sharing `src/lib.rs`, with the cut-file parser in
+`test-ladder.rs`, `turn3d.rs`, `step-export.rs` and `sc-slim.rs` — sharing `src/lib.rs`, with the cut-file parser in
 `src/svg.rs`, the 3D page in `src/turn3d.rs` and the writer of the instruments'
 parametric SolidCraft designs in `src/solidcraft.rs`. Build them once:
 
@@ -84,6 +84,7 @@ speed is the reason for the port: `flat-part-check` over living-hinge's cut file
 | `image-meta-check` | does any tracked image carry metadata — EXIF, GPS, a colour profile, a comment? |
 | `turn3d` | a hand-drawn cut file turned into 3 mm parts and a page that turns them in 3D |
 | `step-export` | a 3D page's parts as STEP solids, to open in a CAD program |
+| `sc-slim` | a SolidCraft design without its build cache, the same bytes every time |
 | `all-gates.sh` | every gate in every repository, one output, one tally |
 | `repro-svg` | does a repository's shipped SVG still come out of its generator? |
 | `name-check` | does a cut file's name agree with the geometry inside it? |
@@ -789,6 +790,26 @@ counted `.step` as shipped since 2026-11-07, so a STEP file no row claims fails.
 It was checked against SolidCraft's own reader (`solidcraft-cli eval`): every body in
 every file it wrote on 2026-11-07 came in closed, with positive volume, and with no
 error or warning.
+
+## `sc-slim`
+
+```
+solidcraft-cli run X.solidcraft.json --save X.sc && target/release/sc-slim X.sc
+```
+
+Makes a SolidCraft design fit to commit. A `.sc` is a zip of `document.json` (the
+parameters and the timeline), `container.json` and `cache/`, the built bodies and how
+long each feature took to build. The timings change every run, so no two saves are the
+same bytes, and the cache is most of the file: 9.6 MB of a 9.7 MB panpipes design.
+SolidCraft rebuilds a design that has no cache when it opens it, no slower than one
+with (7.7 s against 7.6 s for the largest panpipes set), so `sc-slim` keeps
+`document.json` and `container.json` only, uncompressed, dated 1980-01-01, which git
+compresses anyway. The repositories' `.repro` rows build every design this way, and
+`repro-svg` has counted `.sc` and `.solidcraft.json` as shipped since 2026-11-08.
+
+Checked 2026-11-08: two builds of the same design came out byte-identical, the zip
+tests clean, and the slim design opens to the same 88 bodies and volume as the full
+one, and follows a parameter change to the same volume.
 
 ## `make-preview`
 
