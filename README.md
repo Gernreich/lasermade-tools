@@ -766,7 +766,7 @@ of one design, `DIR/<stem>.step`), one solid body per part, assembled as the pag
 shows it with nothing pulled apart. `DIR` defaults to `step/` beside the page.
 
 It reads the model the page already carries, the one line `const DATA = …;` or
-`const D = …;`, in five shapes: a `turn3d` page; the square flute's `viewer.js` and
+`const D = …;`, in five shapes: a `turn3d` page; the square flute's viewer script and
 the ocarina and octagonal-flute copies of it, whose holes may be circles; the
 lyre-harp page, whose cheeks, panels and laminated blocks it builds as the page's
 script does; a stack of rings drawn as quads, the trumpet bell and mouthpiece, one
