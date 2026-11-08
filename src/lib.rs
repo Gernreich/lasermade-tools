@@ -31,9 +31,17 @@ pub mod py {
         if x == 0.0 {
             return if x.is_sign_negative() { "-0.0".into() } else { "0.0".into() };
         }
+        // repr is the closest string of the shortest length that reads back,
+        // ties to even. Rust's {:e} has that length but breaks ties upwards
+        // (2**-25 ends ...53125 at 17 digits: repr 312, {:e} 313), so take the
+        // exact value correctly rounded to that length. That one can fail to
+        // read back beside a power of two, whose lower gap is half the upper:
+        // 2**-44 rounds to ...801 at 16 digits, which is another double, and
+        // there the shortest form, ...802, is repr's.
         let short = format!("{:e}", x);
         let nd = short.split('e').next().unwrap().chars().filter(|c| c.is_ascii_digit()).count();
-        let s = format!("{:.*e}", nd - 1, x);
+        let even = format!("{:.*e}", nd - 1, x);
+        let s = if even.parse::<f64>() == Ok(x) { even } else { short };
         let (mant, exp) = s.split_once('e').unwrap();
         let exp: i32 = exp.parse().unwrap();
         let sign = if mant.starts_with('-') { "-" } else { "" };
