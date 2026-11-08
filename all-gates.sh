@@ -130,18 +130,15 @@ say "every named repository exists" "$( [ -z "$m" ] && echo "ok  $(echo $REPOS |
 # every run. doc-audit only knew the `$ `-prompt form; it now also reads a
 # tagged fence of one command and its output commented out. It executes what it
 # matches, and doc-audit snapshots and restores the tree around that.
-# bore-tmm's library first, before any lane: the flute generators that lanes
-# D and T run call its Rust port of their models (src/models.rs) when it is
-# built, and their own Python when it is not. Either gives the same files --
-# each model checks the port against its Python on first use -- so a missing
-# or stale build costs only time, the time this line saves.
+# bore-tmm's own program first, before any lane: lane T runs it.
 (cd $R/bore-tmm && cargo build --release -q 2>/dev/null)
-# The chanters are Rust since 2026-11-07, and lane T's readers run them
-# (chanter_bores, ghb_chanter --bores, uilleann_chanter --bores) while lane D's
-# repro-svg builds them too: built here, first, so neither waits on the other
-# and a reader never meets a half-linked program. A failure here shows as the
-# lanes' own failures, which name the program.
-for c in practice-chanters ghb-chanter uilleann-chanter; do
+# The flutes, the ocarinas and the chanters are Rust since 2026-11-07, and lane
+# T's readers run them (naf_model --bores, flute_model --bores, chanter_bores,
+# ghb_chanter --bores, uilleann_chanter --bores) while lane D's repro-svg
+# builds them too: built here, first, so neither waits on the other and a
+# reader never meets a half-linked program. A failure here shows as the lanes'
+# own failures, which name the program.
+for c in square-flute four-hole-ocarinas octagonal-flute practice-chanters ghb-chanter uilleann-chanter; do
   (cd $R/$c && cargo build --release --locked -q 2>/dev/null)
 done
 # And lasermade-tools' own programs, which nearly every gate below is: doc-audit,
@@ -802,14 +799,14 @@ lane_D () {
 # lyre-harp's .repro runs its own lyre_harp.py, which imports ribbon_bore.py
 # from the swept-curve checkout beside it, and claims its previews and page too,
 # so its previews need no loop of their own. square-flute's is the same shape,
-# and borrows ribbon_bore.py's path writer from swept-curve.
+# and borrows swept-curve's path writer (Rust, both, since 2026-11-07).
 # kalimba, slapstick, bullroarer and buzz-disc joined on 2026-10-14, when each
 # got a 3D viewer built from its hand-drawn cut files by turn3d (Rust since 2026-11-07): the cut
 # files are acknowledged with "!", and the previews, page and viewer reproduce.
-# four-hole-ocarinas joined on 2026-10-17: its .repro runs four_hole_ocarinas.py,
-# which imports square_flute.py from square-flute and, through it,
-# ribbon_bore.py from swept-curve, so a change in either that moves a part
-# fails here.
+# four-hole-ocarinas joined on 2026-10-17: its .repro runs four_hole_ocarinas
+# (Rust since 2026-11-07, four_hole_ocarinas.py until then), which borrows the
+# square flute's plate and packer and, through it, swept-curve's path writer,
+# so a change in either that moves a part fails here.
 for repo in knotwork-soundholes living-hinge lyre-harp square-flute \
             kalimba slapstick bullroarer buzz-disc four-hole-ocarinas \
             octagonal-flute panpipes practice-chanters ghb-chanter uilleann-chanter; do
@@ -865,7 +862,7 @@ say "previews current in the hand-drawn repos" "$( [ $stale = 0 ] && [ $n -gt 0 
 # for the physics the instrument models each carry a copy of. Its tools read
 # every instrument's bore back out of what its generator DRAWS -- the flutes off
 # the SVGs themselves, the chanters off the parts the sheets are drawn from --
-# into a temporary directory, never the repository. Five verdicts:
+# into a temporary directory, never the repository. Four verdicts:
 #   - the engine passes its textbook tests, and the measuring rig's analysis
 #     recovers the model's resonances through a coloured loudspeaker and noise;
 #   - the bores read now are the bores committed in bore-tmm/bores/cut and
@@ -875,11 +872,10 @@ say "previews current in the hand-drawn repos" "$( [ $stale = 0 ] && [ $n -gt 0 
 #     of tune;
 #   - every note of every drawn bore is within 5 cents of its model's target,
 #     or within the tolerance its reader states and gives a reason for;
-#   - the engine agrees with each designing Python model on that model's own
-#     design, to 0.01 cents, so the two physics cannot drift apart;
-#   - the Rust port of the five models' inner loop (src/models.rs, since
-#     2026-11-07) gives the same bits as their Python, over 500 soundings of
-#     their own designs and of designs jiggled at random.
+#   - the engine agrees with each designing model on that model's own design,
+#     to 0.01 cents, so the two physics cannot drift apart. (A fifth, that
+#     src/models.rs gave the models' Python's bits, went on 2026-11-07 with
+#     the last Python model.)
 # Fail-closed like the rest: each must SEE its success line.
 lane_T () {
 cd $R/bore-tmm 2>/dev/null || { say "bore-tmm present" "FAIL no checkout"; return; }
@@ -889,8 +885,6 @@ o=$(cargo test --release -q 2>&1); rc=$?
 k=$(echo "$o" | grep -cE '^test result: ok\. [1-9]')
 say "bore-tmm engine tests" "$( [ $rc = 0 ] && [ "$k" -ge 2 ] && echo "ok  $k suites" || echo "FAIL cargo test exit $rc" )"
 cargo build --release -q 2>/dev/null
-o=$(python3 tools/check_fast.py 2>&1 | tail -1); o=${o%% (*}
-say "Rust port matches the Python models" "$( [[ "$o" == "FAST MATCH"* ]] && echo "ok  ${o#FAST MATCH: }" || echo "FAIL ${o:-no output}")"
 T=$(mktemp -d)
 python3 tools/read_cut_files.py --out=$T >$T/read.log 2>&1; rc=$?
 d=$(( $(diff -rq $T/cut bores/cut 2>&1 | wc -l) + $(diff -rq $T/predict bores/predict 2>&1 | wc -l) ))

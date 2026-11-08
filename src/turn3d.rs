@@ -241,7 +241,8 @@ impl J {
     }
 }
 
-fn dump_str(s: &str, out: &mut String) {
+/// json.dumps(s): a string in quotes, ensure_ascii as by default
+pub fn dump_str(s: &str, out: &mut String) {
     out.push('"');
     for c in s.chars() {
         match c {

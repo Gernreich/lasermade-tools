@@ -95,6 +95,28 @@ pub mod py {
     }
 
     /// math.degrees
+    /// base64.b64encode(b).decode()
+    pub fn b64(b: &[u8]) -> String {
+        const A: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        let mut s = String::with_capacity(b.len().div_ceil(3) * 4);
+        for c in b.chunks(3) {
+            let n = (c[0] as u32) << 16 | (*c.get(1).unwrap_or(&0) as u32) << 8 | *c.get(2).unwrap_or(&0) as u32;
+            for k in 0..4 {
+                s.push(if k <= c.len() { A[(n >> (18 - 6 * k) & 63) as usize] as char } else { '=' });
+            }
+        }
+        s
+    }
+
+    /// math.log2: libm's, behind black_box so nothing is folded
+    pub fn log2(x: f64) -> f64 {
+        extern "C" {
+            fn log2(x: f64) -> f64;
+        }
+        let f: unsafe extern "C" fn(f64) -> f64 = log2;
+        unsafe { black_box(f)(black_box(x)) }
+    }
+
     pub fn degrees(x: f64) -> f64 {
         x * (180.0 / std::f64::consts::PI)
     }
