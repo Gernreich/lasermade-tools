@@ -228,6 +228,44 @@ impl J {
         }
     }
 
+    /// json.dump(self, f, indent=N): ',' and ': ' with each item on its own
+    /// line, an empty list or object as [] or {}
+    pub fn dump_indent(&self, indent: usize, level: usize, out: &mut String) {
+        let pad = |out: &mut String, l: usize| {
+            out.push('\n');
+            out.push_str(&" ".repeat(indent * l));
+        };
+        match self {
+            J::A(v) if !v.is_empty() => {
+                out.push('[');
+                for (i, x) in v.iter().enumerate() {
+                    if i > 0 {
+                        out.push(',');
+                    }
+                    pad(out, level + 1);
+                    x.dump_indent(indent, level + 1, out);
+                }
+                pad(out, level);
+                out.push(']');
+            }
+            J::O(kv) if !kv.is_empty() => {
+                out.push('{');
+                for (i, (k, x)) in kv.iter().enumerate() {
+                    if i > 0 {
+                        out.push(',');
+                    }
+                    pad(out, level + 1);
+                    dump_str(k, out);
+                    out.push_str(": ");
+                    x.dump_indent(indent, level + 1, out);
+                }
+                pad(out, level);
+                out.push('}');
+            }
+            _ => self.dump(out),
+        }
+    }
+
     /// Read what json.dumps wrote: ints stay ints, objects keep their order.
     pub fn parse(s: &str) -> Result<J, String> {
         let b = s.as_bytes();

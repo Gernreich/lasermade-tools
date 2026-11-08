@@ -139,7 +139,7 @@ say "every named repository exists" "$( [ -z "$m" ] && echo "ok  $(echo $REPOS |
 # builds them too: built here, first, so none waits on another and a reader
 # never meets a half-linked program. A failure here shows as the lanes' own
 # failures, which name the program.
-for c in square-flute four-hole-ocarinas octagonal-flute practice-chanters ghb-chanter uilleann-chanter swept-curve lyre-harp; do
+for c in square-flute four-hole-ocarinas octagonal-flute practice-chanters ghb-chanter uilleann-chanter swept-curve lyre-harp trumpet-elbows-allowed; do
   (cd $R/$c && cargo build --release --locked -q 2>/dev/null)
 done
 # And lasermade-tools' own programs, which nearly every gate below is: doc-audit,
@@ -561,7 +561,7 @@ say "every entry-point tool still runs" "$( [ $bad = 0 ] && [ $n -ge 9 ] && echo
 # and parts/mouthpiece/.repro below. These five write nothing that ships, so no
 # manifest can reach them, and they are the ones that had never been run at all.
 #
-# number_rings.py REWRITES THE SHEET IT IS GIVEN, in place, so it is handed a
+# number_rings REWRITES THE SHEET IT IS GIVEN, in place, so it is handed a
 # copy in $T and never the tracked file. It is asked for --order=document
 # because it refuses to guess the order on a sheet that could have been
 # hand-nested, which is the right refusal and not a failure.
@@ -575,19 +575,20 @@ T=$(mktemp -d); bad=0; n=0
 BS=bell/cut-files/bell-round10-153mm-17rings-x3-rim86-cut-files.svg
 MS=mouthpiece/cut-files/mouthpiece-bore10-trumpet-parts-cut-files.svg
 cp $BS $T/sheet.svg
-run python3 bell/bell.py 20 --out=$T/b.svg
-# bell-adapter.py joined on 2026-09-13. It was the only generator in bell/ that
+run ../target/release/bell 20 --out=$T/b.svg
+# bell-adapter joined on 2026-09-13 (as bell-adapter.py; the parts tools are
+# Rust since 2026-11-07). It was the only generator in bell/ that
 # this gate did not run, and the gate could not have said so: it counts the
 # lines written here and compares that to itself, so a tool nobody listed is a
 # tool nobody misses. "every bell and mouthpiece tool still runs" was true of
 # the seven it knew about and silent about the eighth.
-run python3 bell/bell-adapter.py --out=$T/a.svg
-run python3 bell/verify_bell.py $BS
-run python3 bell/number_rings.py $T/sheet.svg --order=document
-run python3 mouthpiece/mouthpiece.py $T/mp.svg
-run python3 mouthpiece/mouthpiece-cup.py $T/mc.svg
-run python3 part-view.py $BS $T/t1.html
-run python3 part-view.py $MS $T/t2.html
+run ../target/release/bell-adapter --out=$T/a.svg
+run ../target/release/verify_bell $BS
+run ../target/release/number_rings $T/sheet.svg --order=document
+run ../target/release/mouthpiece $T/mp.svg
+run ../target/release/mouthpiece-cup $T/mc.svg
+run ../target/release/part-view $BS $T/t1.html
+run ../target/release/part-view $MS $T/t2.html
 rm -rf $T
 say "every bell and mouthpiece tool still runs" "$( [ $bad = 0 ] && [ $n -ge 8 ] && echo "ok  $n/$n" || echo "FAIL $bad of $n")"
 
@@ -888,13 +889,13 @@ k=$(echo "$o" | grep -cE '^test result: ok\. [1-9]')
 say "bore-tmm engine tests" "$( [ $rc = 0 ] && [ "$k" -ge 2 ] && echo "ok  $k suites" || echo "FAIL cargo test exit $rc" )"
 cargo build --release -q 2>/dev/null
 T=$(mktemp -d)
-python3 tools/read_cut_files.py --out=$T >$T/read.log 2>&1; rc=$?
+./target/release/read_cut_files --out=$T >$T/read.log 2>&1; rc=$?
 d=$(( $(diff -rq $T/cut bores/cut 2>&1 | wc -l) + $(diff -rq $T/predict bores/predict 2>&1 | wc -l) ))
 n=$(( $(ls $T/cut 2>/dev/null | wc -l) + $(ls $T/predict 2>/dev/null | wc -l) ))
 say "bore-tmm bores match the drawings" "$( [ $rc = 0 ] && [ $d = 0 ] && [ $n -gt 0 ] && echo "ok  $n bores" || echo "FAIL read exit $rc, $d differ of $n: $(grep UNREADABLE $T/read.log | head -1)")"
 o=$(./target/release/bore-tmm check --tol=5 $T/cut/*.json 2>&1 | tail -1)
 say "every drawn bore in tune" "$( [[ "$o" == "TUNING OK"* ]] && echo "ok  ${o#TUNING OK: }" || echo "FAIL ${o:-no output}")"
-python3 tools/export_models.py --out=$T/models >/dev/null 2>&1
+./target/release/export_models --out=$T/models >/dev/null 2>&1
 o=$(./target/release/bore-tmm check --compare $T/models/*.json 2>&1 | tail -1)
 say "bore-tmm agrees with the models" "$( [[ "$o" == "MODEL MATCH"* ]] && echo "ok  ${o#MODEL MATCH: }" || echo "FAIL ${o:-no output}")"
 rm -rf $T

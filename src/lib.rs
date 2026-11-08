@@ -355,6 +355,56 @@ pub mod text {
         }
     }
 
+    /// os.path.normpath: "." and empty parts dropped, ".." folded in
+    pub fn normpath(s: &str) -> String {
+        let abs = s.starts_with('/');
+        let mut v: Vec<&str> = Vec::new();
+        for p in s.split('/') {
+            match p {
+                "" | "." => {}
+                ".." if v.last().is_some_and(|l| *l != "..") => {
+                    v.pop();
+                }
+                ".." if abs => {}
+                _ => v.push(p),
+            }
+        }
+        let j = v.join("/");
+        if abs {
+            format!("/{j}")
+        } else if j.is_empty() {
+            ".".into()
+        } else {
+            j
+        }
+    }
+
+    /// os.path.abspath: joined to os.getcwd() and normalised, symlinks kept
+    pub fn abspath(s: &str) -> String {
+        if s.starts_with('/') {
+            normpath(s)
+        } else {
+            let cwd = std::env::current_dir().map(|p| p.to_string_lossy().into_owned()).unwrap_or_default();
+            normpath(&format!("{cwd}/{s}"))
+        }
+    }
+
+    /// os.path.relpath(path, start)
+    pub fn relpath(path: &str, start: &str) -> String {
+        let a = abspath(path);
+        let b = abspath(start);
+        let pa: Vec<&str> = a.split('/').filter(|x| !x.is_empty()).collect();
+        let pb: Vec<&str> = b.split('/').filter(|x| !x.is_empty()).collect();
+        let n = pa.iter().zip(&pb).take_while(|(x, y)| x == y).count();
+        let mut out: Vec<&str> = vec![".."; pb.len() - n];
+        out.extend(&pa[n..]);
+        if out.is_empty() {
+            ".".into()
+        } else {
+            out.join("/")
+        }
+    }
+
     /// Path(a) / b, as pathlib prints it
     pub fn join(a: &str, b: &str) -> String {
         if a.is_empty() || b.starts_with('/') {
