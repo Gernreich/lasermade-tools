@@ -509,6 +509,48 @@ o=$($TB/regress 2>&1 | tail -1)
 nd=$($TB/regress --count 2>/dev/null)
 say "regress, ${nd:-?} block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
 
+# EACH BORE PAGE'S SOLIDCRAFT DESIGN (2026-11-08): the script viewer writes
+# from the page's own walk (checking its blocks are the page's), the slimmed
+# .sc SolidCraft saves from it and the STEP it builds, redrawn and compared
+# byte for byte. A page named bore.html takes its design folder's name.
+cd $R/trumpet-elbows-allowed
+bsd=0; bsbad=0
+bsc () {
+  # local names: the lane's wrapper times itself with $s
+  local pg=$1; shift; local dir=${pg%/*} st; st=${pg##*/}; st=${st%.html}
+  [ "$st" = bore ] && { st=${dir%/*}; st=${st##*/}; }
+  local t=/tmp/_ag_tsc; rm -rf $t && mkdir -p $t
+  if $TB/viewer $pg "$@" --solidcraft $t/$st.solidcraft.json >/dev/null 2>&1 \
+     && solidcraft-cli run $t/$st.solidcraft.json --save $t/$st.sc --out $t/$st.step --quiet 2>/dev/null \
+     && $G/target/release/sc-slim $t/$st.sc \
+     && cmp -s $t/$st.solidcraft.json $dir/solidcraft/$st.solidcraft.json \
+     && cmp -s $t/$st.sc $dir/solidcraft/$st.sc && cmp -s $t/$st.step $dir/step/$st.step
+  then bsd=$((bsd+1)); else bsbad=$((bsbad+1)); fi
+  rm -rf $t
+}
+bsc built/coil-fold2-long-straight-3t/fold2-long-straight-3t.html --bore=10 --straight=30
+bsc parts/bore/concept/walk/coil/2x2-134/2x2-134.html
+bsc parts/bore/concept/walk/coil/3x3-54/3x3-54.html
+bsc parts/bore/concept/walk/coil/4x4-50/4x4-50.html
+bsc parts/bore/concept/walk/coil/5x5-50/5x5-50.html
+bsc parts/bore/concept/walk/coil/fold2-long-straight/coil-10x10x30-0.75t/coil-10x10x30-0.75t.html --bore=10 --straight=30
+bsc parts/bore/concept/walk/coil/fold2-long-straight/coil-10x10x30-1.5t/coil-10x10x30-1.5t.html --bore=10 --straight=30
+bsc parts/bore/concept/walk/coil/fold2-long-straight/coil-10x10x30-2.25t/coil-10x10x30-2.25t.html --bore=10 --straight=30
+bsc parts/bore/concept/walk/coil/fold2/bore/bore.html
+bsc parts/bore/concept/walk/coil/minimal/minimal.html
+bsc parts/bore/concept/walk/coil/square-rise1/square-rise1.html
+bsc parts/bore/concept/walk/coil/square-rise3/square-rise3.html
+bsc parts/bore/concept/walk/coil/three-side/three-side.html
+bsc parts/bore/concept/walk/coil/tight/bore/bore.html
+bsc parts/bore/concept/walk/hilbert/open/open.html
+bsc parts/bore/concept/walk/meander/first/first.html
+bsc parts/bore/concept/walk/meander/greek-key/bore/bore.html
+bsc parts/bore/concept/walk/spiral/expanding/expanding.html
+bsc parts/bore/concept/walk/spiral/telescope/telescope.html
+bsc parts/bore/concept/walk/spiral/ziggurat/bore/bore.html
+say "SolidCraft bore designs match their pages" "$( [ $bsbad = 0 ] && [ $bsd = 20 ] && echo "ok  $bsd/20" || echo "FAIL $bsbad stale, $bsd of 20 current")"
+cd $R/trumpet-elbows-allowed/tools
+
 # regress MEASURES the committed sheets; it never redraws them. Every
 # invariant can hold while the SVG on disk is one the current code would no
 # longer produce -- the hole this file closed for the 40 ribbon sheets and left
