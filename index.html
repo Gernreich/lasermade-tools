@@ -421,7 +421,14 @@ target/release/sc-flatten EDITED.sc [--original=ORIGINAL.sc] [--out=DIR] [--redr
 target/release/sc-replay  EDITED.sc [--original=ORIGINAL.sc] [--out=DIR]
 target/release/sc-compare DIR_A DIR_B [--tol=MM] [--mark-tol=MM]</code></pre>
 <p>Someone opens an instrument's SolidCraft design, makes it bigger or moves a hole, and saves it under a new name. These give back the cut sheets for what they saved, two independent ways, and check the two against each other. Neither writes into the repository's shipped files: the default output is <code>target/sc-flatten/STEM/</code> and <code>target/sc-replay/STEM/</code>, at the committed sheets' own paths. The committed design the edit came from is the committed <code>.sc</code> whose name begins the edited one's (<code>four-hole-ocarina-cube_bigger.sc</code> came from <code>four-hole-ocarina-cube.sc</code>), or <code>--original=</code>. An edit saved from an older version of the design than the one committed now is found in the file's history, and its sheets are read as they were then.</p>
-<p><strong><code>sc-flatten</code> works from the solid.</strong> SolidCraft builds the edited design and the one it came from as STEP files (<code>src/step.rs</code> reads lines, circles and rational B-splines). Every body is laid on its thin side; its two faces give the outline and the holes cut through it, and a face part-way through is a pocket. Each body of the committed design is found among the parts of the committed sheets by shape, at any turn or mirror. That says which sheet it is on, where, which way up, in which inks and with what kerf. A mirror twin, the same shape as its partner, is held to the way most plates on the sheet lie. A body the edit left alone keeps its part exactly as drawn. A sheet with no changed body is written back byte for byte, and on a changed sheet the untouched parts keep their original elements. A changed body is drawn afresh:</p>
+<p><strong><code>sc-flatten</code> works from the solid.</strong> SolidCraft builds the edited design and the one it came from as STEP files (<code>src/step.rs</code> reads lines, circles and rational B-splines). Every body is laid on its thin side; its two faces give the outline and the holes cut through it, and a face part-way through is a pocket. Each body of the committed design is found among the parts of the committed sheets by shape, at any turn or mirror. That says which sheet it is on, where, which way up, in which inks and with what kerf. A body is tried at the turns that lay its long edges together and at the one that lays its principal axis on the part's, so a tapered outline with no straight edge (the bullroarer) still finds its part. Where many parts look alike, these choose among fits that are equally good, never over a better fit:</p>
+<ul>
+<li>a build is one set of sheets, <code>NAME-sheet1</code>, <code>NAME-sheet2</code>... or a folder of its own, and a set that holds every body is that build (the panpipes' builds share a folder, and the trumpet's build shares wall shapes with the concept walks);</li>
+<li>a body named for a piece ("piece 3 wall 1") goes on that piece's sheet (<code>03of12</code>);</li>
+<li>a mirror twin, the same shape as its partner, goes the way most plates on the sheet lie, unless both twins need a part;</li>
+<li>a body left without a part takes one from a body that can move to another, as in a matching.</li>
+</ul>
+<p>A body the edit left alone keeps its part exactly as drawn. A sheet with no changed body is written back byte for byte, and on a changed sheet the untouched parts keep their original elements. A changed body is drawn afresh:</p>
 <ul>
 <li>its outline is grown by the kerf the sheet states ("drawn for a 0.13mm kerf"), or else the median the parts show, with round or mitred corners, whichever redraws the sheet's biggest part better;</li>
 <li>each hole takes the offset its committed hole had (the kalimba puts kerf on outlines only);</li>
@@ -441,7 +448,7 @@ target/release/sc-compare DIR_A DIR_B [--tol=MM] [--mark-tol=MM]</code></pre>
 <li>the generator lists it under <code>--params</code>, as every <code>flat.rs</code> generator does.</li>
 </ul>
 <p>The commands come from the repository's <code>.repro</code>. The line that writes the committed design names the program and the arguments that pick the build. Every cut-sheet line with that program and those arguments runs again with the flags added. An edit no flag follows stops it, by name: a hole moved by its sketch dimension, or a feature added. A sheet the generator draws but its own checks then refuse is still written and reported.</p>
-<p><strong><code>sc-compare</code> is the check.</strong> It pools every part of every sheet on each side, since the two pack differently, and matches them by shape. Of the ways a symmetric outline fits, it uses the one where the engraved marks agree. For each pair it gives:</p>
+<p><strong><code>sc-compare</code> is the check.</strong> It pools every part of every sheet on each side, since the two pack differently, and matches them by shape. Of the ways a symmetric outline fits, it uses the one where the engraved marks agree. Between near-twins (a flute's seven walls) it takes the part lying in the same place on the sheet of the same name. For each pair it gives:</p>
 <ul>
 <li>the farthest any cut line of either lies from the other's (cuts: <code>--tol</code>, default 0.05 mm);</li>
 <li>the farthest any mark lies from its counterpart (marks: <code>--mark-tol</code>, default 0.5 mm);</li>
@@ -456,6 +463,13 @@ target/release/sc-compare DIR_A DIR_B [--tol=MM] [--mark-tol=MM]</code></pre>
 <li><strong>The kalimba at radius 110 and height 80:</strong> all nine bodies within 0.045 mm and 0.006 mm of marks. Its three stiffeners, which the design does not model, are the difference. At that size the generator's one-sheet layout fails its own bed check, and <code>sc-flatten</code> packs onto two sheets.</li>
 </ul>
 <p>The user's own <code>kalimba-septa-box_altered.sc</code> (radius 200, height 150) stops both, rightly: its faces are 390 × 380 mm.</p>
+<p>Checked 2026-11-09 with <code>--redraw-all</code> on one design in each of the fifteen repositories that have one:</p>
+<ul>
+<li><strong>Agree</strong> (cuts within 0.05 mm): bullroarer, buzz-disc, four-hole-ocarinas (cube), kalimba, octagonal-flute, panpipes, slapstick, square-flute, and the built trumpet coil (80 parts within 0.0017 mm).</li>
+<li><strong>The trumpet's own difference, fixed:</strong> every face plate of the coil was 0.93 mm out until its generator stopped drawing a stub, inherited from the Boxes port, where a 2 mm border meets an inside corner (the trumpet repository's notes say how).</li>
+<li><strong>Still to look at:</strong> ghb-chanter (7 of 27 parts, up to 1.46 mm), practice-chanters (4 of 131, 0.17 mm) and uilleann-chanter (10 of 25, 4.57 mm).</li>
+<li><strong>Not read:</strong> lyre-harp and swept-curve, whose designs have no finger joints yet; knotwork-soundholes, whose sheet draws the holes and no board outline.</li>
+</ul>
 <h2 id="make-preview"><code>make-preview</code></h2>
 <pre><code>target/release/make-preview CUTFILE.svg [OUT.svg]      # default previews/&lt;name&gt;
 target/release/make-preview CUTFILE.svg --ground=#faf7f0  # another ground colour</code></pre>

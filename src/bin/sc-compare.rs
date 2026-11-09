@@ -127,7 +127,22 @@ fn main() {
                         .min_by(|x, y| x.0.partial_cmp(&y.0).unwrap())
                         .unwrap();
                     let inks = if sheets::ink_counts(&a.parts[i]) == sheets::ink_counts(pb) { 0.0 } else { 0.5 };
-                    v.push((mean + inks + 0.01 * gap.min(50.0), i, j, r));
+                    // near-twins (a flute's seven walls) fit each other almost
+                    // as well as themselves: a part found where the other
+                    // sheet's part lies, on the sheet of the same name, is
+                    // that part, so a small pull towards the same spot
+                    let here = |p: &sheets::Part| {
+                        let o = &p.outline.pts;
+                        let (x0, y0, x1, y1) = o.iter().fold((f64::MAX, f64::MAX, f64::MIN, f64::MIN), |s, q| (s.0.min(q.0), s.1.min(q.1), s.2.max(q.0), s.3.max(q.1)));
+                        ((x0 + x1) / 2.0, (y0 + y1) / 2.0)
+                    };
+                    let place = if sa[i].0 == sb[j].0 {
+                        let (p, q) = (here(&a.parts[i]), here(pb));
+                        0.05 * ((p.0 - q.0).hypot(p.1 - q.1) / 5.0).min(1.0)
+                    } else {
+                        0.05
+                    };
+                    v.push((mean + inks + 0.01 * gap.min(50.0) + place, i, j, r));
                 }
             }
             v
@@ -158,6 +173,17 @@ fn main() {
             let ab = ra.iter().flatten().map(|&p| sheets::to_rings(p, &rb)).fold(0.0, f64::max);
             let ba = rb.iter().flatten().map(|&p| sheets::to_rings(p, &ra)).fold(0.0, f64::max);
             let w = ab.max(ba);
+            if std::env::var("SC_COMPARE_DEBUG").is_ok() && w > tol {
+                // where on the part the cut lines part company, from B's outline's lower-left corner
+                let (x0, y0) = rb[0].iter().fold((f64::MAX, f64::MAX), |s, p| (s.0.min(p.0), s.1.min(p.1)));
+                let (x1, y1) = rb[0].iter().fold((f64::MIN, f64::MIN), |s, p| (s.0.max(p.0), s.1.max(p.1)));
+                if let Some(p) = ra.iter().flatten().max_by(|p, q| sheets::to_rings(**p, &rb).partial_cmp(&sheets::to_rings(**q, &rb)).unwrap()) {
+                    eprintln!("      A's cut at ({:.2},{:.2}) of B's {:.2} x {:.2} is {:.3} mm from B's", p.0 - x0, p.1 - y0, x1 - x0, y1 - y0, sheets::to_rings(*p, &rb));
+                }
+                if let Some(p) = rb.iter().flatten().max_by(|p, q| sheets::to_rings(**p, &ra).partial_cmp(&sheets::to_rings(**q, &ra)).unwrap()) {
+                    eprintln!("      B's cut at ({:.2},{:.2}) of B's {:.2} x {:.2} is {:.3} mm from A's", p.0 - x0, p.1 - y0, x1 - x0, y1 - y0, sheets::to_rings(*p, &ra));
+                }
+            }
             worst_all = worst_all.max(w);
             pairs += 1;
             let (ca, cb) = (sheets::ink_counts(pa), sheets::ink_counts(pb));

@@ -247,11 +247,49 @@ fn main() {
     let mut cands = match_all(None);
     let mirrored = cands.iter().filter(|c| c.5.mirror).count();
     let way = mirrored * 2 > cands.len();
+    // the sheet's way is preferred, not required: a body with no match that
+    // way keeps its others (the top plate lies outside face up), and a pair
+    // of plates that are the same shape (piece 3 of a trumpet coil) needs
+    // one of each to have a part apiece
     let held = match_all(Some(way));
-    // a body with no match the sheet's way keeps its others (the top plate lies outside face up)
-    let held_bodies: HashSet<usize> = held.iter().map(|c| c.1).collect();
-    cands.retain(|c| !held_bodies.contains(&c.1));
     cands.extend(held);
+    // a build's sheets are one set: name-sheet1, name-sheet2, ... (the
+    // panpipes, every build in one folder), or else a folder of its own
+    // (a trumpet build, one sheet per piece, beside concept walks whose
+    // pieces are the same shapes). When one set holds every body of the
+    // design, the design is that build, and parts that look the same on
+    // another build's sheets are not its
+    let by_name = |si: usize| -> String {
+        let re = fancy_regex::Regex::new(r"-sheet\d+").unwrap();
+        re.replace_all(&sheets_v[si].path, "").to_string()
+    };
+    let by_folder = |si: usize| -> String {
+        let p = &sheets_v[si].path;
+        p.rsplit_once('/').map_or(String::new(), |x| x.0.to_string())
+    };
+    for set_of in [&by_name as &dyn Fn(usize) -> String, &by_folder] {
+        let mut cover: HashMap<String, HashSet<usize>> = HashMap::new();
+        for c in &cands {
+            cover.entry(set_of(c.2)).or_default().insert(c.1);
+        }
+        let mut whole: Vec<(String, f64)> = cover
+            .iter()
+            .filter(|(_, b)| b.len() == old.len())
+            .map(|(k, _)| {
+                // the set's fit: each body's best mean on it
+                let fit: f64 = (0..old.len())
+                    .map(|bi| cands.iter().filter(|c| c.1 == bi && set_of(c.2) == *k).map(|c| c.0).fold(f64::MAX, f64::min))
+                    .sum();
+                (k.clone(), fit)
+            })
+            .collect();
+        whole.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap().then(a.0.cmp(&b.0)));
+        if let Some((w, _)) = whole.first() {
+            let w = w.clone();
+            cands.retain(|c| set_of(c.2) == w);
+            break;
+        }
+    }
     // a part common to several designs (the ocarinas' bird) is on every one of
     // their sheets: take it from the sheets that hold most of this design
     let mut held: HashMap<usize, Vec<usize>> = HashMap::new();
@@ -262,7 +300,36 @@ fn main() {
         }
     }
     let rank = |si: usize| std::cmp::Reverse(held.get(&si).map_or(0, |v| v.len()));
-    cands.sort_by(|a, b| rank(a.2).cmp(&rank(b.2)).then(a.0.partial_cmp(&b.0).unwrap()));
+    // the sheet's way only breaks near-ties: a body and a part that fit
+    // clearly better turned over keep that (a nearly square trumpet plate
+    // fits its own part the sheet's way too, a corner out of place)
+    let mut best_at: HashMap<(usize, usize, usize), f64> = HashMap::new();
+    for c in &cands {
+        let e = best_at.entry((c.1, c.2, c.3)).or_insert(f64::MAX);
+        *e = e.min(c.0);
+    }
+    cands.retain(|c| c.0 < best_at[&(c.1, c.2, c.3)] + 0.05);
+    // and a body takes no part it fits clearly worse than its best one (the
+    // preferences below come before the fit, so they must only choose
+    // among fits that are equally good)
+    let mut best_body: HashMap<usize, f64> = HashMap::new();
+    for c in &cands {
+        let e = best_body.entry(c.1).or_insert(f64::MAX);
+        *e = e.min(c.0);
+    }
+    cands.retain(|c| c.0 < best_body[&c.1] + 0.1);
+    let theirs = |c: &(f64, usize, usize, usize, f64, sheets::Rigid)| c.5.mirror != way;
+    // a body named for its piece ("piece 3 wall 1") belongs on that piece's
+    // sheet ("...-03of12-..."): pieces of one bore share wall shapes, and
+    // near-twins differ by a finger
+    let piece_re = fancy_regex::Regex::new(r"\bpiece (\d+)\b").unwrap();
+    let sheet_re = fancy_regex::Regex::new(r"(\d+)of\d+").unwrap();
+    let num = |re: &fancy_regex::Regex, t: &str| re.captures(t).ok().flatten().and_then(|c| c[1].parse::<usize>().ok());
+    let elsewhere = |c: &(f64, usize, usize, usize, f64, sheets::Rigid)| match (num(&piece_re, &old[c.1].name), num(&sheet_re, &sheets_v[c.2].path)) {
+        (Some(a), Some(b)) => a != b,
+        _ => false,
+    };
+    cands.sort_by(|a, b| elsewhere(a).cmp(&elsewhere(b)).then(rank(a.2).cmp(&rank(b.2))).then(theirs(a).cmp(&theirs(b))).then(a.0.partial_cmp(&b.0).unwrap()));
     let mut body_at: Vec<Option<(usize, usize, f64, f64, sheets::Rigid)>> = vec![None; old.len()];
     let mut taken: Vec<(usize, usize)> = vec![];
     for &(mean, bi, si, pi, worst, r) in &cands {
@@ -271,6 +338,28 @@ fn main() {
         }
         body_at[bi] = Some((si, pi, mean, worst, r));
         taken.push((si, pi));
+    }
+    // a body left without a part, when every part it fits went to another
+    // body that fits elsewhere too (identical walls on three trumpet pieces'
+    // sheets): move those along, as a matching does, until it has one
+    fn augment(bi: usize, cands: &[(f64, usize, usize, usize, f64, sheets::Rigid)], body_at: &mut Vec<Option<(usize, usize, f64, f64, sheets::Rigid)>>, seen: &mut HashSet<(usize, usize)>) -> bool {
+        for c in cands.iter().filter(|c| c.1 == bi) {
+            let at = (c.2, c.3);
+            if !seen.insert(at) {
+                continue;
+            }
+            let holder = body_at.iter().position(|b| b.is_some_and(|b| (b.0, b.1) == at));
+            if holder.is_none() || augment(holder.unwrap(), cands, body_at, seen) {
+                body_at[bi] = Some((c.2, c.3, c.0, c.4, c.5));
+                return true;
+            }
+        }
+        false
+    }
+    for bi in 0..old.len() {
+        if body_at[bi].is_none() {
+            augment(bi, &cands, &mut body_at, &mut HashSet::new());
+        }
     }
     // twins (a plate and its mirror) fit each other's parts nearly as well:
     // swap any two bodies whose parts suit them better the other way round

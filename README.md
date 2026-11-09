@@ -849,8 +849,20 @@ Every body is laid on its thin side; its two faces give the outline and the hole
 through it, and a face part-way through is a pocket. Each body of the committed design
 is found among the parts of the committed sheets by shape, at any turn or mirror. That
 says which sheet it is on, where, which way up, in which inks and with what kerf. A
-mirror twin, the same shape as its partner, is held to the way most plates on the sheet
-lie. A body the edit left alone keeps its part exactly as drawn. A sheet with no
+body is tried at the turns that lay its long edges together and at the one that lays
+its principal axis on the part's, so a tapered outline with no straight edge (the
+bullroarer) still finds its part. Where many parts look alike, these choose among fits
+that are equally good, never over a better fit:
+- a build is one set of sheets, `NAME-sheet1`, `NAME-sheet2`... or a folder of its own,
+  and a set that holds every body is that build (the panpipes' builds share a folder,
+  and the trumpet's build shares wall shapes with the concept walks);
+- a body named for a piece ("piece 3 wall 1") goes on that piece's sheet (`03of12`);
+- a mirror twin, the same shape as its partner, goes the way most plates on the sheet
+  lie, unless both twins need a part;
+- a body left without a part takes one from a body that can move to another, as in a
+  matching.
+
+A body the edit left alone keeps its part exactly as drawn. A sheet with no
 changed body is written back byte for byte, and on a changed sheet the untouched parts
 keep their original elements. A changed body is drawn afresh:
 - its outline is grown by the kerf the sheet states ("drawn for a 0.13mm kerf"), or else
@@ -887,7 +899,9 @@ reported.
 
 **`sc-compare` is the check.** It pools every part of every sheet on each side, since
 the two pack differently, and matches them by shape. Of the ways a symmetric outline
-fits, it uses the one where the engraved marks agree. For each pair it gives:
+fits, it uses the one where the engraved marks agree. Between near-twins (a flute's
+seven walls) it takes the part lying in the same place on the sheet of the same name.
+For each pair it gives:
 - the farthest any cut line of either lies from the other's (cuts: `--tol`, default
   0.05 mm);
 - the farthest any mark lies from its counterpart (marks: `--mark-tol`, default 0.5 mm);
@@ -916,6 +930,19 @@ Checked 2026-11-08 on four cases:
 
 The user's own `kalimba-septa-box_altered.sc` (radius 200, height 150) stops both, rightly:
 its faces are 390 × 380 mm.
+
+Checked 2026-11-09 with `--redraw-all` on one design in each of the fifteen repositories
+that have one:
+- **Agree** (cuts within 0.05 mm): bullroarer, buzz-disc, four-hole-ocarinas (cube),
+  kalimba, octagonal-flute, panpipes, slapstick, square-flute, and the built trumpet
+  coil (80 parts within 0.0017 mm).
+- **The trumpet's own difference, fixed:** every face plate of the coil was 0.93 mm out
+  until its generator stopped drawing a stub, inherited from the Boxes port, where a
+  2 mm border meets an inside corner (the trumpet repository's notes say how).
+- **Still to look at:** ghb-chanter (7 of 27 parts, up to 1.46 mm), practice-chanters
+  (4 of 131, 0.17 mm) and uilleann-chanter (10 of 25, 4.57 mm).
+- **Not read:** lyre-harp and swept-curve, whose designs have no finger joints yet;
+  knotwork-soundholes, whose sheet draws the holes and no board outline.
 
 ## `make-preview`
 

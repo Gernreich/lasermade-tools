@@ -277,6 +277,41 @@ fn ring_centroid(p: &[P]) -> P {
     centroid(&m)
 }
 
+/// A ring's principal axis, from its area moments (exact for the polygon,
+/// whatever its points' spacing); None when it has no one long way (a
+/// square, a circle).
+fn axis(r: &[P]) -> Option<f64> {
+    let n = r.len();
+    let (mut a, mut cx, mut cy, mut xx, mut yy, mut xy) = (0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    for i in 0..n {
+        let (p, q) = (r[i], r[(i + 1) % n]);
+        let k = p.0 * q.1 - q.0 * p.1;
+        a += k;
+        cx += (p.0 + q.0) * k;
+        cy += (p.1 + q.1) * k;
+        xx += (p.0 * p.0 + p.0 * q.0 + q.0 * q.0) * k;
+        yy += (p.1 * p.1 + p.1 * q.1 + q.1 * q.1) * k;
+        xy += (p.0 * q.1 + 2.0 * p.0 * p.1 + 2.0 * q.0 * q.1 + q.0 * p.1) * k;
+    }
+    if a.abs() < 1e-12 {
+        return None;
+    }
+    // a clockwise ring sums every term negative: the same moments, signed
+    if a < 0.0 {
+        (a, cx, cy, xx, yy, xy) = (-a, -cx, -cy, -xx, -yy, -xy);
+    }
+    let a = a / 2.0;
+    let (cx, cy) = (cx / (6.0 * a), cy / (6.0 * a));
+    // second moments about the centroid
+    let ixx = xx / 12.0 - a * cx * cx;
+    let iyy = yy / 12.0 - a * cy * cy;
+    let ixy = xy / 24.0 - a * cx * cy;
+    if (ixx - iyy).abs() < 1e-6 * (ixx + iyy).abs() && ixy.abs() < 1e-6 * (ixx + iyy).abs() {
+        return None;
+    }
+    Some(0.5 * (2.0 * ixy).atan2(ixx - iyy))
+}
+
 /// Thin a ring's points to at most n, evenly.
 fn sample(r: &[Vec<P>], n: usize) -> Vec<P> {
     let all: Vec<P> = r.iter().flatten().copied().collect();
@@ -322,11 +357,23 @@ pub fn register_all(f: &Flat, p: &Part, only: Option<bool>) -> Vec<(f64, f64, Ri
     let probe = sample(&fr, 160);
     let mut found: Vec<(f64, f64, Rigid)> = vec![];
     let mut tried: Vec<(bool, f64)> = vec![];
+    // the turns to try: long edges lined up, and the principal axes lined up,
+    // for an outline that is all curve (the bullroarers) and has no long
+    // edge to line up, or whose curves the solid and the sheet cut into
+    // different lengths
+    let mut pairs: Vec<(f64, f64)> = vec![];
     for &(fl, fang) in fe.iter().take(3) {
         for &(pl, pang) in pe.iter().take(12) {
-            if (fl - pl).abs() > 1.0 {
-                continue;
+            if (fl - pl).abs() <= 1.0 {
+                pairs.push((fang, pang));
             }
+        }
+    }
+    if let (Some(fa), Some(pa)) = (axis(&fr[0]), axis(&p.outline.pts)) {
+        pairs.push((fa, pa));
+    }
+    for &(fang, pang) in &pairs {
+        {
             for mirror in [false, true] {
                 if only.is_some_and(|m| m != mirror) {
                     continue;
@@ -347,15 +394,22 @@ pub fn register_all(f: &Flat, p: &Part, only: Option<bool>) -> Vec<(f64, f64, Ri
                         let d = to_rings(r.apply(x), &pr);
                         sum += d;
                         worst = worst.max(d);
-                        if worst > 3.0 {
+                        if worst > 4.0 {
                             break;
                         }
                     }
-                    if worst > 3.0 {
+                    let dbg = std::env::var("SC_REG_DEBUG").is_ok();
+                    if worst > 4.0 {
+                        if dbg {
+                            eprintln!("  turn {:.1} deg{}: a probe point {worst:.2} mm off, dropped", a.to_degrees(), if mirror { " mirrored" } else { "" });
+                        }
                         continue;
                     }
                     let mean = sum / probe.len() as f64;
-                    if mean > 1.0 {
+                    if mean > 2.0 {
+                        if dbg {
+                            eprintln!("  turn {:.1} deg{}: mean {mean:.2} mm, dropped", a.to_degrees(), if mirror { " mirrored" } else { "" });
+                        }
                         continue;
                     }
                     // settle it, then measure again
