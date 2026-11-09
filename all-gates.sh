@@ -437,6 +437,9 @@ say "design pages match their generator" "$( [ $pgbad = 0 ] && [ $pg = 13 ] && e
 # writes with the page's flags plus --narrow, the slimmed .sc SolidCraft saves
 # from it, and the STEP file it builds -- three files a design, eleven designs,
 # all redrawn and compared byte for byte. The torus's two pages are one bore.
+# Each design carries the ports its committed cheeks are cut with (2026-11-09),
+# so sc-flatten reads it back onto them: the 1506 mm double spiral's page has
+# none, but its only cheek sheet is ported-square.
 scd=0; scbad=0
 scr () {
   # local names: the lane's wrapper times itself with $s
@@ -455,12 +458,12 @@ scr three-lobe-serpentine-with-collinear-ends/three-lobe-serpentine-with-colline
 scr ess/ribbon-ess-bore10-45deg-5arc --shape=ess
 scr $BSP --shape=spiral --port --port-square --cap
 scr volute/double-volute-bore10-45deg-R94-step60 --shape=double-volute
-scr $DSP-1506mm --shape=double-spiral
+scr $DSP-1506mm --shape=double-spiral --port --port-square
 scr $DSP-1000mm --shape=double-spiral --ds-facets=9 --lead=42
 scr $RT --shape=racetrack --lobes=4 --lobe-r=22 --race-cap-r=132.809141 --race-straight=31
 scr $OV --shape=oval
-scr $SC --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41
-scr $TO --shape=torus --facet=27.6923076923 --radius=128.571738
+scr $SC --shape=scallop --facet=36 --lobes=5 --scallop-in-deg=72 --lobe-r=44.22136 --scallop-in-r=41 --port --port-at=1,14 --port-per-cheek --port-square
+scr $TO --shape=torus --facet=27.6923076923 --radius=128.571738 --port --port-at=0,6 --port-per-cheek --port-square
 say "SolidCraft designs match their generator" "$( [ $scbad = 0 ] && [ $scd = 11 ] && echo "ok  $scd/11" || echo "FAIL $scbad stale, $scd of 11 current")"
 
 # THE PAGE AND THE SHEETS READ ONE COMMAND LINE. ribbon_view.rs kept its own copy

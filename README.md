@@ -851,32 +851,64 @@ is found among the parts of the committed sheets by shape, at any turn or mirror
 says which sheet it is on, where, which way up, in which inks and with what kerf. A
 body is tried at the turns that lay its long edges together and at the one that lays
 its principal axis on the part's, so a tapered outline with no straight edge (the
-bullroarer) still finds its part. Where many parts look alike, these choose among fits
-that are equally good, never over a better fit:
-- a build is one set of sheets, `NAME-sheet1`, `NAME-sheet2`... or a folder of its own,
-  and a set that holds every body is that build (the panpipes' builds share a folder,
-  and the trumpet's build shares wall shapes with the concept walks);
+bullroarer) still finds its part, and at the turns that lay an off-centre hole on its
+fellow, so a round plate (the uilleann tenon, a 72-gon) turns by its pins and bore.
+Every ring of the outline has its say in the fit, however few corners it has: a round
+plate drawn in 800 points would otherwise leave its one square hole without a point.
+Once the sheet's kerf is known, each body's move is settled again with the body grown
+by it, so the two outlines are drawn alike; an as-cut body laid on a drawn part is half
+a kerf off all round, and a part curved one side and straight the other came out
+0.07 mm askew. A fit is measured both ways, the body's cut onto the
+part's and the part's onto the body's, so a part with a notch the body lacks (a torus
+cheek with six mortices more) does not fit it. A part drawn as mortices touching the rim
+(a narrow ribbon cheek) is read as cut: the notches opened into the outline. A part on
+a sheet named `-x2-` is cut twice and takes two bodies. Where many parts look alike,
+these choose among fits that are equally good, never over a better fit:
+- a build is one set of sheets: one variant (a ribbon bore's folder holds its cheeks and
+  panels unported, ported and ported both ends, and the sheets that differ only in
+  `-panels` or `-cheek...` are one variant), `NAME-sheet1`, `NAME-sheet2`... or a folder
+  of its own; a set that holds every body is that build (the panpipes' builds share a
+  folder, and the trumpet's build shares wall shapes with the concept walks);
 - a body named for a piece ("piece 3 wall 1") goes on that piece's sheet (`03of12`);
 - a mirror twin, the same shape as its partner, goes the way most plates on the sheet
-  lie, unless both twins need a part;
+  lie, unless both twins need a part, and unless that way fits 0.02 mm worse;
+- a part that fits itself turned or flipped nearly as well (a scallop's cheek, five lobes
+  and a mirror) takes the way whose cut, grown by the sheet's kerf, lies closest on the
+  part's line both ways round, and whose pockets lie on the part's fills (the square
+  flute's flue plate turns only by its engraving);
 - a body left without a part takes one from a body that can move to another, as in a
-  matching.
+  matching;
+- once the sheet's kerf is known, any two bodies swap parts if each, grown by the kerf
+  and settled on the other's part, fits it better by 0.005 mm between them: before the
+  kerf, half of it sits in every fit, and a run of stepped near-twins (a chanter's
+  mouthpiece plates) can come out two parts along.
+
+A body no sheet draws whole, whose holes are what the sheets cut (a knotwork rosette's
+board, of which the cut file draws only the waste), is read as its holes, each a body
+of its own. A sheet whose viewBox does not start at 0 0 (a rosette's, centred on it)
+keeps its origin. An engraved line belongs to the part its middle lies in: a rosette's
+ribbon edge starts on a waste piece's cut line and runs out over the board.
 
 A body the edit left alone keeps its part exactly as drawn. A sheet with no
 changed body is written back byte for byte, and on a changed sheet the untouched parts
 keep their original elements. A changed body is drawn afresh:
 - its outline is grown by the kerf the sheet states ("drawn for a 0.13mm kerf"), or else
   the median the parts show, with round or mitred corners, whichever redraws the sheet's
-  biggest part better;
+  parts better, all of them, by how close the sheet's lines lie to each (the biggest
+  part alone, a chanter's strip, can be thrown by a misfit of its own);
 - each hole takes the offset its committed hole had (the kalimba puts kerf on outlines
   only);
+- a part whose notches were read as cut is drawn back as its sheet drew it: the rim
+  straight across each notch, the notch as a mortice on the rim, sharp-cornered;
 - each pocket is drawn in the fill ink it was engraved in.
 
 What the design does not model is carried over:
 - corner numbers, the window's bevel line and a rosette's interlace each follow the
   nearest corner or hole of the part;
 - corners are where the part's bounding sides meet, so recounted fingers do not move
-  them;
+  them; a corner that does not sit as far from the redrawn outline as from the old one
+  is no anchor (on a curved part many sides touch one vertex, and two of them can cross
+  tens of millimetres away);
 - a rosette's holes are paired through the one shift that carries them all;
 - parts the design has no body for (the kalimba's stiffeners) stay as committed, and
   the report says so.
@@ -901,6 +933,10 @@ reported.
 the two pack differently, and matches them by shape. Of the ways a symmetric outline
 fits, it uses the one where the engraved marks agree. Between near-twins (a flute's
 seven walls) it takes the part lying in the same place on the sheet of the same name.
+Of ways that fit equally (a symmetric part), it takes the one not turned over and
+turned least, so the count of which way most parts lie is not thrown. Each pair's move
+is settled on the two drawn outlines, and on a sheet of the same name the part left
+where it lies is tried too, kept if its worst point lies closer.
 For each pair it gives:
 - the farthest any cut line of either lies from the other's (cuts: `--tol`, default
   0.05 mm);
@@ -932,17 +968,24 @@ The user's own `kalimba-septa-box_altered.sc` (radius 200, height 150) stops bot
 its faces are 390 × 380 mm.
 
 Checked 2026-11-09 with `--redraw-all` on one design in each of the fifteen repositories
-that have one:
-- **Agree** (cuts within 0.05 mm): bullroarer, buzz-disc, four-hole-ocarinas (cube),
-  kalimba, octagonal-flute, panpipes, slapstick, square-flute, and the built trumpet
-  coil (80 parts within 0.0017 mm).
-- **The trumpet's own difference, fixed:** every face plate of the coil was 0.93 mm out
-  until its generator stopped drawing a stub, inherited from the Boxes port, where a
-  2 mm border meets an inside corner (the trumpet repository's notes say how).
-- **Still to look at:** ghb-chanter (7 of 27 parts, up to 1.46 mm), practice-chanters
-  (4 of 131, 0.17 mm) and uilleann-chanter (10 of 25, 4.57 mm).
-- **Not read:** lyre-harp and swept-curve, whose designs have no finger joints yet;
-  knotwork-soundholes, whose sheet draws the holes and no board outline.
+that have one, and on all eleven swept-curve designs: **every one agrees** (cuts within
+0.05 mm, marks within 0.5 mm).
+- bullroarer 0.018 mm, buzz-disc 0.001, four-hole-ocarinas (cube) 0.023, kalimba 0.041,
+  lyre-harp 0.006 (63 parts), octagonal-flute 0.012, panpipes 0.001, slapstick 0.001,
+  square-flute 0.004, the swept-curve spiral 0.002 and the other ten 0.006 or less, and
+  the built trumpet coil 0.002 (80 parts);
+- ghb-chanter 0.049 (27 parts; 0.040 and 0.041 on six and eight sides), practice-chanters
+  0.031 (131 parts), uilleann-chanter 0.032 (25 parts), knotwork-soundholes 0.020.
+
+What it took, besides the reading and matching above:
+- **The trumpet's own difference:** every face plate of the coil was 0.93 mm out until
+  its generator stopped drawing a stub, inherited from the Boxes port, where a 2 mm
+  border meets an inside corner (the trumpet repository's notes say how).
+- **lyre-harp and swept-curve** gained the finger joints their sheets cut.
+- **ghb-chanter's design** lays each strip's length, joints and holes along its leaning
+  face, as the generator draws them; down the axis, a strip came out 0.15 mm long.
+- **ghb's 0.049 mm** is the foot pieces' arcs, true in the design and a polygon on the
+  sheet; it is the closest any repository comes to the limit.
 
 ## `make-preview`
 

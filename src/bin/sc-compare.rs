@@ -67,7 +67,7 @@ fn main() {
         v
     };
     let (sa, sb) = (pool(&dirs[0], &la), pool(&dirs[1], &lb));
-    let a = sheets::Sheet { path: String::new(), w: 0.0, h: 0.0, title: String::new(), desc: String::new(), inks: vec![], parts: sa.iter().map(|x| x.1.clone()).collect(), loose: vec![], text: String::new(), changed: false };
+    let a = sheets::Sheet { path: String::new(), x0: 0.0, y0: 0.0, w: 0.0, h: 0.0, title: String::new(), desc: String::new(), inks: vec![], parts: sa.iter().map(|x| x.1.clone()).collect(), loose: vec![], text: String::new(), changed: false };
     let b = sheets::Sheet { parts: sb.iter().map(|x| x.1.clone()).collect(), ..a.clone() };
     println!("{} parts on {} sheet{} and {} on {}", a.parts.len(), la.len(), if la.len() == 1 { "" } else { "s" }, b.parts.len(), lb.len());
     let mut worst_all: f64 = 0.0;
@@ -120,11 +120,18 @@ fn main() {
                     let ways = sheets::register_all(fa, pb, only);
                     let Some(best) = ways.first().map(|w| w.0) else { continue };
                     // of the ways that fit as well, the one whose marks agree
+                    // (and of those, a symmetric part's, the one not turned
+                    // over and turned least: else it lies whichever way, and
+                    // the count of which way most parts lie goes astray)
                     let (gap, mean, r) = ways
                         .iter()
                         .filter(|w| w.0 < best + 0.01)
                         .map(|w| (mark_gap(&a.parts[i], pb, w.2), w.0, w.2))
-                        .min_by(|x, y| x.0.partial_cmp(&y.0).unwrap())
+                        .min_by(|x, y| {
+                            let k = |w: &(f64, f64, sheets::Rigid)| (w.0, w.2.mirror, w.2.s.atan2(w.2.c).abs());
+                            let (p, q) = (k(x), k(y));
+                            p.0.partial_cmp(&q.0).unwrap().then(p.1.cmp(&q.1)).then(p.2.partial_cmp(&q.2).unwrap())
+                        })
                         .unwrap();
                     let inks = if sheets::ink_counts(&a.parts[i]) == sheets::ink_counts(pb) { 0.0 } else { 0.5 };
                     // near-twins (a flute's seven walls) fit each other almost
@@ -168,11 +175,25 @@ fn main() {
         matched.sort_by_key(|m| m.0);
         for (i, j, r) in matched {
             let (pa, pb) = (&a.parts[i], &b.parts[j]);
-            let ra: Vec<Vec<sheets_p::P>> = sheets::part_rings(pa).iter().map(|ring| ring.iter().map(|&p| r.apply(p)).collect()).collect();
+            // both drawn alike, so settle the move on them (a near-round
+            // plate's turn is barely held by its outline)
+            let r = sheets::settle(r, &sheets::part_rings(pa), &sheets::part_rings(pb));
             let rb = sheets::part_rings(pb);
-            let ab = ra.iter().flatten().map(|&p| sheets::to_rings(p, &rb)).fold(0.0, f64::max);
-            let ba = rb.iter().flatten().map(|&p| sheets::to_rings(p, &ra)).fold(0.0, f64::max);
-            let w = ab.max(ba);
+            let apart = |r: &sheets::Rigid| {
+                let ra: Vec<Vec<sheets_p::P>> = sheets::part_rings(pa).iter().map(|ring| ring.iter().map(|&p| r.apply(p)).collect()).collect();
+                let ab = ra.iter().flatten().map(|&p| sheets::to_rings(p, &rb)).fold(0.0, f64::max);
+                let ba = rb.iter().flatten().map(|&p| sheets::to_rings(p, &ra)).fold(0.0, f64::max);
+                (ab.max(ba), ra)
+            };
+            // the move settles the mean; on a sheet of the same name the part
+            // left where it lies is a move too, and may put the worst point
+            // closer (a foot piece's arc, polygon on one side, true on the other)
+            let still = sheets::Rigid { c: 1.0, s: 0.0, mirror: false, t: (0.0, 0.0) };
+            let r = if sa[i].0 == sb[j].0 && apart(&still).0 < apart(&r).0 { still } else { r };
+            let (w, ra) = apart(&r);
+            if std::env::var("SC_COMPARE_DEBUG").is_ok() {
+                eprintln!("      move A to B: turn {:.4} deg, mirror {}, shift ({:.3},{:.3})", r.s.atan2(r.c).to_degrees(), r.mirror, r.t.0, r.t.1);
+            }
             if std::env::var("SC_COMPARE_DEBUG").is_ok() && w > tol {
                 // where on the part the cut lines part company, from B's outline's lower-left corner
                 let (x0, y0) = rb[0].iter().fold((f64::MAX, f64::MAX), |s, p| (s.0.min(p.0), s.1.min(p.1)));

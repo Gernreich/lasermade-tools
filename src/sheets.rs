@@ -30,11 +30,18 @@ pub struct Item {
 pub struct Part {
     pub outline: Item,
     pub inside: Vec<Item>,
+    /// the part as the laser leaves it, when a hole touches its rim or
+    /// another hole: a ribbon cheek's mortice drawn as a closed slot on a
+    /// straight rim cuts a notch, and the solid has the notch
+    pub cut: Option<Vec<Vec<P>>>,
 }
 
 #[derive(Clone, Debug)]
 pub struct Sheet {
     pub path: String,
+    /// the viewBox's corner (a rosette's file centres it on the origin) and size
+    pub x0: f64,
+    pub y0: f64,
     pub w: f64,
     pub h: f64,
     pub title: String,
@@ -84,6 +91,7 @@ pub fn read(path: &str) -> Result<Sheet, String> {
     let scale = svg::user_scale(&r, root);
     let vb = svg::nums(&r, root.attribute("viewBox"));
     let (w, h) = if vb.len() == 4 { (vb[2] * scale, vb[3] * scale) } else { (0.0, 0.0) };
+    let (x0, y0) = if vb.len() == 4 { (vb[0] * scale, vb[1] * scale) } else { (0.0, 0.0) };
     let text = |tag: &str| root.children().find(|c| c.tag_name().name() == tag).and_then(|c| c.text()).unwrap_or("").to_string();
     let mut items = vec![];
     let mut inks: Vec<(String, bool, String)> = vec![];
@@ -127,9 +135,13 @@ pub fn read(path: &str) -> Result<Sheet, String> {
     // parts, but some sheets cut a part of their own in another ink (the
     // kalimba's optional stiffeners, in orange)
     let black: Vec<usize> = (0..items.len()).filter(|&i| items[i].ink != "#0000ff" && !items[i].fill && items[i].closed && items[i].pts.len() > 2).collect();
-    let holds = |a: &Item, b: &Item| b.pts.iter().all(|&q| svg::inside(q, &a.pts)) && ring_area(&a.pts).abs() > ring_area(&b.pts).abs();
+    // a point on a's line counts as inside it: a narrow cheek's mortices are
+    // drawn with their outer side on its rim
+    let on_line = |q: P, r: &[P]| (0..r.len()).any(|i| seg_dist(q, r[i], r[(i + 1) % r.len()]) < 0.01);
+    // (closed cuts only: an engraved stroke ending on a line stays outside)
+    let holds = |a: &Item, b: &Item| b.pts.iter().all(|&q| svg::inside(q, &a.pts) || (b.closed && on_line(q, &a.pts))) && ring_area(&a.pts).abs() > ring_area(&b.pts).abs();
     let outer: Vec<usize> = black.iter().copied().filter(|&i| !black.iter().any(|&j| j != i && holds(&items[j], &items[i]))).collect();
-    let mut parts: Vec<Part> = outer.iter().map(|&i| Part { outline: items[i].clone(), inside: vec![] }).collect();
+    let mut parts: Vec<Part> = outer.iter().map(|&i| Part { outline: items[i].clone(), inside: vec![], cut: None }).collect();
     let mut loose = vec![];
     let mut host_of: std::collections::HashMap<usize, Option<usize>> = std::collections::HashMap::new();
     for (i, it) in items.into_iter().enumerate() {
@@ -143,16 +155,29 @@ pub fn read(path: &str) -> Result<Sheet, String> {
             }
             continue;
         }
-        // the smallest outline holding its first point
-        let at = it.pts[0];
-        let host = parts.iter().enumerate().filter(|(_, p)| svg::inside(at, &p.outline.pts)).min_by(|a, b| ring_area(&a.1.outline.pts).abs().partial_cmp(&ring_area(&b.1.outline.pts).abs()).unwrap()).map(|(k, _)| k);
+        // the smallest outline holding its first point, or, for a closed cut
+        // whose first point lies on the rim, its middle; an open stroke goes
+        // by the middle of its path (a rosette's ribbon edge starts on a
+        // waste piece's cut line and runs out over the board, and its first
+        // point falls either side of that line by a ten-thousandth of a mm)
+        let smallest = |at: P| parts.iter().enumerate().filter(|(_, p)| svg::inside(at, &p.outline.pts)).min_by(|a, b| ring_area(&a.1.outline.pts).abs().partial_cmp(&ring_area(&b.1.outline.pts).abs()).unwrap()).map(|(k, _)| k);
+        let n = it.pts.len();
+        let first = if it.closed || n < 2 { it.pts[0] } else { let (a, b) = (it.pts[(n - 1) / 2], it.pts[n / 2]); ((a.0 + b.0) / 2.0, (a.1 + b.1) / 2.0) };
+        let mut host = smallest(first);
+        if host.is_none() && it.closed && it.pts.len() > 2 {
+            let n = it.pts.len() as f64;
+            host = smallest((it.pts.iter().map(|q| q.0).sum::<f64>() / n, it.pts.iter().map(|q| q.1).sum::<f64>() / n));
+        }
         host_of.insert(it.el, host);
         match host {
             Some(k) => parts[k].inside.push(it),
             None => loose.push(it),
         }
     }
-    Ok(Sheet { path: path.to_string(), w, h, title: text("title"), desc: text("desc"), inks, parts, loose, text: src.clone(), changed: false })
+    for p in parts.iter_mut() {
+        p.cut = as_cut(&drawn_rings(p));
+    }
+    Ok(Sheet { path: path.to_string(), x0, y0, w, h, title: text("title"), desc: text("desc"), inks, parts, loose, text: src.clone(), changed: false })
 }
 
 // --- placing a flat body on a sheet ------------------------------------------------------
@@ -262,9 +287,47 @@ pub fn rings(m: &geo::MultiPolygon<f64>) -> Vec<Vec<P>> {
     out
 }
 
-/// A part's cut rings on the sheet: its outline and every closed cut inside it.
-pub fn part_rings(p: &Part) -> Vec<Vec<P>> {
+/// A part's rings as drawn: its outline and every closed cut inside it.
+pub fn drawn_rings(p: &Part) -> Vec<Vec<P>> {
     std::iter::once(p.outline.pts.clone()).chain(p.inside.iter().filter(|i| i.closed && !i.fill && i.ink != "#0000ff").map(|i| i.pts.clone())).collect()
+}
+
+/// A part's cut rings: as drawn, or as cut where its holes touch.
+pub fn part_rings(p: &Part) -> Vec<Vec<P>> {
+    p.cut.clone().unwrap_or_else(|| drawn_rings(p))
+}
+
+/// Which holes (rings after the first) touch another ring: lie on it, as a
+/// narrow cheek's mortice lies on its rim.
+pub fn touching(rings: &[Vec<P>]) -> Vec<bool> {
+    let on = |a: &[P], b: &[P]| {
+        let n = b.len();
+        a.iter().any(|&q| (0..n).any(|i| seg_dist(q, b[i], b[(i + 1) % n]) < 0.01))
+    };
+    (0..rings.len()).map(|i| i > 0 && (0..rings.len()).any(|j| j != i && on(&rings[i], &rings[j]))).collect()
+}
+
+/// The rings as the laser leaves the part, the outline less every hole,
+/// when a hole touches another ring; None when none does.
+pub fn as_cut(rings: &[Vec<P>]) -> Option<Vec<Vec<P>>> {
+    let t = touching(rings);
+    if rings.len() < 2 || !t.iter().any(|&t| t) {
+        return None;
+    }
+    // a hole drawn on the rim can stop a ten-thousandth short of it, which
+    // the subtraction keeps as a hair of material: swell each touching hole
+    // by 0.005 mm, so it breaks through
+    let poly = |r: &[P]| geo::MultiPolygon::new(vec![geo::Polygon::new(geo::LineString::from(r.iter().map(|&(x, y)| geo::Coord { x, y }).collect::<Vec<_>>()), vec![])]);
+    let big = (0..rings.len()).max_by(|&a, &b| ring_area(&rings[a]).abs().partial_cmp(&ring_area(&rings[b]).abs()).unwrap()).unwrap();
+    let mut m = poly(&rings[big]);
+    for (i, r) in rings.iter().enumerate() {
+        if i != big {
+            let h = if t[i] { grow(&poly(r), 0.005, false) } else { poly(r) };
+            m = m.difference(&h);
+        }
+    }
+    m.0.sort_by(|a, b| b.unsigned_area().partial_cmp(&a.unsigned_area()).unwrap());
+    Some(self::rings(&m))
 }
 
 fn centroid(m: &geo::MultiPolygon<f64>) -> P {
@@ -313,19 +376,34 @@ fn axis(r: &[P]) -> Option<f64> {
 }
 
 /// Thin a ring's points to at most n, evenly.
+/// About n points of the rings, each ring its share by vertices but never
+/// fewer than eight: a round plate's outline drawn in 800 points would
+/// otherwise leave its one square hole, the only thing that says which way
+/// it turns, without a point
 fn sample(r: &[Vec<P>], n: usize) -> Vec<P> {
-    let all: Vec<P> = r.iter().flatten().copied().collect();
-    if all.len() <= n {
-        return all;
+    let total: usize = r.iter().map(|x| x.len()).sum();
+    if total <= n {
+        return r.iter().flatten().copied().collect();
     }
-    (0..n).map(|i| all[i * all.len() / n]).collect()
+    let mut out = vec![];
+    for x in r {
+        let k = (n * x.len() / total).max(8).min(x.len());
+        out.extend((0..k).map(|i| x[i * x.len() / k]));
+    }
+    out
 }
 
 /// How well a flat body sits on a sheet part, and the move that puts it
 /// there: (mean distance, worst distance, move). Turns are tried by lining
 /// up long edges; the move then lays centroid on centroid.
+///
+/// Two ways within 0.005 mm of each other on the mean are one fit and its
+/// near-twin (a scallop's cheek mirrors onto itself but for a few slivers
+/// at its mortices): the one whose worst point sits closer is the one.
 pub fn register(f: &Flat, p: &Part, only: Option<bool>) -> Option<(f64, f64, Rigid)> {
-    register_all(f, p, only).into_iter().next()
+    let ways = register_all(f, p, only);
+    let best = ways.first()?.0;
+    ways.into_iter().filter(|w| w.0 < best + 0.005).min_by(|a, b| a.1.partial_cmp(&b.1).unwrap())
 }
 
 /// Every distinct way a flat body sits on a sheet part, best first: a
@@ -337,7 +415,7 @@ pub fn register_all(f: &Flat, p: &Part, only: Option<bool>) -> Vec<(f64, f64, Ri
     if fr.len() != pr.len() {
         return vec![];
     }
-    let (fa, pa) = (f.region.unsigned_area(), ring_area(&p.outline.pts).abs() - pr[1..].iter().map(|r| ring_area(r).abs()).sum::<f64>());
+    let (fa, pa) = (f.region.unsigned_area(), ring_area(&pr[0]).abs() - pr[1..].iter().map(|r| ring_area(r).abs()).sum::<f64>());
     if (fa - pa).abs() > 0.05 * fa + 2.0 {
         return vec![];
     }
@@ -351,9 +429,9 @@ pub fn register_all(f: &Flat, p: &Part, only: Option<bool>) -> Vec<(f64, f64, Ri
         e
     };
     let fe = edges(&fr[0]);
-    let pe = edges(&p.outline.pts);
+    let pe = edges(&pr[0]);
     let fc = ring_centroid(&fr[0]); // the outline's, as the part's is: holes would pull it off
-    let pc = ring_centroid(&p.outline.pts);
+    let pc = ring_centroid(&pr[0]);
     let probe = sample(&fr, 160);
     let mut found: Vec<(f64, f64, Rigid)> = vec![];
     let mut tried: Vec<(bool, f64)> = vec![];
@@ -369,8 +447,24 @@ pub fn register_all(f: &Flat, p: &Part, only: Option<bool>) -> Vec<(f64, f64, Ri
             }
         }
     }
-    if let (Some(fa), Some(pa)) = (axis(&fr[0]), axis(&p.outline.pts)) {
+    if let (Some(fa), Some(pa)) = (axis(&fr[0]), axis(&pr[0])) {
         pairs.push((fa, pa));
+    }
+    // and an off-centre hole's offset lined up with its fellow's: a round
+    // plate (the uilleann tenon) has no edge or axis to go by, and only its
+    // pins and its lobed bore say which way it turns
+    let off = |r: &[P], c: P| {
+        let h = ring_centroid(r);
+        ((h.0 - c.0).hypot(h.1 - c.1), (h.1 - c.1).atan2(h.0 - c.0), ring_area(r).abs())
+    };
+    let mut fh: Vec<(f64, f64, f64)> = fr[1..].iter().map(|r| off(r, fc)).filter(|h| h.0 > 1.0).collect();
+    fh.sort_by(|a, b| b.2.partial_cmp(&a.2).unwrap());
+    for &(fd, fang, farea) in fh.iter().take(2) {
+        for (pd, pang, parea) in pr[1..].iter().map(|r| off(r, pc)) {
+            if (fd - pd).abs() < 1.0 && (farea - parea).abs() < 0.2 * farea + 1.0 {
+                pairs.push((fang, pang));
+            }
+        }
     }
     for &(fang, pang) in &pairs {
         {
@@ -427,6 +521,54 @@ pub fn register_all(f: &Flat, p: &Part, only: Option<bool>) -> Vec<(f64, f64, Ri
     }
     found.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
     found
+}
+
+/// Points every `step` mm along each ring, so a long straight side counts
+/// for as much as an arc of the same length sampled finely.
+pub fn along(rings: &[Vec<P>], step: f64) -> Vec<P> {
+    let mut out = vec![];
+    for r in rings {
+        let n = r.len();
+        let mut carry = 0.0;
+        for i in 0..n {
+            let (a, b) = (r[i], r[(i + 1) % n]);
+            let l = (b.0 - a.0).hypot(b.1 - a.1);
+            let mut d = carry;
+            while d < l {
+                out.push((a.0 + (b.0 - a.0) * d / l, a.1 + (b.1 - a.1) * d / l));
+                d += step;
+            }
+            carry = d - l;
+        }
+    }
+    out
+}
+
+/// A move settled on two outlines drawn alike (the same kerf on both): the
+/// ICP refine on points evenly along `src`, both ways round, as long as it
+/// takes a near-round part to find its turn; kept only if it fits better.
+/// register_all's own refine lays an as-cut body on a drawn part, half a
+/// kerf apart, and an outline that is an arc one side and straight the
+/// other (a chanter's foot piece) comes out 0.07 mm over.
+pub fn settle(r: Rigid, src: &[Vec<P>], dst: &[Vec<P>]) -> Rigid {
+    settle_n(r, src, dst, 100)
+}
+
+/// settle, in so many ICP rounds
+pub fn settle_n(r: Rigid, src: &[Vec<P>], dst: &[Vec<P>], rounds: usize) -> Rigid {
+    let probe = along(src, 0.5);
+    if probe.is_empty() {
+        return r;
+    }
+    let back = along(dst, 0.5);
+    let fit = |r: &Rigid| {
+        let moved: Vec<Vec<P>> = src.iter().map(|x| x.iter().map(|&p| r.apply(p)).collect()).collect();
+        let a = probe.iter().map(|&p| to_rings(r.apply(p), dst)).sum::<f64>() / probe.len() as f64;
+        let b = back.iter().map(|&p| to_rings(p, &moved)).sum::<f64>() / back.len().max(1) as f64;
+        a + b
+    };
+    let s = refine(r, &probe, dst, rounds);
+    if fit(&s) < fit(&r) { s } else { r }
 }
 
 // --- the kerf ---------------------------------------------------------------------------
@@ -495,9 +637,11 @@ pub fn write(s: &Sheet) -> String {
         return s.text.clone();
     }
     let mut o = format!(
-        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{w}mm\" height=\"{h}mm\" viewBox=\"0 0 {w} {h}\">\n<title>{}</title>\n<desc>{}</desc>\n",
+        "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{w}mm\" height=\"{h}mm\" viewBox=\"{x0} {y0} {w} {h}\">\n<title>{}</title>\n<desc>{}</desc>\n",
         esc(&s.title),
         esc(&s.desc),
+        x0 = num(s.x0),
+        y0 = num(s.y0),
         w = num(s.w),
         h = num(s.h)
     );
