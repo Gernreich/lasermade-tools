@@ -8,15 +8,36 @@ license = "CC0-1.0"
 
 # One program per file in src/bin/, named after it: doc-audit, md2html,
 # repro-svg, svg-stroke-check, flat-part-check, name-check, ignore-audit,
-# image-meta-check, make-preview, test-ladder, turn3d, step-export. src/lib.rs holds what
+# image-meta-check, make-preview, test-ladder, turn3d, step-export, sc-slim,
+# sc-flatten, sc-replay, sc-compare. src/lib.rs holds what
 # they share; src/svg.rs is the cut-file parser flat-part-check and turn3d use,
-# and src/turn3d.rs is the 3D page the instrument repositories' viewers build on.
+# and src/turn3d.rs is the 3D page the instrument repositories' viewers build on;
+# src/step.rs, src/sheets.rs and src/scedit.rs are what the sc- programs share.
 
 [dependencies]
 # Python's re has lookbehind and backreferences; the regex crate has neither
 fancy-regex = "0.14"
 # for the well-formedness checks and flat-part-check's reading of an SVG
 roxmltree = "0.20"
+# the polygon work sc-flatten does: unions, the kerf, overlaps. Optional, so
+# the instrument repositories that build on this crate do not pull it in;
+# the sc- programs ask for it (cargo build --release --features sc)
+geo = { version = "0.33", optional = true }
 
 [profile.release]
 opt-level = 3
+
+[features]
+sc = ["dep:geo"]
+
+[[bin]]
+name = "sc-flatten"
+required-features = ["sc"]
+
+[[bin]]
+name = "sc-replay"
+required-features = ["sc"]
+
+[[bin]]
+name = "sc-compare"
+required-features = ["sc"]

@@ -13,7 +13,13 @@
 //!   run    a shell command with a timeout, and a pool of threads
 
 pub mod flat;
+#[cfg(feature = "sc")]
+pub mod scedit;
 pub mod solidcraft;
+#[cfg(feature = "sc")]
+pub mod sheets;
+#[cfg(feature = "sc")]
+pub mod step;
 pub mod svg;
 pub mod turn3d;
 

@@ -40,21 +40,28 @@ that cost them a sheet, and because a checker that reports the wrong thing is wo
 no checker at all. Every one of these has produced a wrong answer at some point. Each
 section below says which, because that is the part worth remembering.
 
-Thirteen of them are Rust programs, one file each in `src/bin/` — `doc-audit.rs`,
+Sixteen of them are Rust programs, one file each in `src/bin/` — `doc-audit.rs`,
 `md2html.rs`, `repro-svg.rs`, `svg-stroke-check.rs`, `flat-part-check.rs`,
 `name-check.rs`, `ignore-audit.rs`, `image-meta-check.rs`, `make-preview.rs`,
-`test-ladder.rs`, `turn3d.rs`, `step-export.rs` and `sc-slim.rs` — sharing `src/lib.rs`, with the cut-file parser in
+`test-ladder.rs`, `turn3d.rs`, `step-export.rs`, `sc-slim.rs`, `sc-flatten.rs`,
+`sc-replay.rs` and `sc-compare.rs` — sharing `src/lib.rs`, with the cut-file parser in
 `src/svg.rs`, the 3D page in `src/turn3d.rs` and the writer of the instruments'
 parametric SolidCraft designs in `src/solidcraft.rs`. `src/flat.rs` is what the
 bullroarer, buzz disc, kalimba and slapstick generators share: one table of parameters
 that drives both the cut sheet and the SolidCraft design, so every size is a flag and a
-design parameter of the same name. Build them once:
+design parameter of the same name. The three `sc-` programs that work an edited design
+back to its cut sheets share `src/step.rs` (a STEP file read back as solids, and a solid
+laid flat), `src/sheets.rs` (a cut sheet read as its parts, a part found on a sheet, a
+sheet written back) and `src/scedit.rs` (the edited design, the committed one it came
+from, and their parameters). Build them once:
 
 ```
-cargo build --release
+cargo build --release                  # the gates and the page builder
+cargo build --release --features sc    # and sc-flatten, sc-replay, sc-compare
 ```
 
-and each is then `target/release/<name>`; `all-gates.sh` builds them before anything
+(the `sc` feature brings in the `geo` polygon crate, which the instrument repositories
+that build on this one have no need of) and each is then `target/release/<name>`; `all-gates.sh` builds them before anything
 else runs. `Cargo.toml` names the two crates they use (fancy-regex, for the lookbehind
 and backreferences Python's `re` had, and roxmltree, to read an SVG) and `Cargo.lock`
 pins them. `md2html` also needs [pandoc](https://pandoc.org) (`brew install pandoc`).
@@ -88,6 +95,9 @@ speed is the reason for the port: `flat-part-check` over living-hinge's cut file
 | `turn3d` | a hand-drawn cut file turned into 3 mm parts and a page that turns them in 3D |
 | `step-export` | a 3D page's parts as STEP solids, to open in a CAD program |
 | `sc-slim` | a SolidCraft design without its build cache, the same bytes every time |
+| `sc-flatten` | the cut sheets for a hand-edited SolidCraft design, worked back from the solid |
+| `sc-replay` | the same, drawn again by the repository's generator from the edited parameters |
+| `sc-compare` | two sets of cut sheets, part by part, wherever each part lies |
 | `all-gates.sh` | every gate in every repository, one output, one tally |
 | `repro-svg` | does a repository's shipped SVG still come out of its generator? |
 | `name-check` | does a cut file's name agree with the geometry inside it? |
@@ -813,6 +823,99 @@ compresses anyway. The repositories' `.repro` rows build every design this way, 
 Checked 2026-11-08: two builds of the same design came out byte-identical, the zip
 tests clean, and the slim design opens to the same 88 bodies and volume as the full
 one, and follows a parameter change to the same volume.
+
+## `sc-flatten`, `sc-replay` and `sc-compare`
+
+```
+cargo build --release --features sc    # once
+target/release/sc-flatten EDITED.sc [--original=ORIGINAL.sc] [--out=DIR] [--redraw-all]
+target/release/sc-replay  EDITED.sc [--original=ORIGINAL.sc] [--out=DIR]
+target/release/sc-compare DIR_A DIR_B [--tol=MM] [--mark-tol=MM]
+```
+
+Someone opens an instrument's SolidCraft design, makes it bigger or moves a hole, and
+saves it under a new name. These give back the cut sheets for what they saved, two
+independent ways, and check the two against each other. Neither writes into the
+repository's shipped files: the default output is `target/sc-flatten/STEM/` and
+`target/sc-replay/STEM/`, at the committed sheets' own paths. The committed design the
+edit came from is the committed `.sc` whose name begins the edited one's
+(`four-hole-ocarina-cube_bigger.sc` came from `four-hole-ocarina-cube.sc`), or
+`--original=`. An edit saved from an older version of the design than the one committed
+now is found in the file's history, and its sheets are read as they were then.
+
+**`sc-flatten` works from the solid.** SolidCraft builds the edited design and the one
+it came from as STEP files (`src/step.rs` reads lines, circles and rational B-splines).
+Every body is laid on its thin side; its two faces give the outline and the holes cut
+through it, and a face part-way through is a pocket. Each body of the committed design
+is found among the parts of the committed sheets by shape, at any turn or mirror. That
+says which sheet it is on, where, which way up, in which inks and with what kerf. A
+mirror twin, the same shape as its partner, is held to the way most plates on the sheet
+lie. A body the edit left alone keeps its part exactly as drawn. A sheet with no
+changed body is written back byte for byte, and on a changed sheet the untouched parts
+keep their original elements. A changed body is drawn afresh:
+- its outline is grown by the kerf the sheet states ("drawn for a 0.13mm kerf"), or else
+  the median the parts show, with round or mitred corners, whichever redraws the sheet's
+  biggest part better;
+- each hole takes the offset its committed hole had (the kalimba puts kerf on outlines
+  only);
+- each pocket is drawn in the fill ink it was engraved in.
+
+What the design does not model is carried over:
+- corner numbers, the window's bevel line and a rosette's interlace each follow the
+  nearest corner or hole of the part;
+- corners are where the part's bounding sides meet, so recounted fingers do not move
+  them;
+- a rosette's holes are paired through the one shift that carries them all;
+- parts the design has no body for (the kalimba's stiffeners) stay as committed, and
+  the report says so.
+
+Parts that no longer fit are packed again, onto more sheets if need be. A part bigger
+than the 600 × 305 mm bed any way round stops it, and nothing is written.
+
+**`sc-replay` works through the generator.** SolidCraft evaluates both designs'
+parameters. Every parameter whose value the edit moved, and which the generator takes
+as a flag, is passed at its new value. A parameter is a flag when:
+- the generator's own design says so in its comment ("(the generator's --scale)"), or
+- the generator lists it under `--params`, as every `flat.rs` generator does.
+
+The commands come from the repository's `.repro`. The line that writes the committed
+design names the program and the arguments that pick the build. Every cut-sheet line
+with that program and those arguments runs again with the flags added. An edit no flag
+follows stops it, by name: a hole moved by its sketch dimension, or a feature added.
+A sheet the generator draws but its own checks then refuse is still written and
+reported.
+
+**`sc-compare` is the check.** It pools every part of every sheet on each side, since
+the two pack differently, and matches them by shape. Of the ways a symmetric outline
+fits, it uses the one where the engraved marks agree. For each pair it gives:
+- the farthest any cut line of either lies from the other's (cuts: `--tol`, default
+  0.05 mm);
+- the farthest any mark lies from its counterpart (marks: `--mark-tol`, default 0.5 mm);
+- the items in each ink.
+
+`sc-flatten --redraw-all` on a committed design, compared with the committed sheets,
+checks `sc-flatten` itself: every body is drawn afresh and should land on its committed
+part.
+
+Checked 2026-11-08 on four cases:
+- **The rhombic-dodecahedron ocarina against itself:** written back byte-identical.
+- **The same with `--redraw-all`:** 13 of 14 parts within 0.02 mm and 0.13 mm of marks.
+  The 14th, the top plate, is the design's own difference from its sheet: at the beak's
+  root the design stops the beak 1.3 mm short of the slanted mouth edge, a 1.2 mm²
+  sliver the sheet does not have.
+- **The same ocarina at 1.5× the cavity (`--scale=1.134` to the generator):** 12 of 14
+  parts within 0.02 mm. The two finger-hole plates differ by 0.28 and 1.28 mm. On a
+  rhombus face the best place for a pair of holes is a run of equally good points, not
+  one point. The generator's grid search stops somewhere along it; the design keeps the
+  committed build's fraction of the run. The two agree at the committed size and part
+  when it grows.
+- **The kalimba at radius 110 and height 80:** all nine bodies within 0.045 mm and
+  0.006 mm of marks. Its three stiffeners, which the design does not model, are the
+  difference. At that size the generator's one-sheet layout fails its own bed check,
+  and `sc-flatten` packs onto two sheets.
+
+The user's own `kalimba-septa-box_altered.sc` (radius 200, height 150) stops both, rightly:
+its faces are 390 × 380 mm.
 
 ## `make-preview`
 
