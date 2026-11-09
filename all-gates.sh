@@ -871,8 +871,10 @@ lane_D () {
 # loop of their own. square-flute's is the same shape, and borrows swept-curve's
 # path writer.
 # kalimba, slapstick, bullroarer and buzz-disc joined on 2026-10-14, when each
-# got a 3D viewer built from its hand-drawn cut files by turn3d (Rust since 2026-11-07): the cut
-# files are acknowledged with "!", and the previews, page and viewer reproduce.
+# got a 3D viewer built from its hand-drawn cut files by turn3d (Rust since 2026-11-07); the cut
+# files were acknowledged with "!" until 2026-11-08, when each got a generator
+# on lasermade-tools' flat module that draws them and writes a SolidCraft design,
+# so now the cut files, designs, .sc and STEP files reproduce as well.
 # four-hole-ocarinas joined on 2026-10-17: its .repro runs four_hole_ocarinas
 # (Rust since 2026-11-07, four_hole_ocarinas.py until then), which borrows the
 # square flute's plate and packer and, through it, swept-curve's path writer,
@@ -900,7 +902,7 @@ for d in parts/bell parts/mouthpiece tools/examples; do
   say "${d##*/} drawings and pages reproduce" "$( [[ "$o" == *reproduce* && "$o" != *failing* && "$o" != *unclaimed* ]] && echo "ok  ${o# }" || echo "FAIL ${o:-no output}")"
 done
 
-# The previews in the four hand-drawn repositories are made by make-preview
+# The previews in the four once hand-drawn repositories are made by make-preview
 # and were current with it, unwatched, the whole time. trumpet's are gated and
 # these were not, for no reason other than that nobody had looked.
 cd $R
