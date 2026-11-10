@@ -16,19 +16,19 @@
 atomic-layer-memory :: regen :: python3 tools/redraw.py images/atomic_i_redrawn.png
 atomic-layer-memory :: regen :: python3 tools/redraw_rgb.py images/atomic_i_rgb.png
 
-bang-for-the-buck :: none :: a cleanup tool run on a full drive; it writes nothing committed
+bang-for-the-buck :: check :: cargo build --release -q
 
 coprime-intervals :: regen :: python3 coprime_intervals.py
 
 gernreich-writing :: none :: a hand-written page with no generator
 
-gray-and-de-bruijn :: check :: python3 walks.py --check
+gray-and-de-bruijn :: regen :: cargo build --release -q && ./target/release/walks
 
-harmonics :: check :: python3 harmonics.py --check
+harmonics :: check :: cargo build --release -q && ./target/release/harmonics --check
 
 hex-dice-box :: regen :: cargo build --release -q && ./target/release/hex_dice_box && ./target/release/hex_dice_box --solidcraft=solidcraft && cd solidcraft && solidcraft-cli run hex-dice-box.solidcraft.json --save hex-dice-box.sc --out ../step/hex-dice-box.step --quiet && {tools}/target/release/sc-slim hex-dice-box.sc
 
-knot-crossings :: check :: python3 knot_crossings.py --check
+knot-crossings :: check :: cargo build --release -q && ./target/release/knot_crossings --check
 
 lapping :: none :: a hand-written page with no generator
 
