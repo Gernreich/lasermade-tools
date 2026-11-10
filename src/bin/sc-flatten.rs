@@ -353,6 +353,16 @@ fn main() {
         let mut whole: Vec<(String, f64)> = cover
             .iter()
             .filter(|(_, b)| b.len() == old.len())
+            // and has a place for each: the 2.25t coil's 60 parts hold
+            // shapes of all 80 of the 3t coil's bodies, but not all at once
+            .filter(|(k, _)| {
+                let x = fancy_regex::Regex::new(r"-x(\d+)-").unwrap();
+                let places: usize = (0..sheets_v.len())
+                    .filter(|&si| set_of(si) == **k)
+                    .map(|si| sheets_v[si].parts.len() * x.captures(sheets_v[si].path.rsplit('/').next().unwrap_or("")).ok().flatten().and_then(|c| c[1].parse().ok()).unwrap_or(1))
+                    .sum();
+                places >= old.len()
+            })
             .map(|(k, _)| {
                 // the set's fit: each body's best mean on it, and each of its
                 // parts' best body, a part no body fits counting 1 mm. Bodies
