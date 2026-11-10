@@ -69,6 +69,10 @@ pub fn base(e: &Edit, edited: &[Param], tmp: &Path) -> (PathBuf, Option<String>,
         n
     };
     let want = names(edited);
+    // the edited file unchanged: its parameters are the ones just read
+    if std::fs::read(&e.original).ok().is_some_and(|o| std::fs::read(&e.edited).ok().is_some_and(|d| d == o)) {
+        return (e.original.clone(), None, edited.to_vec());
+    }
     let now = parameters(&e.original, tmp);
     if names(&now) == want {
         return (e.original.clone(), None, now);
@@ -116,14 +120,22 @@ pub struct Param {
 
 /// Every parameter of a design, evaluated.
 pub fn parameters(sc: &Path, tmp: &Path) -> Vec<Param> {
+    parameters_step(sc, tmp, None)
+}
+
+/// parameters(), and the design built as a STEP file in the same run when
+/// `step` names one: SolidCraft builds the design either way, so asking for
+/// both at once saves building it twice.
+pub fn parameters_step(sc: &Path, tmp: &Path, step: Option<&Path>) -> Vec<Param> {
     let script = tmp.join("parameters.list.json");
     let out = tmp.join("parameters.out.json");
     std::fs::write(&script, "[{\"command\":\"parameters.list\",\"params\":{}}]").unwrap();
-    let r = std::process::Command::new("solidcraft-cli")
-        .arg("run")
-        .arg(&script)
-        .arg("--in")
-        .arg(sc)
+    let mut cmd = std::process::Command::new("solidcraft-cli");
+    cmd.arg("run").arg(&script).arg("--in").arg(sc);
+    if let Some(s) = step {
+        cmd.arg("--out").arg(s);
+    }
+    let r = cmd
         .args(["--quiet", "--results", "--json-out"])
         .arg(&out)
         .output()

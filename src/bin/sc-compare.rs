@@ -179,10 +179,12 @@ fn main() {
             // plate's turn is barely held by its outline)
             let r = sheets::settle(r, &sheets::part_rings(pa), &sheets::part_rings(pb));
             let rb = sheets::part_rings(pb);
+            let rbi = sheets::RingIndex::new(&rb);
             let apart = |r: &sheets::Rigid| {
                 let ra: Vec<Vec<sheets_p::P>> = sheets::part_rings(pa).iter().map(|ring| ring.iter().map(|&p| r.apply(p)).collect()).collect();
-                let ab = ra.iter().flatten().map(|&p| sheets::to_rings(p, &rb)).fold(0.0, f64::max);
-                let ba = rb.iter().flatten().map(|&p| sheets::to_rings(p, &ra)).fold(0.0, f64::max);
+                let rai = sheets::RingIndex::new(&ra);
+                let ab = ra.iter().flatten().map(|&p| rbi.dist(p)).fold(0.0, f64::max);
+                let ba = rb.iter().flatten().map(|&p| rai.dist(p)).fold(0.0, f64::max);
                 (ab.max(ba), ra)
             };
             // the move settles the mean; on a sheet of the same name the part

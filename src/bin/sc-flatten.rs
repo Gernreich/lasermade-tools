@@ -54,7 +54,12 @@ fn flats(sc: &str, tmp: &std::path::Path, tag: &str) -> Vec<Flat> {
     if !r.status.success() {
         die(format!("SolidCraft could not build {sc}: {}", String::from_utf8_lossy(&r.stderr).trim()));
     }
-    let t = std::fs::read_to_string(&out).unwrap_or_else(|e| die(format!("{}: {e}", out.display())));
+    flats_of(sc, &out)
+}
+
+/// The bodies of a design SolidCraft has built as a STEP file, flat.
+fn flats_of(sc: &str, out: &std::path::Path) -> Vec<Flat> {
+    let t = std::fs::read_to_string(out).unwrap_or_else(|e| die(format!("{}: {e}", out.display())));
     let bs = step::bodies(&t, 0.005).unwrap_or_else(|e| die(format!("{sc}: {e}")));
     let c = step::centre(&bs);
     bs.iter().map(|b| step::flatten(b, Some(c)).unwrap_or_else(|e| die(e))).collect()
@@ -189,12 +194,16 @@ fn main() {
     let tmp = scedit::Tmp::new("sc-flatten");
     println!("sc-flatten {}\n  from {}", ep.display(), e.original.display());
     // the version of the design the edit started from, and the sheets of that day
-    let (base, commit, _) = scedit::base(&e, &scedit::parameters(&ep, &tmp.0), &tmp.0);
+    // the edited design's parameters, and the design built, in one run
+    let est = tmp.0.join("edited.step");
+    let (base, commit, _) = scedit::base(&e, &scedit::parameters_step(&ep, &tmp.0, Some(&est)), &tmp.0);
     if let Some(c) = &commit {
         println!("  it was edited from {} as committed in {}, so its sheets are read as they were then", e.original.file_name().unwrap().to_string_lossy(), &c[..7]);
     }
-    let old = flats(&base.to_string_lossy(), &tmp.0, "original");
-    let new = flats(&ep.to_string_lossy(), &tmp.0, "edited");
+    // an unchanged design (--redraw-all on the committed file) is built once
+    let same = std::fs::read(&base).ok().is_some_and(|b| std::fs::read(&ep).ok().is_some_and(|d| d == b));
+    let old = if same { flats_of(&ep.to_string_lossy(), &est) } else { flats(&base.to_string_lossy(), &tmp.0, "original") };
+    let new = if same { old.clone() } else { flats_of(&ep.to_string_lossy(), &est) };
     for f in &old {
         if !new.iter().any(|g| g.name == f.name) {
             die(format!("the edit removed or renamed body '{}'; sc-flatten redraws bodies, it does not add or drop them", f.name));
@@ -264,17 +273,30 @@ fn main() {
         for (bi, f) in old.iter().enumerate() {
             for (si, s) in sheets_v.iter().enumerate() {
                 for (pi, p) in s.parts.iter().enumerate() {
-                    if let Some((mean, worst, r)) = sheets::register(f, p, only) {
+                    if let Some((mean, _, r)) = sheets::register(f, p, only) {
                         if mean < 0.2 {
                             // and the part's cut onto the body: a part with a
                             // notch the body lacks (a torus's round-port
                             // cheek has six mortices more than its square
-                            // one) fits it as well the other way only
+                            // one) fits it as well the other way only.
+                            // Both ways on every corner, not the register's
+                            // sample of them: a plate with 64 holes gives its
+                            // outline a handful of the 160 sample points, and
+                            // a back plate 5 mm short at one end (the panpipes'
+                            // strip edge) fitted its full-length twin as well
                             let fr: Vec<Vec<P>> = sheets::rings(&f.region).iter().map(|ring| ring.iter().map(|&q| r.apply(q)).collect()).collect();
                             let pr = sheets::part_rings(p);
+                            let (fi, pix) = (sheets::RingIndex::new(&fr), sheets::RingIndex::new(&pr));
+                            let nf = fr.iter().map(|x| x.len()).sum::<usize>().max(1) as f64;
+                            let fd: Vec<f64> = fr.iter().flatten().map(|&q| pix.dist(q)).collect();
+                            let bd: Vec<f64> = pr.iter().flatten().map(|&q| fi.dist(q)).collect();
+                            let fwd = fd.iter().sum::<f64>() / nf;
                             let n = pr.iter().map(|x| x.len()).sum::<usize>().max(1) as f64;
-                            let back = pr.iter().flatten().map(|&q| sheets::to_rings(q, &fr)).sum::<f64>() / n;
-                            v.push(((mean + back) / 2.0, bi, si, pi, worst, r));
+                            let back = bd.iter().sum::<f64>() / n;
+                            // and the worst corner either way: a 2 mm notch at
+                            // one end of a 455 mm wall barely moves a mean
+                            let worst = fd.iter().chain(&bd).cloned().fold(0.0, f64::max);
+                            v.push(((fwd + back) / 2.0, bi, si, pi, worst, r));
                         }
                     }
                 }
@@ -297,8 +319,10 @@ fn main() {
     // pieces are the same shapes). When one set holds every body of the
     // design, the design is that build, and parts that look the same on
     // another build's sheets are not its
+    // (a sheet of other stock is the build's too: the panpipes' strip edge
+    // is cut from 1.5 mm, "panpipes-E3-strip-1.5mm-sheet1")
     let by_name = |si: usize| -> String {
-        let re = fancy_regex::Regex::new(r"-sheet\d+").unwrap();
+        let re = fancy_regex::Regex::new(r"(-\d+(\.\d+)?mm)?-sheet\d+").unwrap();
         re.replace_all(&sheets_v[si].path, "").to_string()
     };
     let by_folder = |si: usize| -> String {
@@ -318,18 +342,52 @@ fn main() {
         for c in &cands {
             cover.entry(set_of(c.2)).or_default().insert(c.1);
         }
+        if std::env::var("SC_SETS").is_ok() {
+            let mut ks: Vec<&String> = cover.keys().collect();
+            ks.sort();
+            for k in ks {
+                let miss: Vec<&str> = (0..old.len()).filter(|bi| !cover[k].contains(bi)).map(|bi| old[bi].name.as_str()).collect();
+                eprintln!("  set {k}: {} of {} bodies; lacks {}", cover[k].len(), old.len(), miss.iter().take(8).cloned().collect::<Vec<_>>().join(", "));
+            }
+        }
         let mut whole: Vec<(String, f64)> = cover
             .iter()
             .filter(|(_, b)| b.len() == old.len())
             .map(|(k, _)| {
-                // the set's fit: each body's best mean on it
+                // the set's fit: each body's best mean on it, and each of its
+                // parts' best body, a part no body fits counting 1 mm. Bodies
+                // alone miss a part the design lacks among parts it has
+                // twins of: the panpipes' notch-edge tubes have three walls
+                // notched, and a plain design's walls all take the plain
+                // twins, so the notch set fitted as well as the plain one
                 let fit: f64 = (0..old.len())
                     .map(|bi| cands.iter().filter(|c| c.1 == bi && set_of(c.2) == *k).map(|c| c.0).fold(f64::MAX, f64::min))
                     .sum();
-                (k.clone(), fit)
+                let parts: f64 = (0..sheets_v.len())
+                    .filter(|&si| set_of(si) == *k)
+                    .flat_map(|si| (0..sheets_v[si].parts.len()).map(move |pi| (si, pi)))
+                    .map(|(si, pi)| {
+                        let b = cands.iter().filter(|c| c.2 == si && c.3 == pi).map(|c| c.0).fold(f64::MAX, f64::min);
+                        if b == f64::MAX { 1.0 } else { b }
+                    })
+                    .sum();
+                (k.clone(), fit + parts)
             })
             .collect();
-        whole.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap().then(a.0.cmp(&b.0)));
+        // sets that fit alike (the panpipes' plain and chamfer rafts are one
+        // outline, the chamfer only engraved) go to the one named like the
+        // design: panpipes-plain-edge.sc is the "panpipes-E3-plain" sheets,
+        // coil-10x10x30-1.5t.sc the sheets in .../coil-10x10x30-1.5t/cut-files
+        let design_words: HashSet<String> = e.original.file_stem().map(|x| x.to_string_lossy().to_lowercase()).unwrap_or_default().split(|c: char| !c.is_alphanumeric()).filter(|w| !w.is_empty()).map(String::from).collect();
+        let named = |k: &str| std::cmp::Reverse(k.to_lowercase().split(|c: char| !c.is_alphanumeric()).filter(|w| design_words.contains(*w)).count());
+        let best_fit = whole.iter().map(|w| w.1).fold(f64::MAX, f64::min);
+        let near = |f: f64| f <= best_fit + 1e-6 * (1.0 + best_fit.abs());
+        if std::env::var("SC_SETS").is_ok() {
+            for w in &whole {
+                eprintln!("  whole set {}: fit {:.6} near {} named {}", w.0, w.1, near(w.1), named(&w.0).0);
+            }
+        }
+        whole.sort_by(|a, b| near(b.1).cmp(&near(a.1)).then_with(|| if near(a.1) { named(&a.0).cmp(&named(&b.0)) } else { std::cmp::Ordering::Equal }).then(a.1.partial_cmp(&b.1).unwrap()).then(a.0.cmp(&b.0)));
         if let Some((w, _)) = whole.first() {
             let w = w.clone();
             cands.retain(|c| set_of(c.2) == w);
@@ -380,7 +438,17 @@ fn main() {
     // sheet the sheet's way at 0.115 mm, its own square-port part turned
     // over at 0.077)
     let worse = |c: &(f64, usize, usize, usize, f64, sheets::Rigid)| c.0 > best_body[&c.1] + 0.02;
-    cands.sort_by(|a, b| elsewhere(a).cmp(&elsewhere(b)).then(rank(a.2).cmp(&rank(b.2))).then(worse(a).cmp(&worse(b))).then(theirs(a).cmp(&theirs(b))).then(a.0.partial_cmp(&b.0).unwrap()));
+    // nor is a fit whose worst corner is half a millimetre further out than
+    // the body's best fit's: the panpipes' notch-edge tubes have two 455 mm
+    // walls, one notched at an end, and the sheet's way round chose the
+    // other one for each
+    let mut best_worst: HashMap<usize, f64> = HashMap::new();
+    for c in &cands {
+        let e = best_worst.entry(c.1).or_insert(f64::MAX);
+        *e = e.min(c.4);
+    }
+    let farther = |c: &(f64, usize, usize, usize, f64, sheets::Rigid)| c.4 > best_worst[&c.1] + 0.5;
+    cands.sort_by(|a, b| elsewhere(a).cmp(&elsewhere(b)).then(rank(a.2).cmp(&rank(b.2))).then(worse(a).cmp(&worse(b))).then(farther(a).cmp(&farther(b))).then(theirs(a).cmp(&theirs(b))).then(a.0.partial_cmp(&b.0).unwrap()));
     if let Ok(w) = std::env::var("SC_CANDS") {
         for c in cands.iter().filter(|c| old[c.1].name == w) {
             eprintln!("  cand {:.4} worst {:.3} {} part {} mirror {} rank {} theirs {}", c.0, c.4, sheets_v[c.2].path.rsplit('/').next().unwrap_or(""), c.3, c.5.mirror, rank(c.2).0, theirs(c));
@@ -457,6 +525,20 @@ fn main() {
     }
     let lost: Vec<&str> = old.iter().zip(&body_at).filter(|(_, b)| b.is_none()).map(|(f, _)| f.name.as_str()).collect();
     if !lost.is_empty() {
+        // a design with no sheets of its own (a trumpet concept walk drawn
+        // only as a page): the folder its solidcraft/ sits in holds no cut
+        // sheet; parts elsewhere that look like some of its pieces are not it
+        let home = e.original.parent().and_then(|d| d.parent()).and_then(|d| d.strip_prefix(&repo).ok()).map(|d| d.to_string_lossy().to_string()).unwrap_or_default();
+        let own = sheets_v.iter().filter(|s| home.is_empty() || s.path.starts_with(&format!("{home}/"))).count();
+        if own == 0 {
+            die(format!(
+                "{} has no cut sheets: none is committed under {}/, and {} of its {} bodies are on no sheet elsewhere (those that are belong to other builds with the same pieces). There is nothing to redraw it from.",
+                e.original.file_name().unwrap().to_string_lossy(),
+                if home.is_empty() { "." } else { home.as_str() },
+                lost.len(),
+                old.len()
+            ));
+        }
         die(format!("no part of any cut sheet in {} is {}: the committed design and the committed sheets disagree, or the sheets draw it some way sc-flatten cannot read", repo.display(), lost.join(", ")));
     }
     // the kerf each sheet is drawn for: what it says, else the median of
@@ -495,16 +577,18 @@ fn main() {
         let g = sheets::rings(&sheets::grow(&old[bi].region, burn_on[&si], false));
         let pockets: Vec<Vec<P>> = old[bi].pockets.iter().flat_map(|(_, _, m)| sheets::rings(m)).collect();
         let fills: Vec<Vec<P>> = part.inside.iter().filter(|it| it.fill && it.closed).map(|it| it.pts.clone()).collect();
+        let (pri, fli) = (sheets::RingIndex::new(&pr), sheets::RingIndex::new(&fills));
         let score = |r: &sheets::Rigid| {
             let gr: Vec<Vec<P>> = g.iter().map(|ring| ring.iter().map(|&q| r.apply(q)).collect()).collect();
             let n1 = gr.iter().map(|x| x.len()).sum::<usize>().max(1) as f64;
             let n2 = pr.iter().map(|x| x.len()).sum::<usize>().max(1) as f64;
-            let cut = gr.iter().flatten().map(|&q| sheets::to_rings(q, &pr)).sum::<f64>() / n1 + pr.iter().flatten().map(|&q| sheets::to_rings(q, &gr)).sum::<f64>() / n2;
+            let gri = sheets::RingIndex::new(&gr);
+            let cut = gr.iter().flatten().map(|&q| pri.dist(q)).sum::<f64>() / n1 + pr.iter().flatten().map(|&q| gri.dist(q)).sum::<f64>() / n2;
             // and the pockets on the part's fills: a symmetric plate whose
             // engraving alone says which way round it lies (the square
             // flute's flue, red one half and magenta the other)
             let pk: Vec<P> = pockets.iter().flatten().map(|&q| r.apply(q)).collect();
-            let on = if pk.is_empty() || fills.is_empty() { 0.0 } else { pk.iter().map(|&q| sheets::to_rings(q, &fills)).sum::<f64>() / pk.len() as f64 };
+            let on = if pk.is_empty() || fills.is_empty() { 0.0 } else { pk.iter().map(|&q| fli.dist(q)).sum::<f64>() / pk.len() as f64 };
             cut + on
         };
         let best = ways.into_iter().min_by(|a, b| score(a).partial_cmp(&score(b)).unwrap()).unwrap();
@@ -531,7 +615,8 @@ fn main() {
             let gr: Vec<Vec<P>> = g.iter().map(|x| x.iter().map(|&q| r.apply(q)).collect()).collect();
             let n1 = gr.iter().map(|x| x.len()).sum::<usize>().max(1) as f64;
             let n2 = pr.iter().map(|x| x.len()).sum::<usize>().max(1) as f64;
-            gr.iter().flatten().map(|&q| sheets::to_rings(q, &pr)).sum::<f64>() / n1 + pr.iter().flatten().map(|&q| sheets::to_rings(q, &gr)).sum::<f64>() / n2
+            let (pri, gri) = (sheets::RingIndex::new(&pr), sheets::RingIndex::new(&gr));
+            gr.iter().flatten().map(|&q| pri.dist(q)).sum::<f64>() / n1 + pr.iter().flatten().map(|&q| gri.dist(q)).sum::<f64>() / n2
         };
         // of every way the body was found on that part, the one fitting best
         let fit = |bi: usize, si: usize, pi: usize| {
@@ -589,12 +674,13 @@ fn main() {
                 let (_, pi, _, _, r) = body_at[bi].unwrap();
                 let pr = sheets::part_rings(&sheets_v[si].parts[pi]);
                 let g: Vec<Vec<P>> = sheets::rings(&sheets::grow(&old[bi].region, burn, round)).iter().map(|x| x.iter().map(|&q| r.apply(q)).collect()).collect();
+                let (gi, pri) = (sheets::RingIndex::new(&g), sheets::RingIndex::new(&pr));
                 for &q in pr.iter().flatten() {
-                    a += sheets::to_rings(q, &g);
+                    a += gi.dist(q);
                     na += 1;
                 }
                 for &q in g.iter().flatten() {
-                    b += sheets::to_rings(q, &pr);
+                    b += pri.dist(q);
                     nb += 1;
                 }
             }

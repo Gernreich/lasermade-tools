@@ -229,16 +229,168 @@ pub fn nearest_on_rings(p: P, rings: &[Vec<P>]) -> P {
     best.1
 }
 
+/// The rings' segments filed in a square grid, so that a search for the
+/// nearest point looks only at the cells round it, square by square outward,
+/// and stops once no cell further out can hold anything nearer. It answers
+/// exactly as nearest_on_rings() and to_rings() do, distance for distance,
+/// a tie going to the segment they would take (the first, rings in order);
+/// on rings of thousands of segments it is hundreds of times faster
+/// (2026-11-09).
+pub struct RingIndex {
+    segs: Vec<(P, P)>,
+    x0: f64,
+    y0: f64,
+    cell: f64,
+    nx: usize,
+    ny: usize,
+    cells: Vec<Vec<u32>>,
+}
+
+impl RingIndex {
+    pub fn new(rings: &[Vec<P>]) -> RingIndex {
+        let mut segs = vec![];
+        for r in rings {
+            let n = r.len();
+            for i in 0..n {
+                segs.push((r[i], r[(i + 1) % n]));
+            }
+        }
+        let (mut x0, mut y0, mut x1, mut y1) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+        for (a, b) in &segs {
+            for q in [a, b] {
+                x0 = x0.min(q.0);
+                y0 = y0.min(q.1);
+                x1 = x1.max(q.0);
+                y1 = y1.max(q.1);
+            }
+        }
+        if segs.is_empty() || !(x1 - x0).is_finite() || !(y1 - y0).is_finite() {
+            return RingIndex { segs, x0: 0.0, y0: 0.0, cell: 1.0, nx: 1, ny: 1, cells: vec![vec![]] };
+        }
+        let k = ((segs.len() as f64).sqrt().ceil() as usize).clamp(1, 512);
+        let cell = ((x1 - x0).max(y1 - y0) / k as f64).max(1e-6);
+        let nx = (((x1 - x0) / cell).floor() as usize + 1).min(4096);
+        let ny = (((y1 - y0) / cell).floor() as usize + 1).min(4096);
+        let mut ix = RingIndex { segs: vec![], x0, y0, cell, nx, ny, cells: vec![vec![]; nx * ny] };
+        for (i, (a, b)) in segs.iter().enumerate() {
+            let (i0, i1) = (ix.col(a.0.min(b.0)), ix.col(a.0.max(b.0)));
+            let (j0, j1) = (ix.row(a.1.min(b.1)), ix.row(a.1.max(b.1)));
+            for j in j0..=j1 {
+                for c in i0..=i1 {
+                    ix.cells[j * nx + c].push(i as u32);
+                }
+            }
+        }
+        ix.segs = segs;
+        ix
+    }
+
+    fn col(&self, x: f64) -> usize {
+        (((x - self.x0) / self.cell).floor().max(0.0) as usize).min(self.nx - 1)
+    }
+
+    fn row(&self, y: f64) -> usize {
+        (((y - self.y0) / self.cell).floor().max(0.0) as usize).min(self.ny - 1)
+    }
+
+    /// Hand `visit` every segment near p, square of cells by square, until
+    /// none left unvisited can come closer than `visit`'s best so far (it
+    /// returns that distance). A segment filed in several cells may be
+    /// visited more than once.
+    fn search(&self, p: P, mut visit: impl FnMut(usize, P, P) -> f64) {
+        let (cx, cy) = (self.col(p.0) as isize, self.row(p.1) as isize);
+        let (nx, ny) = (self.nx as isize, self.ny as isize);
+        let mut best = f64::MAX;
+        let mut k = 0isize;
+        loop {
+            let mut cell = |i: isize, j: isize| {
+                if i >= 0 && i < nx && j >= 0 && j < ny {
+                    for &s in &self.cells[(j * nx + i) as usize] {
+                        let (a, b) = self.segs[s as usize];
+                        best = best.min(visit(s as usize, a, b));
+                    }
+                }
+            };
+            if k == 0 {
+                cell(cx, cy);
+            } else {
+                for i in cx - k..=cx + k {
+                    cell(i, cy - k);
+                    cell(i, cy + k);
+                }
+                for j in cy - k + 1..cy + k {
+                    cell(cx - k, j);
+                    cell(cx + k, j);
+                }
+            }
+            let (lo_i, hi_i, lo_j, hi_j) = (cx - k, cx + k, cy - k, cy + k);
+            if lo_i <= 0 && hi_i >= nx - 1 && lo_j <= 0 && hi_j >= ny - 1 {
+                return;
+            }
+            // how near an unvisited cell can be
+            let mut bound = f64::MAX;
+            if lo_i > 0 {
+                bound = bound.min(p.0 - (self.x0 + lo_i as f64 * self.cell));
+            }
+            if hi_i < nx - 1 {
+                bound = bound.min(self.x0 + (hi_i + 1) as f64 * self.cell - p.0);
+            }
+            if lo_j > 0 {
+                bound = bound.min(p.1 - (self.y0 + lo_j as f64 * self.cell));
+            }
+            if hi_j < ny - 1 {
+                bound = bound.min(self.y0 + (hi_j + 1) as f64 * self.cell - p.1);
+            }
+            if best < bound - 1e-9 {
+                return;
+            }
+            k += 1;
+        }
+    }
+
+    /// As nearest_on_rings(p, rings).
+    pub fn nearest(&self, p: P) -> P {
+        let mut best = (f64::MAX, p, usize::MAX);
+        self.search(p, |i, a, b| {
+            let (dx, dy) = (b.0 - a.0, b.1 - a.1);
+            let l2 = dx * dx + dy * dy;
+            let t = if l2 == 0.0 { 0.0 } else { (((p.0 - a.0) * dx + (p.1 - a.1) * dy) / l2).clamp(0.0, 1.0) };
+            let q = (a.0 + t * dx, a.1 + t * dy);
+            let d = (p.0 - q.0).powi(2) + (p.1 - q.1).powi(2);
+            if d < best.0 || (d == best.0 && i < best.2) {
+                best = (d, q, i);
+            }
+            best.0.sqrt()
+        });
+        best.1
+    }
+
+    /// As to_rings(p, rings).
+    pub fn dist(&self, p: P) -> f64 {
+        let mut best = f64::MAX;
+        self.search(p, |_, a, b| {
+            best = best.min(seg_dist(p, a, b));
+            best
+        });
+        best
+    }
+}
+
 /// Settle a move by closest points (ICP): each round pairs every probe
 /// point with its nearest on the rings and takes the turn and shift that
 /// fit those pairs best, the mirror kept.
-pub fn refine(mut r: Rigid, probe: &[P], rings: &[Vec<P>], rounds: usize) -> Rigid {
+pub fn refine(r: Rigid, probe: &[P], rings: &[Vec<P>], rounds: usize) -> Rigid {
+    refine_in(r, probe, &RingIndex::new(rings), rounds)
+}
+
+/// refine, on rings already indexed
+pub fn refine_in(mut r: Rigid, probe: &[P], rings: &RingIndex, rounds: usize) -> Rigid {
     for _ in 0..rounds {
         let src: Vec<P> = probe.iter().map(|&p| {
             let y = if r.mirror { -p.1 } else { p.1 };
             (p.0, y)
         }).collect();
-        let dst: Vec<P> = probe.iter().map(|&p| nearest_on_rings(r.apply(p), rings)).collect();
+        let dst: Vec<P> = probe.iter().map(|&p| rings.nearest(r.apply(p))).collect();
         let n = src.len() as f64;
         let (sx, sy) = (src.iter().map(|p| p.0).sum::<f64>() / n, src.iter().map(|p| p.1).sum::<f64>() / n);
         let (dx, dy) = (dst.iter().map(|p| p.0).sum::<f64>() / n, dst.iter().map(|p| p.1).sum::<f64>() / n);
@@ -412,6 +564,7 @@ pub fn register(f: &Flat, p: &Part, only: Option<bool>) -> Option<(f64, f64, Rig
 pub fn register_all(f: &Flat, p: &Part, only: Option<bool>) -> Vec<(f64, f64, Rigid)> {
     let fr = rings(&f.region);
     let pr = part_rings(p);
+    let pri = RingIndex::new(&pr);
     if fr.len() != pr.len() {
         return vec![];
     }
@@ -485,7 +638,7 @@ pub fn register_all(f: &Flat, p: &Part, only: Option<bool>) -> Vec<(f64, f64, Ri
                     let mut sum = 0.0;
                     let mut worst: f64 = 0.0;
                     for &x in &probe {
-                        let d = to_rings(r.apply(x), &pr);
+                        let d = pri.dist(r.apply(x));
                         sum += d;
                         worst = worst.max(d);
                         if worst > 4.0 {
@@ -507,8 +660,8 @@ pub fn register_all(f: &Flat, p: &Part, only: Option<bool>) -> Vec<(f64, f64, Ri
                         continue;
                     }
                     // settle it, then measure again
-                    let r = refine(r, &probe, &pr, 30);
-                    let ds: Vec<f64> = probe.iter().map(|&x| to_rings(r.apply(x), &pr)).collect();
+                    let r = refine_in(r, &probe, &pri, 30);
+                    let ds: Vec<f64> = probe.iter().map(|&x| pri.dist(r.apply(x))).collect();
                     let mean = ds.iter().sum::<f64>() / ds.len() as f64;
                     let worst = ds.iter().cloned().fold(0.0, f64::max);
                     // the same way found from another pair of edges
@@ -561,14 +714,90 @@ pub fn settle_n(r: Rigid, src: &[Vec<P>], dst: &[Vec<P>], rounds: usize) -> Rigi
         return r;
     }
     let back = along(dst, 0.5);
+    let di = RingIndex::new(dst);
     let fit = |r: &Rigid| {
         let moved: Vec<Vec<P>> = src.iter().map(|x| x.iter().map(|&p| r.apply(p)).collect()).collect();
-        let a = probe.iter().map(|&p| to_rings(r.apply(p), dst)).sum::<f64>() / probe.len() as f64;
-        let b = back.iter().map(|&p| to_rings(p, &moved)).sum::<f64>() / back.len().max(1) as f64;
+        let mi = RingIndex::new(&moved);
+        let a = probe.iter().map(|&p| di.dist(r.apply(p))).sum::<f64>() / probe.len() as f64;
+        let b = back.iter().map(|&p| mi.dist(p)).sum::<f64>() / back.len().max(1) as f64;
         a + b
     };
-    let s = refine(r, &probe, dst, rounds);
-    if fit(&s) < fit(&r) { s } else { r }
+    let s = refine_in(r, &probe, &di, rounds);
+    let s = if fit(&s) < fit(&r) { s } else { r };
+    // then point to line: a round plate with a small polygon hole (the ghb
+    // chanter's collar socket, a 72-gon round a hexagon) turns freely under
+    // point-to-point rounds, its circle and the hexagon's sides sliding, and
+    // stopped 0.95 degrees out with the hexagon's corners 0.05 mm off
+    let q = polish(s, &probe, &di, 20);
+    if fit(&q) < fit(&s) { q } else { s }
+}
+
+/// Point-to-line ICP rounds: each probe point's distance to its nearest
+/// point on the rings, measured along the line between them, is made least
+/// for a small turn and shift, linearised, and the turn re-normalised. It
+/// settles a turn that the corners alone hold in a few rounds, where
+/// point-to-point rounds creep.
+pub fn polish(mut r: Rigid, probe: &[P], rings: &RingIndex, rounds: usize) -> Rigid {
+    for _ in 0..rounds {
+        // the normal equations of sum((p + th*perp(p - c) + t - q).n)^2
+        let moved: Vec<P> = probe.iter().map(|&p| r.apply(p)).collect();
+        let n = moved.len() as f64;
+        let c = (moved.iter().map(|p| p.0).sum::<f64>() / n, moved.iter().map(|p| p.1).sum::<f64>() / n);
+        let mut m = [[0.0f64; 3]; 3];
+        let mut v = [0.0f64; 3];
+        for &p in &moved {
+            let q = rings.nearest(p);
+            let (ex, ey) = (p.0 - q.0, p.1 - q.1);
+            let l = ex.hypot(ey);
+            if l < 1e-9 {
+                continue;
+            }
+            let nn = (ex / l, ey / l);
+            // a turn th about c moves p by th*(-(p.1 - c.1), p.0 - c.0)
+            let j = [-(p.1 - c.1) * nn.0 + (p.0 - c.0) * nn.1, nn.0, nn.1];
+            for a in 0..3 {
+                for b in 0..3 {
+                    m[a][b] += j[a] * j[b];
+                }
+                v[a] -= j[a] * l;
+            }
+        }
+        let Some(x) = solve3(m, v) else { break };
+        let (th, tx, ty) = (x[0], x[1], x[2]);
+        if !(th.is_finite() && tx.is_finite() && ty.is_finite()) {
+            break;
+        }
+        // compose: turn by th about c, then shift
+        let (ct, st) = (th.cos(), th.sin());
+        let rot = |p: P| (c.0 + ct * (p.0 - c.0) - st * (p.1 - c.1) + tx, c.1 + st * (p.0 - c.0) + ct * (p.1 - c.1) + ty);
+        let (nc, ns) = (ct * r.c - st * r.s, st * r.c + ct * r.s);
+        let o = rot(r.t);
+        let next = Rigid { c: nc, s: ns, mirror: r.mirror, t: o };
+        let step = th.abs() + tx.hypot(ty);
+        r = next;
+        if step < 1e-10 {
+            break;
+        }
+    }
+    r
+}
+
+/// The 3 x 3 system m x = v, or None when it is singular.
+fn solve3(m: [[f64; 3]; 3], v: [f64; 3]) -> Option<[f64; 3]> {
+    let det = |a: [[f64; 3]; 3]| a[0][0] * (a[1][1] * a[2][2] - a[1][2] * a[2][1]) - a[0][1] * (a[1][0] * a[2][2] - a[1][2] * a[2][0]) + a[0][2] * (a[1][0] * a[2][1] - a[1][1] * a[2][0]);
+    let d = det(m);
+    if d.abs() < 1e-12 {
+        return None;
+    }
+    let mut out = [0.0; 3];
+    for k in 0..3 {
+        let mut a = m;
+        for i in 0..3 {
+            a[i][k] = v[i];
+        }
+        out[k] = det(a) / d;
+    }
+    Some(out)
 }
 
 // --- the kerf ---------------------------------------------------------------------------
@@ -598,7 +827,8 @@ pub fn stated_kerf(desc: &str) -> Option<f64> {
 /// overlapping at a corner, say) do not move it.
 pub fn burn_of(f: &Flat, p: &Part, r: Rigid) -> f64 {
     let pr = part_rings(p);
-    let mut d: Vec<f64> = rings(&f.region).iter().flatten().map(|&q| to_rings(r.apply(q), &pr)).collect();
+    let pri = RingIndex::new(&pr);
+    let mut d: Vec<f64> = rings(&f.region).iter().flatten().map(|&q| pri.dist(r.apply(q))).collect();
     d.sort_by(|a, b| a.partial_cmp(b).unwrap());
     d[d.len() / 2]
 }
@@ -706,4 +936,50 @@ pub fn ink_counts(p: &Part) -> Vec<(String, usize)> {
     }
     v.sort();
     v
+}
+
+#[cfg(test)]
+mod ring_index_test {
+    use super::*;
+
+    /// RingIndex against the plain searches, on rings of every density and
+    /// points near, on and far from them: the same answers, bit for bit.
+    #[test]
+    fn same_as_brute_force() {
+        let mut seed = 0x2545F4914F6CDD1Du64;
+        let mut rnd = || {
+            seed ^= seed << 13;
+            seed ^= seed >> 7;
+            seed ^= seed << 17;
+            (seed >> 11) as f64 / (1u64 << 53) as f64
+        };
+        for case in 0..60 {
+            let mut rings = vec![];
+            for _ in 0..1 + case % 4 {
+                let (cx, cy, r) = (rnd() * 200.0 - 100.0, rnd() * 100.0, 1.0 + rnd() * 60.0);
+                let n = 3 + (rnd() * [4.0, 40.0, 400.0, 3000.0][case % 4]) as usize;
+                // a wobbly circle, some points repeated, some on a grid
+                let ring: Vec<P> = (0..n)
+                    .map(|i| {
+                        let a = i as f64 / n as f64 * std::f64::consts::TAU;
+                        let w = if case % 3 == 0 { 1.0 } else { 1.0 + 0.3 * rnd() };
+                        let p = (cx + r * w * a.cos(), cy + r * w * a.sin());
+                        if case % 5 == 0 { ((p.0 * 4.0).round() / 4.0, (p.1 * 4.0).round() / 4.0) } else { p }
+                    })
+                    .collect();
+                rings.push(ring);
+            }
+            let ix = RingIndex::new(&rings);
+            for k in 0..400 {
+                let spread = [1.0, 50.0, 300.0, 5000.0][k % 4];
+                let p = if k % 7 == 0 { rings[0][k % rings[0].len()] } else { (rnd() * 2.0 * spread - spread, rnd() * 2.0 * spread - spread) };
+                let (a, b) = (nearest_on_rings(p, &rings), ix.nearest(p));
+                assert!(a.0.to_bits() == b.0.to_bits() && a.1.to_bits() == b.1.to_bits(), "case {case} point {p:?}: {a:?} vs {b:?}");
+                assert_eq!(to_rings(p, &rings).to_bits(), ix.dist(p).to_bits(), "case {case} point {p:?}");
+            }
+        }
+        let empty = RingIndex::new(&[]);
+        assert_eq!(empty.nearest((1.0, 2.0)), nearest_on_rings((1.0, 2.0), &[]));
+        assert_eq!(empty.dist((1.0, 2.0)), to_rings((1.0, 2.0), &[]));
+    }
 }

@@ -847,7 +847,10 @@ now is found in the file's history, and its sheets are read as they were then.
 it came from as STEP files (`src/step.rs` reads lines, circles and rational B-splines).
 Every body is laid on its thin side; its two faces give the outline and the holes cut
 through it, and a face part-way through is a pocket. Each body of the committed design
-is found among the parts of the committed sheets by shape, at any turn or mirror. That
+is found among the parts of the committed sheets by shape, at any turn or mirror, and
+scored on every corner both ways, the body's onto the part and the part's onto the
+body: the shape search samples 160 points, and a plate with 64 holes gives its outline
+only a handful, so a back plate 5 mm short at one end fitted its full-length twin. That
 says which sheet it is on, where, which way up, in which inks and with what kerf. A
 body is tried at the turns that lay its long edges together and at the one that lays
 its principal axis on the part's, so a tapered outline with no straight edge (the
@@ -867,11 +870,22 @@ these choose among fits that are equally good, never over a better fit:
 - a build is one set of sheets: one variant (a ribbon bore's folder holds its cheeks and
   panels unported, ported and ported both ends, and the sheets that differ only in
   `-panels` or `-cheek...` are one variant), `NAME-sheet1`, `NAME-sheet2`... or a folder
-  of its own; a set that holds every body is that build (the panpipes' builds share a
-  folder, and the trumpet's build shares wall shapes with the concept walks);
+  of its own, a sheet of other stock counted in (`panpipes-E3-strip-1.5mm-sheet1` is the
+  strip build's); a set that holds every body is that build (the panpipes' builds share a
+  folder, and the trumpet's build shares wall shapes with the concept walks). Of several
+  such sets the one that fits best wins, its fit counted both ways: each body's best part
+  in it, and each of its parts' best body, a part no body fits counting 1 mm, so a set
+  with parts the design lacks loses (the notch-edge tubes' three notched walls, which a
+  plain design's walls never take, having plain twins to take). Sets that fit alike go to
+  the one named most like the design (`panpipes-plain-edge.sc` is the plain raft, though
+  the chamfer raft is the same outline, and `coil-10x10x30-2.25t.sc` the sheets in its
+  own folder, though every coil of that walk shares its pieces);
 - a body named for a piece ("piece 3 wall 1") goes on that piece's sheet (`03of12`);
 - a mirror twin, the same shape as its partner, goes the way most plates on the sheet
-  lie, unless both twins need a part, and unless that way fits 0.02 mm worse;
+  lie, unless both twins need a part, unless that way fits 0.02 mm worse, and unless its
+  worst corner lies half a millimetre further out than the body's best fit's (of the
+  notch-edge tubes' two 455 mm walls, only one is notched at an end, which barely moves
+  a mean);
 - a part that fits itself turned or flipped nearly as well (a scallop's cheek, five lobes
   and a mirror) takes the way whose cut, grown by the sheet's kerf, lies closest on the
   part's line both ways round, and whose pockets lie on the part's fills (the square
@@ -888,6 +902,10 @@ board, of which the cut file draws only the waste), is read as its holes, each a
 of its own. A sheet whose viewBox does not start at 0 0 (a rosette's, centred on it)
 keeps its origin. An engraved line belongs to the part its middle lies in: a rosette's
 ribbon edge starts on a waste piece's cut line and runs out over the board.
+
+A design whose folder holds no cut sheet (a trumpet concept walk, drawn only as a page)
+stops with that said: parts elsewhere that look like some of its pieces are other
+builds'.
 
 A body the edit left alone keeps its part exactly as drawn. A sheet with no
 changed body is written back byte for byte, and on a changed sheet the untouched parts
@@ -916,15 +934,34 @@ What the design does not model is carried over:
 Parts that no longer fit are packed again, onto more sheets if need be. A part bigger
 than the 600 × 305 mm bed any way round stops it, and nothing is written.
 
+The moves are settled by closest points (ICP), point to point, then point to line: a
+round plate with a small polygon hole (the ghb chanter's collar socket, a 72-gon round a
+hexagon) turns freely under point-to-point rounds, its circle and the hexagon's sides
+sliding, and stopped 0.95° out with the hexagon's corners 0.05 mm off; point to line
+holds it by the corners in a few rounds. Each kept only if it fits better.
+
+Every nearest-point search goes through `sheets::RingIndex`, the rings' segments filed in
+a grid, which answers exactly as the plain search does (`cargo test --release --features
+sc --lib ring_index` checks it bit for bit); SolidCraft builds a design once for its
+parameters and its STEP together, and once in all for `--redraw-all`. The octagonal
+flute's redraw went from 14 s to 3, and the round trip of all 98 committed designs
+takes about 20 minutes, most of it SolidCraft's (2026-11-09).
+
 **`sc-replay` works through the generator.** SolidCraft evaluates both designs'
 parameters. Every parameter whose value the edit moved, and which the generator takes
 as a flag, is passed at its new value. A parameter is a flag when:
 - the generator's own design says so in its comment ("(the generator's --scale)"), or
 - the generator lists it under `--params`, as every `flat.rs` generator does.
 
-The commands come from the repository's `.repro`. The line that writes the committed
-design names the program and the arguments that pick the build. Every cut-sheet line
-with that program and those arguments runs again with the flags added. An edit no flag
+The comment may also say "as the generator's --plate=", as the chanters' do. The
+commands come from the repository's `.repro`. The line that writes the committed
+design names the program and the arguments that pick the build. The cut-sheet lines
+with that program and those arguments run again with the flags added: of them, those
+whose sheets are named most like the design, and of those the ones that add no switch
+of their own. One program may write several designs (`ghb_chanter --solidcraft=` writes
+the 4-, 6- and 8-sided ones), and a build's sheet line may carry a switch the design's
+line does not (`--sides=6`); the standard practice chanter's `--joint=butt` sheet is not
+its design's. An edit no flag
 follows stops it, by name: a hole moved by its sketch dimension, or a feature added.
 A sheet the generator draws but its own checks then refuse is still written and
 reported.

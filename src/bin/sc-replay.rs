@@ -6,7 +6,8 @@
 //! the edit changed is an edit; every design parameter whose value moved
 //! because of it, and which the generator takes as a flag, is passed to the
 //! generator at its new value. A parameter is a flag when the generator's own
-//! design says so in its comment ("(the generator's --scale)"), or when the
+//! design says so in its comment ("(the generator's --scale)", "as the
+//! generator's --plate="), or when the
 //! generator lists it under --params (the flat.rs generators: every design
 //! parameter is --name=VALUE, a dash for each underscore). The commands come
 //! from the repository's .repro: the line that writes the committed design
@@ -115,7 +116,8 @@ fn main() {
     let mut flag_of: HashMap<String, String> = HashMap::new();
     if ok {
         if let Ok(t) = std::fs::read_to_string(&fresh) {
-            let re = fancy_regex::Regex::new(r"\(the generator's (--[a-z0-9-]+)\)").unwrap();
+            // "(the generator's --scale)" or "as the generator's --plate=": the flag named
+            let re = fancy_regex::Regex::new(r"the generator's (--[a-z0-9-]+)(?![a-z0-9-])").unwrap();
             if let Ok(j) = scedit::json::parse(&t) {
                 let steps = if !j.items().is_empty() { j.items().to_vec() } else if !j.get("commands").items().is_empty() { j.get("commands").items().to_vec() } else { j.get("steps").items().to_vec() };
                 for st in steps {
@@ -182,6 +184,19 @@ fn main() {
             o.ends_with(".svg") && !o.split('/').any(|p| p == "previews") && w[0] == program && picks.iter().all(|p| w.contains(p)) && !c.contains("--solidcraft=")
         })
         .collect();
+    // one program may write several designs (ghb_chanter writes the 4-, 6-
+    // and 8-sided ones, with no switch to say which): the sheets named most
+    // like the design are its build, and of those the lines that add no
+    // switch of their own (the standard chanter's finger joints, not its
+    // --joint=butt sheet)
+    let words = |t: &str| -> HashSet<String> { t.to_lowercase().split(|c: char| !c.is_alphanumeric()).filter(|w| !w.is_empty()).map(String::from).collect() };
+    let design_words = words(&ostem);
+    let like = |o: &str| words(o.rsplit('/').next().unwrap_or(o)).intersection(&design_words).count();
+    let extra = |c: &str| c.split_whitespace().skip(1).filter(|w| w.starts_with("--") && !w.starts_with("--out=") && !picks.contains(w)).count();
+    let best_like = sheets.iter().map(|(o, _)| like(o)).max().unwrap_or(0);
+    let sheets: Vec<&(String, String)> = sheets.into_iter().filter(|(o, _)| like(o) == best_like).collect();
+    let least = sheets.iter().map(|(_, c)| extra(c)).min().unwrap_or(0);
+    let sheets: Vec<&(String, String)> = sheets.into_iter().filter(|(_, c)| extra(c) == least).collect();
     if sheets.is_empty() {
         die(format!("{}/.repro has no cut sheet drawn by {program} {}", e.repo.display(), picks.join(" ")));
     }
