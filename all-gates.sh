@@ -513,9 +513,12 @@ nd=$($TB/regress --count 2>/dev/null)
 say "regress, ${nd:-?} block designs" "$( [[ "$o" == *"all designs pass"* ]] && echo "ok" || echo "FAIL $o")"
 
 # EACH BORE PAGE'S SOLIDCRAFT DESIGN (2026-11-08): the script viewer writes
-# from the page's own walk (checking its blocks are the page's), the slimmed
-# .sc SolidCraft saves from it and the STEP it builds, redrawn and compared
-# byte for byte. A page named bore.html takes its design folder's name.
+# from the page's own walk (checking its blocks are the page's) and the slimmed
+# .sc SolidCraft saves from it, redrawn and compared byte for byte. A page
+# named bore.html takes its design folder's name. The STEP was rebuilt and
+# compared too until 2026-11-11, when the designs' patterned fingers made that
+# twenty minutes of the lane; step/ is no longer checked here, so rebuild it
+# by hand (solidcraft-cli run X.solidcraft.json --out X.step) after a change.
 cd $R/trumpet-elbows-allowed
 bsd=0; bsbad=0
 bsc () {
@@ -524,10 +527,10 @@ bsc () {
   [ "$st" = bore ] && { st=${dir%/*}; st=${st##*/}; }
   local t=/tmp/_ag_tsc; rm -rf $t && mkdir -p $t
   if $TB/viewer $pg "$@" --solidcraft $t/$st.solidcraft.json >/dev/null 2>&1 \
-     && solidcraft-cli run $t/$st.solidcraft.json --save $t/$st.sc --out $t/$st.step --quiet 2>/dev/null \
+     && solidcraft-cli run $t/$st.solidcraft.json --save $t/$st.sc --quiet 2>/dev/null \
      && $G/target/release/sc-slim $t/$st.sc \
      && cmp -s $t/$st.solidcraft.json $dir/solidcraft/$st.solidcraft.json \
-     && cmp -s $t/$st.sc $dir/solidcraft/$st.sc && cmp -s $t/$st.step $dir/step/$st.step
+     && cmp -s $t/$st.sc $dir/solidcraft/$st.sc
   then bsd=$((bsd+1)); else bsbad=$((bsbad+1)); fi
   rm -rf $t
 }
