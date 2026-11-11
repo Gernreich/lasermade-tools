@@ -191,7 +191,14 @@ fn main() {
             // left where it lies is a move too, and may put the worst point
             // closer (a foot piece's arc, polygon on one side, true on the other)
             let still = sheets::Rigid { c: 1.0, s: 0.0, mirror: false, t: (0.0, 0.0) };
-            let r = if sa[i].0 == sb[j].0 && apart(&still).0 < apart(&r).0 { still } else { r };
+            // And a round part (a mouthpiece ring) fits its cuts at any turn,
+            // so if left where it lies it passes too, the marks choose: the
+            // fitted turn carried ring 30's number 0.65 mm round its ring
+            let mark_gap = |r: &sheets::Rigid| {
+                let (ma, mb) = (marks(pa, Some(*r)), marks(pb, None));
+                if ma.is_empty() && mb.is_empty() { 0.0 } else { far(&ma, &mb).max(far(&mb, &ma)) }
+            };
+            let r = if sa[i].0 == sb[j].0 && (apart(&still).0 < apart(&r).0 || (apart(&still).0 <= tol && mark_gap(&still) < mark_gap(&r))) { still } else { r };
             let (w, ra) = apart(&r);
             if std::env::var("SC_COMPARE_DEBUG").is_ok() {
                 eprintln!("      move A to B: turn {:.4} deg, mirror {}, shift ({:.3},{:.3})", r.s.atan2(r.c).to_degrees(), r.mirror, r.t.0, r.t.1);

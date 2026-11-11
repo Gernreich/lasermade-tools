@@ -569,7 +569,11 @@ pub fn register_all(f: &Flat, p: &Part, only: Option<bool>) -> Vec<(f64, f64, Ri
         return vec![];
     }
     let (fa, pa) = (f.region.unsigned_area(), ring_area(&pr[0]).abs() - pr[1..].iter().map(|r| ring_area(r).abs()).sum::<f64>());
-    if (fa - pa).abs() > 0.05 * fa + 2.0 {
+    // the sheets' kerf grows a part 0.065 mm all round: a thin fingered strip
+    // (the standard octagon chanter's back strip, 704 mm² inside 640 mm of
+    // edge) gains more than 5% by it, so the edge's length counts too
+    let edge: f64 = pr.iter().map(|r| (0..r.len()).map(|i| { let (a, b) = (r[i], r[(i + 1) % r.len()]); (b.0 - a.0).hypot(b.1 - a.1) }).sum::<f64>()).sum();
+    if (fa - pa).abs() > 0.05 * fa + 2.0 + 0.1 * edge {
         return vec![];
     }
     let edges = |r: &[P]| -> Vec<(f64, f64)> {

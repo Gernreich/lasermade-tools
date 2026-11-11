@@ -500,6 +500,24 @@ pub fn face_region(loops: &[Vec<P>]) -> geo::MultiPolygon<f64> {
     r
 }
 
+/// The region without its holes of no area: a boolean leaves one, three
+/// points at one spot, where an outline pinches to a point (where the
+/// cuboctahedron's and the square antiprism's beak meets the top plate).
+pub fn drop_empty_holes(m: geo::MultiPolygon<f64>) -> geo::MultiPolygon<f64> {
+    geo::MultiPolygon::new(
+        m.0.into_iter()
+            .map(|p| {
+                let (ext, ints) = p.into_inner();
+                let keep = ints.into_iter().filter(|l| {
+                    let v: Vec<P> = l.coords().map(|c| (c.x, c.y)).collect();
+                    ring_area(&v).abs() > 1e-6
+                });
+                geo::Polygon::new(ext, keep.collect())
+            })
+            .collect(),
+    )
+}
+
 /// Lay a body down: find the direction it is thin in, and take its faces
 /// square to that as the laser sees them. With `centre` (the whole
 /// instrument's), the normal points away from it, so every plate is seen
@@ -559,6 +577,6 @@ pub fn flatten(b: &Body, centre: Option<V3>) -> Result<Flat, String> {
             pockets.push((depth, side, r));
         }
     }
-    let region = low.union(&high);
+    let region = drop_empty_holes(low.union(&high));
     Ok(Flat { name: b.name.clone(), u, v, n, thickness: hi - lo, region, pockets })
 }
