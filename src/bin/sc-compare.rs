@@ -115,6 +115,7 @@ fn main() {
         };
         let all = |only: Option<bool>| {
             let mut v: Vec<(f64, usize, usize, sheets::Rigid)> = vec![];
+            let mut fits: Vec<(f64, f64, usize, usize, sheets::Rigid, f64, f64)> = vec![];
             for (i, fa) in fas.iter().enumerate() {
                 for (j, pb) in b.parts.iter().enumerate() {
                     let ways = sheets::register_all(fa, pb, only);
@@ -123,12 +124,12 @@ fn main() {
                     // (and of those, a symmetric part's, the one not turned
                     // over and turned least: else it lies whichever way, and
                     // the count of which way most parts lie goes astray)
-                    let (gap, mean, r) = ways
+                    let (gap, mean, r, worst) = ways
                         .iter()
                         .filter(|w| w.0 < best + 0.01)
-                        .map(|w| (mark_gap(&a.parts[i], pb, w.2), w.0, w.2))
+                        .map(|w| (mark_gap(&a.parts[i], pb, w.2), w.0, w.2, w.1))
                         .min_by(|x, y| {
-                            let k = |w: &(f64, f64, sheets::Rigid)| (w.0, w.2.mirror, w.2.s.atan2(w.2.c).abs());
+                            let k = |w: &(f64, f64, sheets::Rigid, f64)| (w.0, w.2.mirror, w.2.s.atan2(w.2.c).abs());
                             let (p, q) = (k(x), k(y));
                             p.0.partial_cmp(&q.0).unwrap().then(p.1.cmp(&q.1)).then(p.2.partial_cmp(&q.2).unwrap())
                         })
@@ -149,8 +150,17 @@ fn main() {
                     } else {
                         0.05
                     };
-                    v.push((mean + inks + 0.01 * gap.min(50.0) + place, i, j, r));
+                    fits.push((mean, inks + 0.01 * gap.min(50.0), i, j, r, place, worst));
                 }
+            }
+            // but only where the fit's worst point is within the cut
+            // tolerance: else a thin part of the other hand (a ghb foot
+            // piece, 26 x 6.5 mm, fitted 7.8 degrees turned, its mean
+            // 0.005 mm and its worst over a millimetre) wins by lying in
+            // the same spot (the 4-sided chanter at 2.5 mm, 2026-11-11)
+            for (mean, rest, i, j, r, place, worst) in fits {
+                let place = if worst <= tol { place } else { 0.05 };
+                v.push((mean + rest + place, i, j, r));
             }
             v
         };

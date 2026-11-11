@@ -17,7 +17,9 @@
 //! hole was, pockets in the fill inks they were engraved in, set where the
 //! old part sat. What the design does not model (engraved numbers, lines, a
 //! rosette's interlace) is carried over, each mark following the nearest
-//! corner or hole; parts the design has no body for stay as committed. Parts
+//! corner or hole; parts the design has no body for stay as committed. A
+//! body added or dropped, one of a run of like bodies, adds a copy of its
+//! twin's part or drops its own. Parts
 //! that no longer fit are packed again, onto more sheets if need be.
 //! `--redraw-all` redraws every body, unchanged or not, to check this
 //! against the committed sheets.
@@ -204,13 +206,24 @@ fn main() {
     let same = std::fs::read(&base).ok().is_some_and(|b| std::fs::read(&ep).ok().is_some_and(|d| d == b));
     let old = if same { flats_of(&ep.to_string_lossy(), &est) } else { flats(&base.to_string_lossy(), &tmp.0, "original") };
     let new = if same { old.clone() } else { flats_of(&ep.to_string_lossy(), &est) };
-    for f in &old {
-        if !new.iter().any(|g| g.name == f.name) {
-            die(format!("the edit removed or renamed body '{}'; sc-flatten redraws bodies, it does not add or drop them", f.name));
+    // a body added or dropped is one more or one fewer of a run of like
+    // bodies (a cap's plates, round(cap_len/ply) of them): named as one of
+    // the bodies both keep but for its numbers, and the same shape as it.
+    // An added body is drawn as its twin's part again, a dropped one's part
+    // goes; any other change in the bodies stops it
+    let stem = |n: &str| n.chars().filter(|c| !c.is_ascii_digit() && !"() ".contains(*c)).collect::<String>();
+    let kept_stems: HashSet<String> = old.iter().filter(|f| new.iter().any(|g| g.name == f.name)).map(|f| stem(&f.name)).collect();
+    let dropped: Vec<String> = old.iter().filter(|f| !new.iter().any(|g| g.name == f.name)).map(|f| f.name.clone()).collect();
+    let added: Vec<String> = new.iter().filter(|g| !old.iter().any(|f| f.name == g.name)).map(|g| g.name.clone()).collect();
+    for n in &dropped {
+        if !kept_stems.contains(&stem(n)) {
+            die(format!("the edit removed or renamed body '{n}'; sc-flatten adds or drops only one of a run of like bodies"));
         }
     }
-    if new.len() != old.len() {
-        die(format!("the edit has {} bodies and the original {}; sc-flatten redraws bodies, it does not add or drop them", new.len(), old.len()));
+    for n in &added {
+        if !kept_stems.contains(&stem(n)) {
+            die(format!("the edit added body '{n}'; sc-flatten adds or drops only one of a run of like bodies"));
+        }
     }
     // the repository's cut sheets
     let mut sheets_v: Vec<Sheet> = files_at(&repo, commit.as_deref(), "*.svg")
@@ -703,12 +716,18 @@ fn main() {
     let mut changed_names: HashMap<usize, Vec<String>> = HashMap::new();
     let mut report = vec![];
     let mut carried_total = 0;
+    let mut gone: Vec<(usize, usize)> = vec![];
     for (bi, f) in old.iter().enumerate() {
         let (si, pi, mean, _worst, r) = body_at[bi].unwrap();
         if !touched.contains(&si) {
             touched.push(si);
         }
-        let g = newby[f.name.as_str()];
+        let Some(&g) = newby.get(f.name.as_str()) else {
+            gone.push((si, pi));
+            changed_names.entry(si).or_default().push(f.name.clone());
+            report.push(format!("  dropped   {:24} {}", f.name, sheets_v[si].path));
+            continue;
+        };
         if !redraw_all && same_shape(f, g) {
             report.push(format!("  same      {:24} {} (part sits within {:.3} mm)", f.name, sheets_v[si].path, mean));
             continue;
@@ -1036,6 +1055,32 @@ fn main() {
         if n > 0 {
             report.push(format!("  kept      {n} part{} of {} that the design does not model, as committed", if n == 1 { "" } else { "s" }, sheets_v[si].path));
         }
+    }
+    // the added bodies, each its twin's part again, laid past the sheet's
+    // edge so the sheet is packed again; then the dropped bodies' parts go
+    for n in &added {
+        let g = newby[n.as_str()];
+        let twin = old.iter().enumerate().find(|(_, f)| newby.get(f.name.as_str()).is_some_and(|h| stem(&f.name) == stem(n) && same_shape(h, g)));
+        let Some((bi, f)) = twin else {
+            die(format!("the edit added body '{n}', the same shape as none of its run; sc-flatten does not draw a body afresh"));
+        };
+        let (si, pi, _, _, _) = body_at[bi].unwrap();
+        let s = &mut sheets_v[si];
+        let mut p = s.parts[pi].clone();
+        let b = bbox(&p.outline.pts);
+        let d = (s.x0 + s.w + 10.0 - b.0, 0.0);
+        for it in std::iter::once(&mut p.outline).chain(p.inside.iter_mut()) {
+            *it = it.moved(d);
+        }
+        s.parts.push(p);
+        s.changed = true;
+        changed_names.entry(si).or_default().push(n.clone());
+        report.push(format!("  added     {:24} {} (as {}'s part)", n, sheets_v[si].path, f.name));
+    }
+    gone.sort_by(|a, b| b.cmp(a));
+    for (si, pi) in gone {
+        sheets_v[si].parts.remove(pi);
+        sheets_v[si].changed = true;
     }
     // does every changed sheet still lie flat, every part clear of the others?
     let gap = 3.0;

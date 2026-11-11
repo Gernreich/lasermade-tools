@@ -929,7 +929,12 @@ What the design does not model is carried over:
   tens of millimetres away);
 - a rosette's holes are paired through the one shift that carries them all;
 - parts the design has no body for (the kalimba's stiffeners) stay as committed, and
-  the report says so.
+  the report says so;
+- a body the edit adds or drops is one more or one fewer of a run of like bodies (a
+  practice chanter's cap is `round(cap_len/ply)` plates, 42 at 2.9 mm against 41): its
+  name is a kept body's but for the numbers, and an added one is the same shape as one
+  of them and is drawn as that one's part again; a dropped one's part goes. Any other
+  body added, dropped or renamed stops it.
 
 Parts that no longer fit are packed again, onto more sheets if need be. A part bigger
 than the 600 × 305 mm bed any way round stops it, and nothing is written.
@@ -969,7 +974,10 @@ reported.
 **`sc-compare` is the check.** It pools every part of every sheet on each side, since
 the two pack differently, and matches them by shape. Of the ways a symmetric outline
 fits, it uses the one where the engraved marks agree. Between near-twins (a flute's
-seven walls) it takes the part lying in the same place on the sheet of the same name.
+seven walls) it takes the part lying in the same place on the sheet of the same name,
+but only where that fit's worst point is within the cut tolerance: a ghb foot piece,
+26 × 6.5 mm, fits its other-hand twin turned 7.8° with a mean of 0.005 mm and a worst
+of over a millimetre, and had been taking it for lying in the same spot.
 Of ways that fit equally (a symmetric part), it takes the one not turned over and
 turned least, so the count of which way most parts lie is not thrown. Each pair's move
 is settled on the two drawn outlines, and on a sheet of the same name the part left
