@@ -641,11 +641,20 @@ fn main() {
             let (pri, gri) = (sheets::RingIndex::new(&pr), sheets::RingIndex::new(&gr));
             gr.iter().flatten().map(|&q| pri.dist(q)).sum::<f64>() / n1 + pr.iter().flatten().map(|&q| gri.dist(q)).sum::<f64>() / n2
         };
+        let mut now: Vec<f64> = (0..old.len()).map(|bi| body_at[bi].map_or(0.0, |b| two_way(bi, b.0, b.1, &b.4))).collect();
+        // a body that fits its part badly may have been dealt its twin's:
+        // the twins of a polyhedron (square plates that differ at one
+        // nipped corner) were pruned from each other's candidates, so try
+        // it every way on the other part too
+        let poor: Vec<bool> = now.iter().map(|&x| x > 0.01).collect();
         // of every way the body was found on that part, the one fitting best
         let fit = |bi: usize, si: usize, pi: usize| {
-            cands.iter().filter(|c| c.1 == bi && c.2 == si && c.3 == pi).map(|c| (two_way(bi, si, pi, &c.5), *c)).min_by(|a, b| a.0.partial_cmp(&b.0).unwrap())
+            let mut ways: Vec<(f64, usize, usize, usize, f64, sheets::Rigid)> = cands.iter().filter(|c| c.1 == bi && c.2 == si && c.3 == pi).copied().collect();
+            if poor[bi] {
+                ways.extend(sheets::register_all(&old[bi], &sheets_v[si].parts[pi], None).into_iter().map(|w| (w.0, bi, si, pi, w.1, w.2)));
+            }
+            ways.into_iter().map(|c| (two_way(bi, si, pi, &c.5), c)).min_by(|a, b| a.0.partial_cmp(&b.0).unwrap())
         };
-        let mut now: Vec<f64> = (0..old.len()).map(|bi| body_at[bi].map_or(0.0, |b| two_way(bi, b.0, b.1, &b.4))).collect();
         for _ in 0..20 {
             let mut swapped = false;
             for i in 0..old.len() {

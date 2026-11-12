@@ -428,7 +428,7 @@ target/release/sc-compare DIR_A DIR_B [--tol=MM] [--mark-tol=MM]</code></pre>
 <li>a mirror twin, the same shape as its partner, goes the way most plates on the sheet lie, unless both twins need a part, unless that way fits 0.02 mm worse, and unless its worst corner lies half a millimetre further out than the body's best fit's (of the notch-edge tubes' two 455 mm walls, only one is notched at an end, which barely moves a mean);</li>
 <li>a part that fits itself turned or flipped nearly as well (a scallop's cheek, five lobes and a mirror) takes the way whose cut, grown by the sheet's kerf, lies closest on the part's line both ways round, and whose pockets lie on the part's fills (the square flute's flue plate turns only by its engraving);</li>
 <li>a body left without a part takes one from a body that can move to another, as in a matching;</li>
-<li>once the sheet's kerf is known, any two bodies swap parts if each, grown by the kerf and settled on the other's part, fits it better by 0.005 mm between them: before the kerf, half of it sits in every fit, and a run of stepped near-twins (a chanter's mouthpiece plates) can come out two parts along.</li>
+<li>once the sheet's kerf is known, any two bodies swap parts if each, grown by the kerf and settled on the other's part, fits it better by 0.005 mm between them: before the kerf, half of it sits in every fit, and a run of stepped near-twins (a chanter's mouthpiece plates) can come out two parts along. A body that fits its own part worse than 0.01 mm is tried there every way, not only the ways the first pass kept: the elongated square bipyramid's two side plates, alike but for one nipped corner, had each been dealt the other's part, and neither had been kept as a way onto the other's (0.05 mm each before the swap, 0.000 after).</li>
 </ul>
 <p>A body no sheet draws whole, whose holes are what the sheets cut (a knotwork rosette's board, of which the cut file draws only the waste), is read as its holes, each a body of its own. A sheet whose viewBox does not start at 0 0 (a rosette's, centred on it) keeps its origin. An engraved line belongs to the part its middle lies in: a rosette's ribbon edge starts on a waste piece's cut line and runs out over the board.</p>
 <p>A design whose folder holds no cut sheet (a trumpet concept walk, drawn only as a page) stops with that said: parts elsewhere that look like some of its pieces are other builds'.</p>
@@ -483,13 +483,14 @@ target/release/sc-compare DIR_A DIR_B [--tol=MM] [--mark-tol=MM]</code></pre>
 <li><strong>ghb-chanter's design</strong> lays each strip's length, joints and holes along its leaning face, as the generator draws them; down the axis, a strip came out 0.15 mm long.</li>
 <li><strong>ghb's 0.049 mm</strong> is the foot pieces' arcs, true in the design and a polygon on the sheet; it is the closest any repository comes to the limit.</li>
 </ul>
-<p>Checked 2026-11-11 on all 98 committed designs: 85 agree, and the rest are known. Three fixes since the run before (81):</p>
+<p>Checked 2026-11-11 on all 98 committed designs: 86 agree, and the rest are known. Four fixes since the run before (81):</p>
 <ul>
 <li><strong>A zero-area hole</strong> that the union in <code>step::flatten</code> leaves where an outline pinches to a point (the cuboctahedron's and the square antiprism's beak meeting the top plate) is dropped, so those plates match their parts (0.022 and 0.023 mm).</li>
 <li><strong>The area pre-check in <code>register_all</code></strong> allows for the kerf along the part's edge (0.1 mm per mm of edge): the standard octagon chanter's back strip, 704 mm² inside 640 mm of fingered edge, grows more than 5% by it and was refused (now 0.006 mm).</li>
 <li><strong><code>sc-compare</code> on a round part</strong> (a mouthpiece ring) that passes on its cuts left where it lies lets the marks choose between that and the fitted turn, which had carried ring 30's number 0.65 mm round its ring (now 0.000 mm).</li>
+<li><strong>Near-twin plates swapped:</strong> the elongated square bipyramid's two side plates had each been dealt the other's part (0.137 mm); the swap step now tries a badly fitting body every way on the other part (now 0.024 mm).</li>
 </ul>
-<p>Left: the trumpet's nine concept walks have no sheets; the pinned 1.5 mm coil's sheets predate its design; the rhombic dodecahedron's beak sliver (1.69 mm); the elongated square bipyramid's top plate (0.137 mm), where the generator's clip carries the nip's diagonal across a finger tab past the face's edge and the design leaves a step; and the knotwork septafoil (0.057 mm), an acute tip on a waste piece that the solid blunts.</p>
+<p>Left: the trumpet's nine concept walks have no sheets; the pinned 1.5 mm coil's sheets predate its design; the rhombic dodecahedron's beak sliver (1.69 mm); and the knotwork septafoil (0.057 mm), an acute tip on a waste piece that the solid blunts.</p>
 <h2 id="make-preview"><code>make-preview</code></h2>
 <pre><code>target/release/make-preview CUTFILE.svg [OUT.svg]      # default previews/&lt;name&gt;
 target/release/make-preview CUTFILE.svg --ground=#faf7f0  # another ground colour</code></pre>

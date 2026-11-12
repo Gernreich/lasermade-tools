@@ -895,7 +895,11 @@ these choose among fits that are equally good, never over a better fit:
 - once the sheet's kerf is known, any two bodies swap parts if each, grown by the kerf
   and settled on the other's part, fits it better by 0.005 mm between them: before the
   kerf, half of it sits in every fit, and a run of stepped near-twins (a chanter's
-  mouthpiece plates) can come out two parts along.
+  mouthpiece plates) can come out two parts along. A body that fits its own part
+  worse than 0.01 mm is tried there every way, not only the ways the first pass kept:
+  the elongated square bipyramid's two side plates, alike but for one nipped corner,
+  had each been dealt the other's part, and neither had been kept as a way onto the
+  other's (0.05 mm each before the swap, 0.000 after).
 
 A body no sheet draws whole, whose holes are what the sheets cut (a knotwork rosette's
 board, of which the cut file draws only the waste), is read as its holes, each a body
@@ -1032,8 +1036,8 @@ What it took, besides the reading and matching above:
 - **ghb's 0.049 mm** is the foot pieces' arcs, true in the design and a polygon on the
   sheet; it is the closest any repository comes to the limit.
 
-Checked 2026-11-11 on all 98 committed designs: 85 agree, and the rest are known.
-Three fixes since the run before (81):
+Checked 2026-11-11 on all 98 committed designs: 86 agree, and the rest are known.
+Four fixes since the run before (81):
 - **A zero-area hole** that the union in `step::flatten` leaves where an outline pinches
   to a point (the cuboctahedron's and the square antiprism's beak meeting the top
   plate) is dropped, so those plates match their parts (0.022 and 0.023 mm).
@@ -1043,11 +1047,12 @@ Three fixes since the run before (81):
 - **`sc-compare` on a round part** (a mouthpiece ring) that passes on its cuts left
   where it lies lets the marks choose between that and the fitted turn, which had carried
   ring 30's number 0.65 mm round its ring (now 0.000 mm).
+- **Near-twin plates swapped:** the elongated square bipyramid's two side plates had
+  each been dealt the other's part (0.137 mm); the swap step now tries a badly fitting
+  body every way on the other part (now 0.024 mm).
 
 Left: the trumpet's nine concept walks have no sheets; the pinned 1.5 mm coil's sheets
-predate its design; the rhombic dodecahedron's beak sliver (1.69 mm); the elongated
-square bipyramid's top plate (0.137 mm), where the generator's clip carries the nip's
-diagonal across a finger tab past the face's edge and the design leaves a step; and
+predate its design; the rhombic dodecahedron's beak sliver (1.69 mm); and
 the knotwork septafoil (0.057 mm), an acute tip on a waste piece that the solid blunts.
 
 ## `make-preview`
