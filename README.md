@@ -1041,7 +1041,7 @@ What it took, besides the reading and matching above:
 - **ghb's 0.049 mm** is the foot pieces' arcs, true in the design and a polygon on the
   sheet; it is the closest any repository comes to the limit.
 
-Checked 2026-11-12 on all 98 committed designs: 97 agree, and the one left is known.
+Checked 2026-11-12 on all 98 committed designs: all 98 agree.
 Four fixes since the run before (81):
 - **A zero-area hole** that the union in `step::flatten` leaves where an outline pinches
   to a point (the cuboctahedron's and the square antiprism's beak meeting the top
@@ -1063,8 +1063,9 @@ knotwork septafoil, whose design now takes every point of its cut file (0.057 to
 Then the nine trumpet concept walks, which had no sheets: `bore_split` drew them
 (251 sheets, now in `tools/designs.rs`), and each design agrees within 0.004 mm.
 
-Left: the pinned 1.5-turn coil's sheets predate its design: they keep the zero-width
-stubs the wood was cut with, which no solid can carry (0.905 mm).
+And the 1.5-turn coil, whose sheets were the record of the wood cut from them, with the
+zero-width stubs no solid can carry (0.905 mm): the record moved to its `as-cut/`, which
+`sc-flatten` does not read, and `cut-files/` is redrawn (0.0025 mm).
 
 ## `make-preview`
 

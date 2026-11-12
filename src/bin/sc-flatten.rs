@@ -225,10 +225,11 @@ fn main() {
             die(format!("the edit added body '{n}'; sc-flatten adds or drops only one of a run of like bodies"));
         }
     }
-    // the repository's cut sheets
+    // the repository's cut sheets (not previews, and not an as-cut/ record of
+    // wood already cut, which a redraw of today's design is not meant to match)
     let mut sheets_v: Vec<Sheet> = files_at(&repo, commit.as_deref(), "*.svg")
         .into_iter()
-        .filter(|f| !f.split('/').any(|p| p == "previews" || p.starts_with('.')))
+        .filter(|f| !f.split('/').any(|p| p == "previews" || p == "as-cut" || p.starts_with('.')))
         .filter_map(|f| {
             let at = match &commit {
                 None => repo.join(&f),
