@@ -742,6 +742,11 @@ on. Containment is decided by most of a ring's vertices, not its first: the
 slapstick's three paddles share their cut lines, and a first vertex on a shared line
 read as inside the neighbour, which made one paddle a hole in another.
 
+It drops a point within 0.02 mm of the line through its neighbours, which a view
+never misses. `parts_eps(path, 0.0)` keeps every point, for a design that must be the
+cut file's own: at 0.02 the knotwork septafoil's design lost the tip of an 11.6°
+waste piece, a point 0.057 mm past its neighbour (2026-11-12).
+
 It reads a sheet of separate parts. A rosette sheet is a cut-out with no single
 outline, so its openings come back as dozens of small parts — the same limit
 `flat-part-check` has.
@@ -1036,7 +1041,7 @@ What it took, besides the reading and matching above:
 - **ghb's 0.049 mm** is the foot pieces' arcs, true in the design and a polygon on the
   sheet; it is the closest any repository comes to the limit.
 
-Checked 2026-11-11 on all 98 committed designs: 86 agree, and the rest are known.
+Checked 2026-11-12 on all 98 committed designs: 88 agree, and the rest are known.
 Four fixes since the run before (81):
 - **A zero-area hole** that the union in `step::flatten` leaves where an outline pinches
   to a point (the cuboctahedron's and the square antiprism's beak meeting the top
@@ -1051,9 +1056,14 @@ Four fixes since the run before (81):
   each been dealt the other's part (0.137 mm); the swap step now tries a badly fitting
   body every way on the other part (now 0.024 mm).
 
+And two designs since (2026-11-12): the rhombic dodecahedron's top, whose nip now
+stops at the beak's side line as the generator's clip does (1.69 to 0.023 mm), and the
+knotwork septafoil, whose design now takes every point of its cut file (0.057 to
+0.000 mm).
+
 Left: the trumpet's nine concept walks have no sheets; the pinned 1.5 mm coil's sheets
-predate its design; the rhombic dodecahedron's beak sliver (1.69 mm); and
-the knotwork septafoil (0.057 mm), an acute tip on a waste piece that the solid blunts.
+predate its design: they keep the zero-width stubs the wood was cut with, which no
+solid can carry (0.905 mm).
 
 ## `make-preview`
 

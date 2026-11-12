@@ -508,6 +508,15 @@ pub fn geometry(svg_path: &str) -> Result<(Vec<svg::Geo>, f64), String> {
 
 /// -> the cut file's parts, largest first, y up, in millimetres.
 pub fn parts(svg_path: &str) -> Vec<Part> {
+    parts_eps(svg_path, 0.02)
+}
+
+/// parts(), each ring's points dropped where they lie within eps of the
+/// line through their neighbours: 0.02 mm for a 3D view, 0 for a design
+/// that must be the cut file's own. (At 0.02 the tip of a knotwork
+/// septafoil's 11.6 degree waste piece went, a point 0.057 mm past its
+/// neighbour and that close to the line back through it.)
+pub fn parts_eps(svg_path: &str, eps: f64) -> Vec<Part> {
     let (got, _) = geometry(svg_path).unwrap_or_else(|e| crate::die(e));
     let mut cuts: Vec<(String, Vec<Vec<P>>)> = vec![];
     let mut engr: Vec<Vec<P>> = vec![];
@@ -532,7 +541,7 @@ pub fn parts(svg_path: &str) -> Vec<Part> {
         let joined = if rest.is_empty() { vec![] } else { stitch(rest, TOL).0 };
         for p in closed.into_iter().chain(joined) {
             let p = if p[0] == *p.last().unwrap() { p[..p.len() - 1].to_vec() } else { p };
-            rings.push((c.clone(), simplify(p, 0.02)));
+            rings.push((c.clone(), simplify(p, eps)));
         }
     }
     let key = |r: &(String, Vec<P>)| -area(&ring(&r.1)).abs();
