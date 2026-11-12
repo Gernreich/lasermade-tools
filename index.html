@@ -484,15 +484,15 @@ target/release/sc-compare DIR_A DIR_B [--tol=MM] [--mark-tol=MM]</code></pre>
 <li><strong>ghb-chanter's design</strong> lays each strip's length, joints and holes along its leaning face, as the generator draws them; down the axis, a strip came out 0.15 mm long.</li>
 <li><strong>ghb's 0.049 mm</strong> is the foot pieces' arcs, true in the design and a polygon on the sheet; it is the closest any repository comes to the limit.</li>
 </ul>
-<p>Checked 2026-11-12 on all 98 committed designs: 88 agree, and the rest are known. Four fixes since the run before (81):</p>
+<p>Checked 2026-11-12 on all 98 committed designs: 97 agree, and the one left is known. Four fixes since the run before (81):</p>
 <ul>
 <li><strong>A zero-area hole</strong> that the union in <code>step::flatten</code> leaves where an outline pinches to a point (the cuboctahedron's and the square antiprism's beak meeting the top plate) is dropped, so those plates match their parts (0.022 and 0.023 mm).</li>
 <li><strong>The area pre-check in <code>register_all</code></strong> allows for the kerf along the part's edge (0.1 mm per mm of edge): the standard octagon chanter's back strip, 704 mm² inside 640 mm of fingered edge, grows more than 5% by it and was refused (now 0.006 mm).</li>
 <li><strong><code>sc-compare</code> on a round part</strong> (a mouthpiece ring) that passes on its cuts left where it lies lets the marks choose between that and the fitted turn, which had carried ring 30's number 0.65 mm round its ring (now 0.000 mm).</li>
 <li><strong>Near-twin plates swapped:</strong> the elongated square bipyramid's two side plates had each been dealt the other's part (0.137 mm); the swap step now tries a badly fitting body every way on the other part (now 0.024 mm).</li>
 </ul>
-<p>And two designs since (2026-11-12): the rhombic dodecahedron's top, whose nip now stops at the beak's side line as the generator's clip does (1.69 to 0.023 mm), and the knotwork septafoil, whose design now takes every point of its cut file (0.057 to 0.000 mm).</p>
-<p>Left: the trumpet's nine concept walks have no sheets; the pinned 1.5 mm coil's sheets predate its design: they keep the zero-width stubs the wood was cut with, which no solid can carry (0.905 mm).</p>
+<p>And two designs since (2026-11-12): the rhombic dodecahedron's top, whose nip now stops at the beak's side line as the generator's clip does (1.69 to 0.023 mm), and the knotwork septafoil, whose design now takes every point of its cut file (0.057 to 0.000 mm). Then the nine trumpet concept walks, which had no sheets: <code>bore_split</code> drew them (251 sheets, now in <code>tools/designs.rs</code>), and each design agrees within 0.004 mm.</p>
+<p>Left: the pinned 1.5-turn coil's sheets predate its design: they keep the zero-width stubs the wood was cut with, which no solid can carry (0.905 mm).</p>
 <h2 id="make-preview"><code>make-preview</code></h2>
 <pre><code>target/release/make-preview CUTFILE.svg [OUT.svg]      # default previews/&lt;name&gt;
 target/release/make-preview CUTFILE.svg --ground=#faf7f0  # another ground colour</code></pre>
